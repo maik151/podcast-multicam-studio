@@ -1,6 +1,15 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, signal, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+
+export interface CameraQualityPreset {
+  id: string;
+  label: string;
+  shortLabel: string;
+  width: number;
+  height: number;
+  fps: number;
+}
 
 @Component({
   selector: 'app-mobile-cam',
@@ -16,103 +25,336 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
   public camId = signal<number>(1);
   public isConnected = signal<boolean>(false);
+  public isManuallyStopped = signal<boolean>(false);
   public isProgram = signal<boolean>(false);
   public isPreview = signal<boolean>(false);
-  public batteryLevel = signal<number>(100);
+
+  // Batería real del hardware (null si el navegador/SO como iOS bloquea Battery API)
+  public batteryLevel = signal<number | null>(null);
+  public isBatterySupported = signal<boolean>(false);
   public isCharging = signal<boolean>(false);
+
   public isTorchOn = signal<boolean>(false);
   public isOledActive = signal<boolean>(false);
   public currentZoom = signal<number>(1.0);
   public availableZooms = signal<number[]>([0.5, 1.0, 2.0]);
   public isZoomSupported = signal<boolean>(false);
   public statusText = signal<string>('Iniciando sensor de cámara...');
+  public hardwareNotice = signal<string | null>(null);
+
+  // Presets de Resolución y FPS con fallback inteligente
+  public readonly qualityPresets: CameraQualityPreset[] = [
+    { id: '720p30', label: '720p HD @ 30 FPS (Wi-Fi Estable)', shortLabel: '720p 30', width: 1280, height: 720, fps: 30 },
+    { id: '1080p30', label: '1080p FHD @ 30 FPS (Estándar)', shortLabel: '1080p 30', width: 1920, height: 1080, fps: 30 },
+    { id: '1080p60', label: '1080p FHD @ 60 FPS (Fluido)', shortLabel: '1080p 60', width: 1920, height: 1080, fps: 60 },
+    { id: '4k30', label: '4K UHD @ 30 FPS (Máxima Nitidez)', shortLabel: '4K 30', width: 3840, height: 2160, fps: 30 }
+  ];
+
+  public selectedPresetId = signal<string>('1080p30');
+  public actualResolutionText = signal<string>('1080p @ 30 FPS');
+
+  // Soporte PWA & Fullscreen
+  public canInstallPwa = signal<boolean>(false);
+  public isFullscreen = signal<boolean>(false);
+  private deferredPwaPrompt: any = null;
 
   private localStream: MediaStream | null = null;
   private ws: WebSocket | null = null;
   private pc: RTCPeerConnection | null = null;
   private batteryInterval: number | null = null;
+  private reconnectTimer: number | null = null;
+  private noticeTimeout: number | null = null;
 
   private readonly rtcConfig: RTCConfiguration = {
     iceServers: []
   };
 
+  @HostListener('window:beforeinstallprompt', ['$event'])
+  public onBeforeInstallPrompt(e: Event): void {
+    e.preventDefault();
+    this.deferredPwaPrompt = e;
+    this.canInstallPwa.set(true);
+  }
+
   async ngOnInit(): Promise<void> {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
-      this.camId.set(parseInt(idParam) || 1);
+      this.camId.set(parseInt(idParam, 10) || 1);
     }
 
     this.connectWs();
-    await this.startCamera();
+    await this.startCamera(this. qualityPresets[1]); // 1080p30 por defecto inicial seguro
     this.monitorBattery();
   }
 
   ngOnDestroy(): void {
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(t => t.stop());
-    }
-    if (this.pc) this.pc.close();
-    if (this.ws) this.ws.close();
-    if (this.batteryInterval) clearInterval(this.batteryInterval);
+    this.cleanupAllResources();
   }
 
-  public async startCamera(): Promise<void> {
-    this.statusText.set('Solicitando acceso a cámara trasera Full HD...');
-    const fallbacks: MediaStreamConstraints[] = [
+  private cleanupAllResources(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.batteryInterval) {
+      clearInterval(this.batteryInterval);
+      this.batteryInterval = null;
+    }
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(t => t.stop());
+      this.localStream = null;
+    }
+    if (this.pc) {
+      try { this.pc.close(); } catch {}
+      this.pc = null;
+    }
+    if (this.ws) {
+      try { this.ws.onclose = null; this.ws.close(); } catch {}
+      this.ws = null;
+    }
+  }
+
+  public showHardwareNotice(msg: string): void {
+    this.hardwareNotice.set(msg);
+    if (this.noticeTimeout) clearTimeout(this.noticeTimeout);
+    this.noticeTimeout = window.setTimeout(() => this.hardwareNotice.set(null), 5000);
+  }
+
+  /**
+   * Finaliza limpiamente la transmisión desde el celular, liberando cámara y red.
+   */
+  public stopTransmission(): void {
+    this.isManuallyStopped.set(true);
+    this.isProgram.set(false);
+    this.isPreview.set(false);
+    this.isConnected.set(false);
+    this.statusText.set('Transmisión finalizada por el operador.');
+
+    if (this.cameraVideoRef && this.cameraVideoRef.nativeElement) {
+      this.cameraVideoRef.nativeElement.srcObject = null;
+    }
+    this.cleanupAllResources();
+  }
+
+  /**
+   * Reanuda la transmisión sin necesidad de recargar ni volver a escanear el QR.
+   */
+  public async resumeTransmission(): Promise<void> {
+    this.isManuallyStopped.set(false);
+    this.statusText.set('Reanudando sensor y conexión con el estudio...');
+    const preset = this.qualityPresets.find(p => p.id === this.selectedPresetId()) || this.qualityPresets[1];
+    this.connectWs();
+    await this.startCamera(preset);
+    this.monitorBattery();
+  }
+
+  public async installPwa(): Promise<void> {
+    if (this.deferredPwaPrompt) {
+      this.deferredPwaPrompt.prompt();
+      const choice = await this.deferredPwaPrompt.userChoice;
+      if (choice && choice.outcome === 'accepted') {
+        this.canInstallPwa.set(false);
+      }
+      this.deferredPwaPrompt = null;
+    } else {
+      this.showHardwareNotice('Para instalar como App: abre el menú del navegador y elige "Agregar a pantalla de inicio".');
+    }
+  }
+
+  public async toggleFullscreen(): Promise<void> {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        this.isFullscreen.set(true);
+      } else {
+        await document.exitFullscreen();
+        this.isFullscreen.set(false);
+      }
+    } catch {
+      this.showHardwareNotice('Modo pantalla completa gestionado por el sistema operativo.');
+    }
+  }
+
+  /**
+   * Cambia la resolución y FPS en vivo, validando si el sensor físico del teléfono la soporta.
+   * Si el teléfono no soporta esa resolución/FPS, aplica fallback automático sin cortar la sesión.
+   */
+  public async selectQualityPreset(presetId: string): Promise<void> {
+    const preset = this.qualityPresets.find(p => p.id === presetId);
+    if (!preset) return;
+    this.selectedPresetId.set(preset.id);
+    await this.startCamera(preset);
+  }
+
+  public async startCamera(requestedPreset?: CameraQualityPreset): Promise<void> {
+    const target = requestedPreset || this.qualityPresets.find(p => p.id === this.selectedPresetId()) || this.qualityPresets[1];
+    this.statusText.set(`Configurando óptica en ${target.width}x${target.height} @ ${target.fps} FPS...`);
+
+    // Si ya hay un stream activo, primero intentamos applyConstraints sobre el track actual
+    if (this.localStream && this.localStream.getVideoTracks().length > 0 && requestedPreset) {
+      const existingTrack = this.localStream.getVideoTracks()[0];
+      try {
+        await existingTrack.applyConstraints({
+          width: { exact: target.width },
+          height: { exact: target.height },
+          frameRate: { ideal: target.fps, max: target.fps }
+        });
+        this.verifyAndReportActualFormat(existingTrack, target, false);
+        return;
+      } catch {
+        // Si exact falla en applyConstraints, reabrimos con cadena de fallbacks
+        this.localStream.getTracks().forEach(t => t.stop());
+        this.localStream = null;
+      }
+    }
+
+    const fallbacks: { constraints: MediaStreamConstraints; isFallback: boolean }[] = [
+      // 1. Intento exacto / ideal de la resolución y FPS pedidos por el usuario
       {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 60 }
-        },
-        audio: false
+        isFallback: false,
+        constraints: {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { exact: target.width },
+            height: { exact: target.height },
+            frameRate: { exact: target.fps }
+          },
+          audio: false
+        }
+      },
+      // 2. Misma resolución pero con FPS flexible (ej. si pidió 60fps pero el sensor solo da 30fps en esa resolución)
+      {
+        isFallback: true,
+        constraints: {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: target.width },
+            height: { ideal: target.height },
+            frameRate: { ideal: target.fps }
+          },
+          audio: false
+        }
+      },
+      // 3. Fallback seguro 1080p @ 30 FPS
+      {
+        isFallback: true,
+        constraints: {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 }
+          },
+          audio: false
+        }
+      },
+      // 4. Fallback seguro 720p @ 30 FPS
+      {
+        isFallback: true,
+        constraints: {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 }
+          },
+          audio: false
+        }
+      },
+      // 5. Fallback universal del sensor
+      {
+        isFallback: true,
+        constraints: {
+          video: { facingMode: 'environment' },
+          audio: false
+        }
       },
       {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30 }
-        },
-        audio: false
-      },
-      {
-        video: { facingMode: 'environment' },
-        audio: false
-      },
-      {
-        video: true,
-        audio: false
+        isFallback: true,
+        constraints: {
+          video: true,
+          audio: false
+        }
       }
     ];
 
-    for (const constraints of fallbacks) {
+    let usedFallback = false;
+    for (const item of fallbacks) {
       try {
-        this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-        if (this.localStream) break;
-      } catch (err) {
-        console.warn('Intento de apertura de cámara con fallback:', err);
+        this.localStream = await navigator.mediaDevices.getUserMedia(item.constraints);
+        if (this.localStream) {
+          usedFallback = item.isFallback;
+          break;
+        }
+      } catch {
+        continue;
       }
     }
 
     if (this.localStream) {
-      if (this.cameraVideoRef) {
+      if (this.cameraVideoRef && this.cameraVideoRef.nativeElement) {
         this.cameraVideoRef.nativeElement.srcObject = this.localStream;
         this.cameraVideoRef.nativeElement.play().catch(() => {});
       }
-      this.statusText.set('Cámara activa. Enlazando video con el Director...');
-      // Notificar al Director que el stream de cámara ya está listo para transmitir
+
+      const videoTrack = this.localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        this.verifyAndReportActualFormat(videoTrack, target, usedFallback);
+
+        // Si ya existe una conexión WebRTC activa con el Director, reemplazar el track en caliente
+        if (this.pc) {
+          const sender = this.pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack).catch(() => {});
+          }
+        }
+      }
+
       this.sendWs({
         type: 'ready_for_offer',
         camId: this.camId()
       });
     } else {
-      this.statusText.set('⚠️ Concede permisos de cámara en el navegador para transmitir.');
+      this.statusText.set('Concede permisos de cámara en el navegador para transmitir.');
+      this.showHardwareNotice('No se pudo acceder al sensor de cámara. Verifica los permisos del navegador.');
     }
   }
 
+  private verifyAndReportActualFormat(
+    track: MediaStreamTrack,
+    target: CameraQualityPreset,
+    usedFallback: boolean
+  ): void {
+    const settings = track.getSettings ? track.getSettings() : {};
+    const realW = settings.width || target.width;
+    const realH = settings.height || target.height;
+    const realFps = Math.round(settings.frameRate || target.fps);
+
+    this.actualResolutionText.set(`${realW}x${realH} @ ${realFps} FPS`);
+
+    const mismatched = (realW !== target.width || realH !== target.height || Math.abs(realFps - target.fps) > 5);
+    if (mismatched || (usedFallback && realW !== target.width)) {
+      this.showHardwareNotice(
+        `Tu celular no soporta ${target.width}x${target.height}@${target.fps}fps. Adaptado automáticamente a ${realW}x${realH} @ ${realFps} FPS.`
+      );
+      this.statusText.set(`Transmitiendo en ${realW}x${realH} @ ${realFps} FPS (Adaptado)`);
+    } else {
+      this.statusText.set(`Transmitiendo en ${realW}x${realH} @ ${realFps} FPS`);
+    }
+
+    // Notificar al Director el formato real activo del hardware
+    this.sendWs({
+      type: 'format_update',
+      camId: this.camId(),
+      width: realW,
+      height: realH,
+      fps: realFps,
+      resolutionLabel: `${realW}x${realH} @ ${realFps} FPS`
+    });
+  }
+
   public connectWs(): void {
+    if (this.isManuallyStopped()) return;
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${window.location.host}/ws`;
     this.ws = new WebSocket(wsUrl);
@@ -126,12 +368,21 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         camId: this.camId()
       });
       this.reportBattery();
+      if (this.localStream) {
+        const videoTrack = this.localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          const preset = this.qualityPresets.find(p => p.id === this.selectedPresetId()) || this.qualityPresets[1];
+          this.verifyAndReportActualFormat(videoTrack, preset, false);
+        }
+      }
     };
 
     this.ws.onclose = () => {
       this.isConnected.set(false);
-      this.statusText.set('Desconectado. Reintentando...');
-      setTimeout(() => this.connectWs(), 2000);
+      if (!this.isManuallyStopped()) {
+        this.statusText.set('Desconectado. Reintentando enlace...');
+        this.reconnectTimer = window.setTimeout(() => this.connectWs(), 2000);
+      }
     };
 
     this.ws.onmessage = async (event) => {
@@ -144,9 +395,9 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     };
   }
 
-  private async handleMessage(msg: { type: string; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit; activeCam?: number; previewCam?: number }): Promise<void> {
+  private async handleMessage(msg: any): Promise<void> {
     if (msg.type === 'offer' && msg.sdp) {
-      this.statusText.set('Recibida oferta SDP del director. Negociando...');
+      this.statusText.set('Negociando enlace de video con la consola...');
       if (!this.localStream) {
         await this.startCamera();
       }
@@ -168,7 +419,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
       this.pc.onconnectionstatechange = () => {
         if (this.pc?.connectionState === 'connected') {
-          this.statusText.set('ENLACE WEBRTC ESTABLECIDO (EN VIVO)');
+          this.statusText.set(`EN VIVO // ${this.actualResolutionText()}`);
         }
       };
 
@@ -201,13 +452,30 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       }
     } else if (msg.type === 'tally') {
       if (msg.activeCam !== undefined) {
-        this.isProgram.set(msg.activeCam === this.camId());
+        this.isProgram.set(Number(msg.activeCam) === this.camId());
       }
       if (msg.previewCam !== undefined) {
-        this.isPreview.set(msg.previewCam === this.camId());
+        this.isPreview.set(Number(msg.previewCam) === this.camId());
       }
+    } else if (msg.type === 'set_quality') {
+      // Solicitud remota desde la consola de Director para cambiar resolución/FPS
+      const w = Number(msg.width) || 1920;
+      const h = Number(msg.height) || 1080;
+      const fps = Number(msg.fps) || 30;
+      const matched = this.qualityPresets.find(p => p.width === w && p.height === h && p.fps === fps) || {
+        id: 'custom',
+        label: `${w}x${h} @ ${fps} FPS`,
+        shortLabel: `${h}p ${fps}`,
+        width: w,
+        height: h,
+        fps
+      };
+      if (matched.id !== 'custom') {
+        this.selectedPresetId.set(matched.id);
+      }
+      await this.startCamera(matched);
     } else if (msg.type === 'command' || msg.type === 'camera_command') {
-      const action = (msg as { action?: string; command?: string; zoom?: number }).action || (msg as { action?: string; command?: string; zoom?: number }).command;
+      const action = msg.action || msg.command;
       if (action === 'toggle_oled' || action === 'oled') {
         this.toggleOled();
       } else if (action === 'toggle_torch' || action === 'torch') {
@@ -215,18 +483,22 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       } else if (action === 'switch_lens' || action === 'cycle_lens' || action === 'cycle_zoom') {
         await this.cycleLens();
       } else if (action === 'set_zoom') {
-        const factor = (msg as { zoom?: number }).zoom ?? 1.0;
+        const factor = msg.zoom ?? 1.0;
         await this.setZoom(factor);
+      } else if (action === 'set_resolution' && msg.presetId) {
+        await this.selectQualityPreset(msg.presetId);
       }
     }
   }
 
   public toggleOled(): void {
     this.isOledActive.update(v => !v);
+    this.reportBattery();
   }
 
   public exitOledSaver(): void {
     this.isOledActive.set(false);
+    this.reportBattery();
   }
 
   public async toggleTorch(): Promise<void> {
@@ -242,19 +514,17 @@ export class MobileCamComponent implements OnInit, OnDestroy {
           advanced: [{ torch: next } as MediaTrackConstraintSet]
         });
         this.isTorchOn.set(next);
-        this.statusText.set(`Linterna de apoyo: ${next ? 'ENCENDIDA (ON)' : 'APAGADA (OFF)'}`);
+        this.statusText.set(`Linterna de apoyo: ${next ? 'ENCENDIDA' : 'APAGADA'}`);
         this.sendWs({
           type: 'camera_telemetry',
           camId: this.camId(),
           torch: next
         });
       } else {
-        this.isTorchOn.set(next);
-        this.statusText.set(`Linterna de apoyo: ${next ? 'ON' : 'OFF'}`);
+        this.showHardwareNotice('Este lente no dispone de flash LED físico o el navegador restringe su control.');
       }
-    } catch (e) {
-      console.warn('Torch no soportado:', e);
-      this.isTorchOn.update(v => !v);
+    } catch {
+      this.showHardwareNotice('No se pudo activar el flash LED en este sensor.');
     }
   }
 
@@ -271,20 +541,21 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         const min = caps.zoom.min ?? 0.5;
         const max = caps.zoom.max ?? 5.0;
         target = Math.max(min, Math.min(max, factor));
+        await track.applyConstraints({
+          advanced: [{ zoom: target } as MediaTrackConstraintSet]
+        });
+        this.currentZoom.set(factor);
+        this.statusText.set(`Óptica ajustada a ${factor}x`);
+        this.sendWs({
+          type: 'camera_telemetry',
+          camId: this.camId(),
+          zoom: factor
+        });
+      } else {
+        this.currentZoom.set(factor);
+        this.showHardwareNotice('Zoom óptico gestionado por el navegador móvil.');
       }
-
-      await track.applyConstraints({
-        advanced: [{ zoom: target } as MediaTrackConstraintSet]
-      });
-      this.currentZoom.set(factor);
-      this.statusText.set(`Óptica ajustada a ${factor}x`);
-      this.sendWs({
-        type: 'camera_telemetry',
-        camId: this.camId(),
-        zoom: factor
-      });
-    } catch (e) {
-      console.warn('Hardware de cámara no soporta zoom nativo:', e);
+    } catch {
       this.currentZoom.set(factor);
     }
   }
@@ -297,21 +568,41 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     await this.setZoom(zooms[nextIdx]);
   }
 
+  /**
+   * Lee únicamente datos reales de la Battery Status API del dispositivo.
+   * Si el navegador (ej. iOS Safari) no expone la API, NO inventa un 100% falso.
+   */
   private monitorBattery(): void {
-    const nav = navigator as unknown as { getBattery?: () => Promise<{ level: number; charging: boolean; addEventListener: (t: string, fn: () => void) => void }> };
-    if (nav && nav.getBattery) {
+    const nav = navigator as unknown as {
+      getBattery?: () => Promise<{
+        level: number;
+        charging: boolean;
+        addEventListener: (t: string, fn: () => void) => void;
+      }>;
+    };
+
+    if (nav && typeof nav.getBattery === 'function') {
       nav.getBattery().then(batt => {
         const update = () => {
-          this.batteryLevel.set(Math.round(batt.level * 100));
-          this.isCharging.set(batt.charging);
-          this.reportBattery();
+          if (typeof batt.level === 'number' && !isNaN(batt.level)) {
+            this.isBatterySupported.set(true);
+            this.batteryLevel.set(Math.round(batt.level * 100));
+            this.isCharging.set(Boolean(batt.charging));
+            this.reportBattery();
+          }
         };
         update();
         batt.addEventListener('levelchange', update);
         batt.addEventListener('chargingchange', update);
-      }).catch(() => {});
+      }).catch(() => {
+        this.isBatterySupported.set(false);
+        this.batteryLevel.set(null);
+      });
+    } else {
+      this.isBatterySupported.set(false);
+      this.batteryLevel.set(null);
     }
-    // Reporte periódico cada 5 segundos mediante WebSockets hacia la consola central
+
     if (this.batteryInterval) clearInterval(this.batteryInterval);
     this.batteryInterval = window.setInterval(() => {
       this.reportBattery();
@@ -321,15 +612,18 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   public reportBattery(): void {
     const isOled = this.isOledActive();
     const thermalStatus = isOled ? 'COOLED' : (this.isTorchOn() ? 'WARM' : 'NORMAL');
+    const realLevel = this.isBatterySupported() ? this.batteryLevel() : undefined;
+
     this.sendWs({
       type: 'battery',
       camId: this.camId(),
-      level: this.batteryLevel(),
-      battery: this.batteryLevel(),
-      charging: this.isCharging(),
-      isCharging: this.isCharging(),
+      level: realLevel,
+      battery: realLevel,
+      charging: this.isBatterySupported() ? this.isCharging() : undefined,
+      isCharging: this.isBatterySupported() ? this.isCharging() : undefined,
       thermalStatus: thermalStatus,
       isOled: isOled,
+      resolutionLabel: this.actualResolutionText(),
       timestamp: Date.now()
     });
   }

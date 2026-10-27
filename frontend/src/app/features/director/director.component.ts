@@ -167,7 +167,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch {}
     this.isTutorialOpen.set(false);
     this.telemetry.logEvent('UI_INTERACTION', 'TUTORIAL_GUIDE', 'COMPLETE_TUTORIAL', 'Tutorial de bienvenida completado');
-    this.showToast('✅ Guía completada. Puedes reabrirla cuando quieras desde [? TUTORIAL]');
+    this.showToast('Guía completada. Puedes reabrirla cuando quieras desde [TUTORIAL]');
   }
 
   public isTutorialZoneActive(zone: string): boolean {
@@ -178,7 +178,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   public async onOpenLogsFolder(): Promise<void> {
     await this.telemetry.openLogsFolder();
-    this.showToast('📋 Abriendo carpeta de Logs JSON en Windows Explorer');
+    this.showToast('Abriendo carpeta de Logs JSON en Windows Explorer');
   }
 
   ngAfterViewInit(): void {
@@ -206,7 +206,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   public async onOpenRecordingsFolder(): Promise<void> {
     await this.recorder.openRecordingsFolder();
-    this.showToast('📂 Abriendo carpeta de Grabaciones en Windows Explorer');
+    this.showToast('Abriendo carpeta de Grabaciones en Windows Explorer');
   }
 
   public onCopyLanUrl(): void {
@@ -215,7 +215,26 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
       navigator.clipboard.writeText(url).catch(() => {});
     }
     this.openQrModal();
-    this.showToast(`🔗 URL copiada: ${url}`);
+    this.showToast(`URL copiada al portapapeles: ${url}`);
+  }
+
+  public onCustomNameInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.recorder.setCustomRecordingName(input.value);
+  }
+
+  public setRemoteResolution(camId: number, presetId: string): void {
+    this.webrtc.setCameraResolution(camId, presetId);
+    this.telemetry.logEvent('WEBRTC_SIGNALING', 'REMOTE_FORMAT', 'SET_RESOLUTION', `Solicitud de cambio de calidad en CAM 0${camId}: ${presetId}`, {
+      camId,
+      presetId
+    });
+    this.showToast(`CAM 0${camId} -> Calidad solicitada: ${presetId.toUpperCase()}`);
+  }
+
+  public onPlayCalibrationTone(): void {
+    this.audio.playCalibrationTone();
+    this.showToast('Tono de prueba 440Hz enviado a osciloscopio y audífonos');
   }
 
   public getConnectedCamerasCount(): number {
@@ -260,13 +279,13 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
       fromCam: current,
       toCam: nextCam
     });
-    this.showToast(`⚡ Auto-Mix -> CAM 0${nextCam}`);
+    this.showToast(`Auto-Mix -> CAM 0${nextCam}`);
   }
 
   public onTriggerDipToBlack(): void {
     this.switcher.triggerDipToBlack();
     this.telemetry.logEvent('SWITCHER', 'DIP_TO_BLACK', 'EXECUTE_DIP', 'Transición cinemática Dip to Black (600ms)');
-    this.showToast('🎬 Transición Dip to Black [600ms]');
+    this.showToast('Transición Dip to Black [600ms]');
     setTimeout(() => {
       this.webrtc.sendTallyUpdate(this.switcher.activeCam(), this.switcher.previewCam());
     }, 320);
@@ -278,7 +297,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.telemetry.logEvent('UI_INTERACTION', 'MONITOR_PGM', 'CYCLE_GUIDE', `Guía de encuadre cambiada a ${labels[mode]}`, {
       guideMode: labels[mode]
     });
-    this.showToast(`📐 Guía de Encuadre: ${labels[mode]}`);
+    this.showToast(`Guía de Encuadre (Overlay): ${labels[mode]}`);
   }
 
   public onCycleVideoProfile(): void {
@@ -291,7 +310,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.telemetry.logEvent('RECORDER', 'VIDEO_PROFILE', 'CHANGE_PROFILE', `Perfil de video cambiado a ${nextProfile}`, {
       profile: nextProfile
     });
-    this.showToast(`🎞️ Perfil Master: ${nextProfile}`);
+    this.showToast(`Perfil de Grabación Master: ${nextProfile}`);
   }
 
   public getLedSegmentClass(channel: 'L' | 'R', index: number): string {
@@ -313,14 +332,15 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     const canvasStream = canvas.captureStream(60);
     const audioStream = this.audio.getAudioDestinationStream();
     const isNowRec = await this.recorder.toggleRecording(canvasStream, audioStream);
+    const customName = this.recorder.customRecordingName().trim();
     this.telemetry.logEvent(
       'RECORDER',
       'MASTER_RECORDER',
       isNowRec ? 'START_RECORDING' : 'STOP_RECORDING',
       isNowRec ? 'Grabación Master iniciada en disco' : 'Grabación Master detenida y sellada',
-      { profile: this.recorder.currentProfile(), activeCam: this.switcher.activeCam() }
+      { profile: this.recorder.currentProfile(), activeCam: this.switcher.activeCam(), customName }
     );
-    this.showToast(isNowRec ? '🔴 GRABACIÓN EN DISCO INICIADA' : '⏹️ TOMA FINALIZADA Y SELLADA');
+    this.showToast(isNowRec ? `[REC] GRABANDO EN DISCO: ${customName || 'TOMA MASTER'}` : '[STOP] TOMA FINALIZADA Y GUARDADA EN DISCO');
   }
 
   public async onAddMarkerFlag(): Promise<void> {
@@ -329,10 +349,10 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
       this.telemetry.logEvent('RECORDER', 'CUE_MARKERS', 'ADD_MARKER_FLAG', `Marcador insertado en ${marker.timecode}`, {
         timecode: marker.timecode
       });
-      this.showToast(`🚩 Marcador agregado [${marker.timecode}]`);
+      this.showToast(`[FLAG] Marcador agregado en [${marker.timecode}]`);
     } else {
       this.telemetry.logEvent('RECORDER', 'CUE_MARKERS', 'MARKER_WITHOUT_REC', 'Intento de insertar marcador sin grabación activa', {}, 'WARN');
-      this.showToast('⚠️ Inicia la grabación [REC] para insertar marcadores de edición');
+      this.showToast('Inicia primero la grabación [INICIAR GRABACIÓN] para insertar marcadores');
     }
   }
 
@@ -342,7 +362,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     const label = select.options[select.selectedIndex]?.text || devId;
     this.audio.selectedDeviceId.set(devId);
     this.audio.initAudioPipeline(devId);
-    this.showToast(`🎙️ Micrófono activo: ${label}`);
+    this.showToast(`Micrófono activo: ${label}`);
   }
 
   public onAudioDelayInput(event: Event): void {
@@ -353,7 +373,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   public onAudioDelayChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.audio.setAudioDelay(Number(input.value));
-    this.showToast(`⏱️ Compensación Lip-Sync: +${input.value} ms`);
+    this.showToast(`Compensación Lip-Sync: +${input.value} ms`);
   }
 
   public onHeadphoneVolumeInput(event: Event): void {
@@ -446,22 +466,22 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   public onCycleTapSync(): void {
     const nextVal = this.audio.cycleSyncPreset();
-    this.showToast(`⏱️ Compensación Lip-Sync: +${nextVal} ms`);
+    this.showToast(`Compensación Lip-Sync: +${nextVal} ms`);
   }
 
   public onToggleEmergencyBlack(): void {
     const isBlack = this.switcher.toggleEmergencyBlack();
-    this.showToast(isBlack ? '⚠️ CORTE DE EMERGENCIA A NEGRO' : '✅ SEÑAL DE PROGRAMA RESTABLECIDA');
+    this.showToast(isBlack ? 'CORTE DE EMERGENCIA A NEGRO ACTIVO' : 'SEÑAL DE PROGRAMA RESTABLECIDA');
   }
 
   public onToggleMasterMute(): void {
     const isMuted = this.audio.toggleMasterMute();
-    this.showToast(isMuted ? '🔇 MICRÓFONO SILENCIADO (MUTE)' : '🎙️ MICRÓFONO EN VIVO');
+    this.showToast(isMuted ? 'MICRÓFONO MASTER SILENCIADO (MUTE)' : 'MICRÓFONO MASTER EN VIVO');
   }
 
   public onToggleCueMute(): void {
     const isMuted = this.audio.toggleCueMute();
-    this.showToast(isMuted ? '🎧 RETORNO AURICULARES MUTEADO' : '🎧 RETORNO AURICULARES ACTIVO');
+    this.showToast(isMuted ? 'MONITOREO EN AUDÍFONOS: DESACTIVADO' : 'MONITOREO OBS EN AUDÍFONOS: ACTIVO (ESCUCHANDO MIC)');
   }
 
   public onToggleLowCut(): void {
@@ -567,18 +587,24 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
       const drawLoop = () => {
         if (!this.isRendering) return;
 
-        // Actualizar fuentes de video remotas tanto en buffer de canvas como en elementos DOM ISO
+        // Enlazar y sincronizar elementos de video DOM en vivo (iso-video-1..3) para decodificación por hardware continua
         for (let i = 1; i <= 3; i++) {
           const stream = this.webrtc.getCameraStream(i);
-          const v = videoElements[i];
-          if (stream && v.srcObject !== stream) {
-            v.srcObject = stream;
-            v.play().catch(() => {});
-          }
           const domVid = document.getElementById(`iso-video-${i}`) as HTMLVideoElement | null;
-          if (domVid && stream && domVid.srcObject !== stream) {
-            domVid.srcObject = stream;
-            domVid.play().catch(() => {});
+          if (domVid) {
+            videoElements[i] = domVid;
+            if (stream && domVid.srcObject !== stream) {
+              domVid.srcObject = stream;
+              domVid.play().catch(() => {});
+            } else if (stream && domVid.paused && domVid.readyState >= 2) {
+              domVid.play().catch(() => {});
+            }
+          } else {
+            const v = videoElements[i];
+            if (stream && v.srcObject !== stream) {
+              v.srcObject = stream;
+              v.play().catch(() => {});
+            }
           }
         }
 
@@ -588,8 +614,12 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
         const drawVideoOrPattern = (vid: HTMLVideoElement, camId: number, alpha: number) => {
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-          if (vid && vid.readyState >= 2 && !vid.paused) {
-            ctx.drawImage(vid, 0, 0, width, height);
+          const liveVid = (document.getElementById(`iso-video-${camId}`) as HTMLVideoElement | null) || vid;
+          if (liveVid && liveVid.srcObject && liveVid.readyState >= 2 && liveVid.videoWidth > 0) {
+            if (liveVid.paused) {
+              liveVid.play().catch(() => {});
+            }
+            ctx.drawImage(liveVid, 0, 0, width, height);
           } else {
             // Test Pattern Profesional Broadcast cuando no hay cámara conectada
             this.drawBroadcastTestPattern(ctx, width, height, camId);
@@ -629,7 +659,6 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
             drawVideoOrPattern(videoElements[targetCam], targetCam, fadeIn);
           }
 
-          this.drawFramingGuides(ctx, width, height, this.switcher.framingMode());
           this.animFrameId = requestAnimationFrame(drawLoop);
           return;
         }
@@ -662,8 +691,8 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
           drawVideoOrPattern(activeVid, activeCam, 1.0);
         }
 
-        // Guías de Encuadre de Estudio
-        this.drawFramingGuides(ctx, width, height, this.switcher.framingMode());
+        // NOTA IMPORTANTE: Las guías de encuadre (Safe Area 80%, TikTok 9:16, Tercios) se renderizan
+        // como un overlay HTML/SVG sobre el monitor y NUNCA se queman dentro del canvas grabado.
 
         this.animFrameId = requestAnimationFrame(drawLoop);
       };
@@ -764,6 +793,6 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   public toggleRemoteTorch(camId: number): void {
     this.webrtc.toggleCameraTorch(camId);
-    this.showToast(`⚡ Linterna conmutada en Cámara 0${camId}`);
+    this.showToast(`Linterna conmutada en Cámara 0${camId}`);
   }
 }

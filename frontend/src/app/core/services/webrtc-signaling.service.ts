@@ -141,10 +141,22 @@ export class WebRtcSignalingService {
           this.pendingCandidates[camId].push(msg.candidate);
         }
       }
+    } else if (msg.type === 'format_update') {
+      const m = msg as unknown as { width?: number; height?: number; fps?: number; resolutionLabel?: string };
+      this.ngZone.run(() => {
+        const h = m.height || 1080;
+        const fps = m.fps || 30;
+        this.updateCameraState(camId, {
+          resolution: m.resolutionLabel || `${h}p`,
+          fps: fps
+        });
+      });
     } else if (msg.type === 'battery' || msg.type === 'telemetry' || msg.type === 'camera_telemetry') {
       this.ngZone.run(() => {
-        const level = msg.level !== undefined ? msg.level : msg.battery;
-        const charging = msg.charging !== undefined ? msg.charging : msg.isCharging;
+        const rawLevel = msg.level !== undefined ? msg.level : msg.battery;
+        const level = typeof rawLevel === 'number' ? rawLevel : undefined;
+        const rawCharging = msg.charging !== undefined ? msg.charging : msg.isCharging;
+        const charging = typeof rawCharging === 'boolean' ? rawCharging : undefined;
         const thermalStatus = msg.thermalStatus || 'NORMAL';
         const partial: Partial<CameraFeed> = {
           isConnected: true,
@@ -366,6 +378,10 @@ export class WebRtcSignalingService {
       this.updateCameraState(camId, { isOledActive: !cam.isOledActive });
     }
     this.sendCameraCommand(camId, 'toggle_oled');
+  }
+
+  public setCameraResolution(camId: number | 'all', presetId: string): void {
+    this.sendCameraCommand(camId, 'set_resolution', { presetId });
   }
 
   public getCameraStream(camId: number): MediaStream | null {

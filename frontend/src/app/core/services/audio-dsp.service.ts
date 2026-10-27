@@ -17,7 +17,9 @@ export class AudioDspService {
   });
 
   public readonly audioDevices = signal<AudioDevice[]>([]);
+  public readonly audioOutputDevices = signal<AudioDevice[]>([]);
   public readonly selectedDeviceId = signal<string>('default');
+  public readonly selectedOutputDeviceId = signal<string>('default');
   public readonly delayMs = signal<number>(85);
   public readonly isLowCut = signal<boolean>(true);
   public readonly isCompressor = signal<boolean>(true);
@@ -47,6 +49,18 @@ export class AudioDspService {
 
   constructor(private ngZone: NgZone) {
     this.listenToDeviceChange();
+    this.registerAutoResumeListener();
+  }
+
+  private registerAutoResumeListener(): void {
+    if (typeof window === 'undefined') return;
+    const resumeAudio = () => {
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
+    };
+    window.addEventListener('click', resumeAudio, { passive: true });
+    window.addEventListener('keydown', resumeAudio, { passive: true });
   }
 
   private listenToDeviceChange(): void {
@@ -69,18 +83,25 @@ export class AudioDspService {
 
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(d => d.kind === 'audioinput');
+      const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
 
-      const mapped: AudioDevice[] = audioInputs.map((dev, idx) => ({
+      const mappedInputs: AudioDevice[] = audioInputs.map((dev, idx) => ({
         deviceId: dev.deviceId,
         label: dev.label ? dev.label.replace(/^Default - /, '') : `Micrófono / Interfaz USB ${idx + 1}`
       }));
 
-      this.audioDevices.set(mapped);
+      const mappedOutputs: AudioDevice[] = audioOutputs.map((dev, idx) => ({
+        deviceId: dev.deviceId,
+        label: dev.label ? dev.label.replace(/^Default - /, '') : `Audífonos / Salida ${idx + 1}`
+      }));
+
+      this.audioDevices.set(mappedInputs);
+      this.audioOutputDevices.set(mappedOutputs);
 
       const current = this.selectedDeviceId();
-      const targetId = (current !== 'default' && mapped.some(d => d.deviceId === current))
+      const targetId = (current !== 'default' && mappedInputs.some(d => d.deviceId === current))
         ? current
-        : (mapped[0]?.deviceId || 'default');
+        : (mappedInputs[0]?.deviceId || 'default');
 
       this.selectedDeviceId.set(targetId);
       await this.initAudioPipeline(targetId);
@@ -110,7 +131,7 @@ export class AudioDspService {
 
         // 3. Saturación de Cinta / Limitador Soft
         this.tapeNode = this.audioCtx.createWaveShaper();
-        this.tapeNode.curve = this.makeTapeDistortionCurve(15);
+        this.tapeNode.curve = this.isTapeWarmth() ? this.makeTapeDistortionCurve(18) : this.makeLinearCurve();
         this.tapeNode.oversample = '4x';
 
         // 4. Retardo de Compensación Lip-Sync
@@ -121,25 +142,46 @@ export class AudioDspService {
         this.masterGainNode = this.audioCtx.createGain();
         this.masterGainNode.gain.value = this.isMasterMuted() ? 0.0 : 1.0;
 
-        // 6. Ganancia CUE (Monitoreo Auriculares)
+        // 6. Ganancia CUE / Monitoreo OBS (Escucha en Audífonos en Vivo)
         this.cueGainNode = this.audioCtx.createGain();
         this.cueGainNode.gain.value = this.isCueMuted() ? 0.0 : (this.headphoneVolume() / 100.0);
 
-        // 7. Analyser para Vúmetros en Tiempo Real
+        // 7. Analyser para Vúmetros y Osciloscopio en Tiempo Real
         this.analyserNode = this.audioCtx.createAnalyser();
         this.analyserNode.fftSize = 1024;
-        this.analyserNode.smoothingTimeConstant = 0.3;
+        this.analyserNode.smoothingTimeConstant = 0.25;
 
         // 8. Destino de Grabación
         this.audioDestination = this.audioCtx.createMediaStreamDestination();
+
+        // Conectar Grafo DSP Fijo:
+        // lowCut -> compressor -> tapeNode -> delayNode -> masterGain
+        this.lowCutNode.connect(this.compressorNode);
+        this.compressorNode.connect(this.tapeNode);
+        this.tapeNode.connect(this.delayNode);
+        this.delayNode.connect(this.masterGainNode);
+
+        this.masterGainNode.connect(this.audioDestination);
+        this.masterGainNode.connect(this.analyserNode);
+
+        // Conexión CUE de Auriculares (Monitoreo estilo OBS) a la salida del sistema
+        this.masterGainNode.connect(this.cueGainNode);
+        this.cueGainNode.connect(this.audioCtx.destination);
       }
 
       if (this.audioCtx.state === 'suspended') {
-        await this.audioCtx.resume();
+        await this.audioCtx.resume().catch(() => {});
+      }
+
+      // Desconectar fuente previa antes de cambiar de micrófono
+      if (this.micSourceNode) {
+        try { this.micSourceNode.disconnect(); } catch {}
+        this.micSourceNode = null;
       }
 
       if (this.micStream) {
         this.micStream.getTracks().forEach(t => t.stop());
+        this.micStream = null;
       }
 
       const audioConstraints: MediaStreamConstraints = {
@@ -151,27 +193,15 @@ export class AudioDspService {
         }
       };
 
-      this.micStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+      try {
+        this.micStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+      } catch {
+        // Fallback al micrófono predeterminado si el deviceId exacto falla
+        this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+
       this.micSourceNode = this.audioCtx.createMediaStreamSource(this.micStream);
-
-      // Conectar Grafo DSP Profesional:
-      // micSource -> lowCut -> compressor -> tapeNode -> delayNode -> masterGain
-      // masterGain -> destination (grabación)
-      // masterGain -> cueGain -> audioCtx.destination (auriculares)
-      // masterGain -> analyserNode (vúmetros)
-      this.micSourceNode.disconnect();
       this.micSourceNode.connect(this.lowCutNode!);
-      this.lowCutNode!.connect(this.compressorNode!);
-      this.compressorNode!.connect(this.tapeNode!);
-      this.tapeNode!.connect(this.delayNode!);
-      this.delayNode!.connect(this.masterGainNode!);
-
-      this.masterGainNode!.connect(this.audioDestination!);
-      this.masterGainNode!.connect(this.analyserNode!);
-
-      // Conexión CUE de Auriculares a la salida del sistema
-      this.masterGainNode!.connect(this.cueGainNode!);
-      this.cueGainNode!.connect(this.audioCtx.destination);
 
       this.startVuMeterLoop();
       console.log('[AudioDspService] Cadena DSP calibrada activa a 48 kHz');
@@ -180,13 +210,65 @@ export class AudioDspService {
     }
   }
 
+  /**
+   * Permite seleccionar por qué audífonos/salida escuchar el Monitoreo OBS (Chromium setSinkId).
+   */
+  public async setAudioOutputDevice(sinkId: string): Promise<void> {
+    this.selectedOutputDeviceId.set(sinkId);
+    if (this.audioCtx && 'setSinkId' in this.audioCtx) {
+      try {
+        await (this.audioCtx as unknown as { setSinkId: (id: string) => Promise<void> }).setSinkId(
+          sinkId === 'default' ? '' : sinkId
+        );
+      } catch (e) {
+        console.warn('[AudioDspService] No se pudo cambiar el dispositivo de salida:', e);
+      }
+    }
+  }
+
+  /**
+   * Emite un pulso de calibración de estudio (440 Hz suave de 350ms) por el bus DSP
+   * para verificar audífonos (Monitoreo OBS) y el osciloscopio en vivo.
+   */
+  public async playCalibrationTone(): Promise<void> {
+    try {
+      if (!this.audioCtx) {
+        await this.initAudioPipeline(this.selectedDeviceId());
+      }
+      if (!this.audioCtx || !this.lowCutNode) return;
+      if (this.audioCtx.state === 'suspended') {
+        await this.audioCtx.resume();
+      }
+
+      const osc = this.audioCtx.createOscillator();
+      const toneGain = this.audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 440; // La 440Hz Broadcast Reference
+
+      const now = this.audioCtx.currentTime;
+      toneGain.gain.setValueAtTime(0.001, now);
+      toneGain.gain.exponentialRampToValueAtTime(0.25, now + 0.04);
+      toneGain.gain.exponentialRampToValueAtTime(0.001, now + 0.40);
+
+      osc.connect(toneGain);
+      toneGain.connect(this.lowCutNode);
+      osc.start(now);
+      osc.stop(now + 0.42);
+    } catch (e) {
+      console.warn('[AudioDspService] Error en tono de prueba:', e);
+    }
+  }
+
   private startVuMeterLoop(): void {
     if (this.isVuMeterRunning) return;
     this.isVuMeterRunning = true;
 
-    // Ejecutar fuera de Angular Zone para NO disparar Change Detection 60 veces por segundo
     this.ngZone.runOutsideAngular(() => {
       const updateMeter = () => {
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          // Intentar reanudar silenciosamente
+        }
+
         if (this.analyserNode && !this.isMasterMuted()) {
           this.analyserNode.getFloatTimeDomainData(this.timeData);
 
@@ -204,8 +286,8 @@ export class AudioDspService {
           const rmsInstant = Math.sqrt(sumSquares / len);
 
           const minDb = -60.0;
-          const rmsDb = rmsInstant > 0.00001 ? 20 * Math.log10(rmsInstant) : minDb;
-          const peakDb = peakInstant > 0.00001 ? 20 * Math.log10(peakInstant) : minDb;
+          const rmsDb = rmsInstant > 0.00001 ? Math.max(minDb, 20 * Math.log10(rmsInstant)) : minDb;
+          const peakDb = peakInstant > 0.00001 ? Math.max(minDb, 20 * Math.log10(peakInstant)) : minDb;
 
           const targetPct = Math.max(0, Math.min(100, ((peakDb + 60.0) / 60.0) * 100.0));
 
@@ -223,18 +305,18 @@ export class AudioDspService {
             this.currentLvlR = this.currentLvlR * 0.88 + targetPctR * 0.12;
           }
 
-          // Generación de Osciloscopio Vectorial SVG
-          const step = Math.max(1, Math.floor(len / 32));
+          // Generación de Osciloscopio Vectorial SVG (64 puntos con ganancia visual sensible a la voz)
+          const points = 64;
+          const step = Math.max(1, Math.floor(len / points));
           let pathStr = 'M0,20';
-          for (let i = 0; i <= 32; i++) {
+          for (let i = 0; i <= points; i++) {
             const sIdx = Math.min(len - 1, i * step);
             const sVal = this.timeData[sIdx] || 0;
-            const x = Math.round((i / 32) * 500);
-            const y = Math.max(2, Math.min(38, Math.round(20 - (sVal * 28))));
+            const x = Math.round((i / points) * 500);
+            const y = Math.max(2, Math.min(38, Math.round(20 - (sVal * 115))));
             pathStr += ` L${x},${y}`;
           }
 
-          // Actualizar Signal solo con los valores computados
           this.audioMetrics.set({
             rmsDb: Math.round(rmsDb * 10) / 10,
             peakDb: Math.round(peakDb * 10) / 10,
@@ -334,6 +416,9 @@ export class AudioDspService {
     const next = !this.isCueMuted();
     this.isCueMuted.set(next);
     if (this.cueGainNode && this.audioCtx) {
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
       const targetGain = next ? 0.0 : (this.headphoneVolume() / 100.0);
       this.cueGainNode.gain.setTargetAtTime(targetGain, this.audioCtx.currentTime, 0.02);
     }

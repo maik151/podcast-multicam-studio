@@ -4,7 +4,13 @@
   <meta charset="utf-8">
   <title>TX-STUDIO // PROFESSIONAL BROADCAST SUITE</title>
   <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#ff6200">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TX-STUDIO">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="tx_studio_Isotipo_naranja.svg">
   <link rel="alternate icon" type="image/png" href="tx_studio_Isotipo_naranja.png">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
@@ -89,5 +95,12 @@
 </head>
 <body class="h-screen w-screen overflow-hidden flex flex-col font-mono text-[11px] leading-tight bg-[#090b0e] text-[#c9d1d9] antialiased select-none">
   <app-root class="h-full w-full flex flex-col overflow-hidden"></app-root>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

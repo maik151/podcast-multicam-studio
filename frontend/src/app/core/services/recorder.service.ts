@@ -17,6 +17,8 @@ export class RecorderService {
 
   public readonly markers = signal<MarkerFlag[]>([]);
   public readonly currentProfile = signal<VideoProfile>('1080p60');
+  public readonly customRecordingName = signal<string>('RUTA33_EPISODIO1');
+  public readonly lastSavedFile = signal<string | null>(null);
   public readonly activeCodec = signal<string>('H.264 (GPU NVENC/QuickSync)');
   public readonly isHardwareAccelerated = signal<boolean>(true);
 
@@ -53,20 +55,25 @@ export class RecorderService {
       const state = this.recordingState();
 
       const profile = this.getProfileSettings();
+      const customName = this.customRecordingName().trim();
       const res = await fetch('/api/record/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          project: state.project,
+          project: customName || state.project,
           episode: state.episode,
           take: state.take,
           resolution: profile.resolution,
           fps: profile.fps,
-          ext: optimal.ext
+          ext: optimal.ext,
+          customName: customName
         })
       });
 
       const data = await res.json();
+      if (data && data.file) {
+        this.lastSavedFile.set(data.file);
+      }
       console.log('[RecorderService] Sesión iniciada:', data);
 
       const combinedStream = new MediaStream();
@@ -154,6 +161,8 @@ export class RecorderService {
       this.recordingState.update(s => ({
         ...s,
         isRecording: false,
+        seconds: 0,
+        timecode: '00:00:00:00',
         take: s.take + 1
       }));
 
@@ -162,6 +171,10 @@ export class RecorderService {
       console.error('[RecorderService] Error al detener grabación:', e);
       return false;
     }
+  }
+
+  public setCustomRecordingName(name: string): void {
+    this.customRecordingName.set(name);
   }
 
   public setProject(project: string): void {

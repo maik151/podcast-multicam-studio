@@ -17,11 +17,21 @@ class RecorderService:
         self.total_bytes_written = 0
         self.is_active = False
 
-    def start_take(self, project: str = "Podcast", episode: str = "Episodio_01", take: int = 1, resolution: str = "1080p", fps: int = 60, ext: str = "webm") -> dict:
+    def start_take(
+        self,
+        project: str = "Podcast",
+        episode: str = "Episodio_01",
+        take: int = 1,
+        resolution: str = "1080p",
+        fps: int = 60,
+        ext: str = "webm",
+        custom_name: str = ""
+    ) -> dict:
         """Inicia un nuevo archivo físico de toma en disco."""
         proj_clean = project.strip().replace(" ", "_")
         ep_clean = episode.strip().replace(" ", "_")
         ext_clean = ext.strip().replace(".", "")
+        custom_clean = "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in (custom_name or "").strip())
 
         # Sellar toma anterior de forma segura si quedó abierta
         if self.current_recording_file and not self.current_recording_file.closed:
@@ -32,7 +42,10 @@ class RecorderService:
         os.makedirs(self.current_recording_folder, exist_ok=True)
 
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"Toma_{take:02d}_{resolution}_{fps}fps_{timestamp}.{ext_clean}"
+        if custom_clean:
+            filename = f"{custom_clean}_Toma_{take:02d}_{resolution}_{fps}fps_{timestamp}.{ext_clean}"
+        else:
+            filename = f"Toma_{take:02d}_{resolution}_{fps}fps_{timestamp}.{ext_clean}"
         self.current_recording_path = os.path.join(self.current_recording_folder, filename)
         self.total_bytes_written = 0
 

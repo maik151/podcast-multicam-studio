@@ -20,7 +20,8 @@ class RecordingController:
             take=int(data.get("take", 1)),
             resolution=data.get("resolution", "1080p"),
             fps=int(data.get("fps", 60)),
-            ext=data.get("ext", "webm")
+            ext=data.get("ext", "webm"),
+            custom_name=data.get("customName", "")
         )
         return web.json_response(res)
 

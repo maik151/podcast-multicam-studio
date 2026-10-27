@@ -15,7 +15,7 @@ export class SwitcherService {
   public readonly isTbarActive = signal<boolean>(false);
   public readonly tbarProgress = signal<number>(0.0); // 0.0 a 1.0 (Manual T-Bar position)
   public readonly isEmergencyBlack = signal<boolean>(false);
-  public readonly framingMode = signal<number>(1); // 0: Off, 1: Safe 80%, 2: TikTok 9:16, 3: Tercios
+  public readonly framingMode = signal<number>(0); // 0: Off, 1: Safe 80%, 2: TikTok 9:16, 3: Tercios
 
   private prevCamId = 1;
   private transitionStartTime = 0;
