@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+
+
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;min-height:100vh;margin:0;padding:0;background-color:#0c0e12;color:#e2e2e8;overflow:hidden;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { tertiary: "#c3c6d2", "on-error": "#690005", "on-primary-fixed-variant": "#7e2c00", secondary: "#ffb68b", "on-tertiary-fixed-variant": "#434750", "on-secondary-fixed-variant": "#753400", "surface-tint": "#ffb597", "inverse-surface": "#e2e2e8", surface: "#111318", "surface-container-low": "#1a1c20", "on-tertiary-fixed": "#181c24", "surface-dim": "#111318", "inverse-primary": "#a53d00", "surface-container-highest": "#333539", "surface-container-lowest": "#0c0e12", "surface-container": "#1e2024", "on-surface-variant": "#e3bfb1", "on-tertiary-container": "#2a2e37", "tertiary-container": "#9195a0", "on-tertiary": "#2c3039", "on-error-container": "#ffdad6", "on-primary-fixed": "#360f00", "on-surface": "#e2e2e8", "outline-variant": "#5a4137", "primary-fixed": "#ffdbcd", "surface-variant": "#333539", "primary-fixed-dim": "#ffb597", "on-secondary-container": "#ffd4bc", "on-background": "#e2e2e8", "on-secondary-fixed": "#321300", "secondary-fixed-dim": "#ffb68b", "on-secondary": "#522300", "error-container": "#93000a", "primary-container": "#ff6200", "on-primary-container": "#541b00", "secondary-fixed": "#ffdbc8", "tertiary-fixed-dim": "#c3c6d2", "surface-container-high": "#282a2e", background: "#111318", "inverse-on-surface": "#2f3035", "secondary-container": "#9d4900", primary: "#ffb597", error: "#ffb4ab", "tertiary-fixed": "#dfe2ee", outline: "#aa8a7d", "on-primary": "#591d00", "surface-bright": "#37393e" }, borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" }, spacing: { "space-lg": "16px", "space-md": "12px", gutter: "12px", margin: "20px", "space-xs": "4px", "space-sm": "8px", "space-xl": "24px", "margin-mobile": "12px", "gutter-mobile": "8px" }, fontFamily: { "headline-lg": ["Space Grotesk"], "body-sm": ["JetBrains Mono"], "display-lg": ["Space Grotesk"], "headline-lg-mobile": ["Space Grotesk"], "title-sm": ["JetBrains Mono"], "label-technical": ["JetBrains Mono"], "headline-md": ["Space Grotesk"], "label-md": ["JetBrains Mono"], "body-lg": ["JetBrains Mono"] }, fontSize: { "headline-lg": ["28px", { lineHeight: "32px", letterSpacing: "-0.02em", fontWeight: "600" }], "body-sm": ["11px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "400" }], "display-lg": ["40px", { lineHeight: "44px", letterSpacing: "-0.04em", fontWeight: "700" }], "headline-lg-mobile": ["22px", { lineHeight: "26px", letterSpacing: "-0.01em", fontWeight: "600" }], "title-sm": ["14px", { lineHeight: "18px", letterSpacing: "0.05em", fontWeight: "600" }], "label-technical": ["9px", { lineHeight: "10px", letterSpacing: "0.12em", fontWeight: "600" }], "headline-md": ["18px", { lineHeight: "24px", letterSpacing: "0.02em", fontWeight: "600" }], "label-md": ["10px", { lineHeight: "12px", letterSpacing: "0.08em", fontWeight: "500" }], "body-lg": ["13px", { lineHeight: "18px", letterSpacing: "0em", fontWeight: "400" }] } } } };</script><style>
+
+    body {
+
+      min-height: max(884px, 100dvh);
+
+    }
+
+  </style>
+
+  <script>
+function openCameraSelector() {
+  var m = document.getElementById('mobile-qr-modal');
+  if (m) {
+    m.style.setProperty('display', 'flex', 'important');
+    m.classList.remove('hidden');
+  }
+  if (window.startQrScanner) window.startQrScanner();
+}
+function closeCameraSelector() {
+  var m = document.getElementById('mobile-qr-modal');
+  if (m) {
+    m.style.setProperty('display', 'none', 'important');
+    m.classList.add('hidden');
+  }
+  if (window.stopQrScanner) window.stopQrScanner();
+}
+function selectCameraRole(newCamId) {
+  window.location.href = '/cam/' + newCamId;
+}
+window.openCameraSelector = openCameraSelector;
+window.closeCameraSelector = closeCameraSelector;
+window.selectCameraRole = selectCameraRole;
+</script>
+</head>
+<body class="bg-surface-container-lowest text-on-surface w-full h-screen p-0 m-0 select-none overflow-hidden font-body-sm antialiased">
+<main class="relative w-full h-full bg-surface-container-lowest overflow-hidden">
+  
+  <!-- PANTALLA 1: LIVE VIEWFINDER CON TALLY Y CONTROLES FÍSICOS -->
+  <div id="viewfinder-view" class="w-full h-full flex flex-col justify-between overflow-y-auto">
+    <div class="flex flex-col w-full text-on-surface select-none pb-safe">
+
+<!-- TALLY ON AIR PULSE FRAME -->
+
+<div class="relative w-full rounded-xl overflow-hidden bg-surface-container-lowest p-1 shadow-2xl">
+
+<!-- Tally Step Border Glow Wrapper -->
+
+<div class="relative w-full rounded-lg overflow-hidden bg-error/20 p-[3px] transition-all duration-300" id="tally-box">
+
+<!-- Top Tally Mechanical Status Indicator Bar -->
+
+<div class="flex items-center justify-between px-3 py-1 bg-surface-container-lowest text-error mb-[2px] rounded-t">
+
+<div class="flex items-center gap-1.5">
+
+<span class="inline-block w-2 h-2 bg-error animate-ping"></span>
+
+<span class="font-label-technical text-label-technical tracking-widest uppercase font-bold text-error"><span id="tally-label">TALLY // ON AIR</span></span>
+
+</div>
+
+<div class="flex items-center gap-2">
+
+<span class="font-label-technical text-label-technical text-primary tracking-wider">STAGE A · TX-LINK</span>
+
+<span class="w-1.5 h-1.5 bg-primary"></span>
+
+</div>
+
+</div>
+
+<!-- CAMERA VIEWFINDER CHASSIS (16:9 Live Feed Area) -->
+
+<div class="relative w-full aspect-[9/16] max-h-[540px] bg-surface-container-lowest overflow-hidden flex flex-col justify-between p-2.5">
+
+<!-- Live Video Backing / Mock Video Plate -->
+
+<!-- Live Camera Hardware Video Feed -->
+<div class="absolute inset-0 bg-black overflow-hidden flex items-center justify-center">
+  <video id="camera-feed" autoplay playsinline muted class="w-full h-full object-cover"></video>
+  <div id="cam-tap-overlay" onclick="startCamera()" class="absolute inset-0 z-30 bg-[#140b05]/95 flex flex-col items-center justify-center gap-2 cursor-pointer p-4 text-center">
+    <span class="material-symbols-outlined text-4xl text-primary animate-pulse">videocam</span>
+    <span class="font-label-technical text-label-technical text-primary font-bold uppercase tracking-wider">TOCA AQUÍ PARA INICIAR LA CÁMARA</span>
+    <span class="text-[10px] text-on-surface-variant font-mono">Permite el acceso a la cámara y micrófono</span>
+    <button class="mt-2 bg-primary-container hover:bg-primary text-on-primary-container font-bold px-4 py-2 rounded text-xs uppercase tracking-widest shadow-lg">ACTIVAR TRANSMISIÓN</button>
+  </div>
+  <!-- CRT Scanline & Grain Texture Simulation Overlay -->
+  <div class="absolute inset-0 bg-gradient-to-b from-surface-container-lowest/40 via-transparent to-surface-container-lowest/80 pointer-events-none"></div>
+  <div class="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.35)_50%)] bg-[length:100%_4px] pointer-events-none opacity-30"></div>
+</div>
+
+<!-- TOP FLOATING PIXEL POD (Modular Synthesizer Telemetry Header) -->
+
+<div class="relative z-20 flex flex-col gap-1.5 w-full">
+
+<!-- Top Row Badges -->
+
+<div class="flex items-center justify-between w-full gap-1">
+
+<!-- Left Pod: Cam ID Pill -->
+
+<div class="flex items-center gap-1.5 bg-surface-container-highest px-2 py-1 rounded shadow-md">
+
+<span class="w-2 h-2 bg-primary-container animate-pulse"></span>
+
+<span class="font-label-technical text-label-technical text-on-surface uppercase font-bold tracking-wider"><span id="cam-badge">CAM 01 // HOST</span></span>
+
+</div>
+
+<!-- Center Pod: LAN Telemetry -->
+
+<div class="flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded shadow-sm">
+
+<span class="material-symbols-outlined text-[12px] text-primary">wifi</span>
+
+<span class="font-label-technical text-label-technical text-primary font-bold"><span id="conn-status">5GHz LAN · 18ms</span></span>
+
+</div>
+
+<!-- Right Pod: Resolution & Battery Block -->
+
+<div class="flex items-center gap-1.5 bg-surface-container-highest px-2 py-1 rounded shadow-md">
+
+<span class="font-label-technical text-label-technical text-on-surface-variant font-bold"><span id="quality-info" class="cursor-pointer hover:text-primary">1080p60</span></span>
+
+<div class="flex items-center gap-0.5 text-primary">
+
+<span class="w-1.5 h-2.5 bg-primary-container inline-block"></span>
+
+<span class="w-1.5 h-2.5 bg-primary-container inline-block"></span>
+
+<span class="w-1.5 h-2.5 bg-primary-container inline-block"></span>
+
+<span class="w-1.5 h-2.5 bg-primary-container inline-block"></span>
+
+<span class="w-1.5 h-2.5 bg-surface-container inline-block"></span>
+
+</div>
+
+<span class="font-label-technical text-label-technical text-primary font-bold"><span id="battery-val">88%</span></span>
+
+</div>
+
+</div>
+
+<!-- Secondary Telemetry Banner: SMPTE Timecode & Mode -->
+
+<div class="flex items-center justify-between px-2 py-0.5 bg-surface-container-lowest/80 rounded backdrop-blur-sm">
+
+<div class="flex items-center gap-2">
+
+<span class="w-1.5 h-1.5 bg-error"></span>
+
+<span class="font-title-sm text-title-sm text-error font-bold tracking-widest" id="live-smpte">TC 01:24:18:24</span>
+
+</div>
+
+<span class="font-label-technical text-label-technical text-on-surface-variant tracking-wider">TX//OP-CAM REV 2.4</span>
+
+</div>
+
+</div>
+
+<!-- RETICLE, SAFE AREAS & HUD GRAPHICS -->
+
+<div class="relative z-10 w-full flex-1 flex items-center justify-center pointer-events-none my-1">
+
+<!-- Safe Title Outline Mask (Corner Brackets) -->
+
+<div class="absolute inset-4 flex flex-col justify-between">
+
+<div class="flex justify-between w-full">
+
+<div class="w-4 h-4 bg-transparent shadow-none relative">
+
+<span class="absolute top-0 left-0 w-3 h-[2px] bg-primary"></span>
+
+<span class="absolute top-0 left-0 w-[2px] h-3 bg-primary"></span>
+
+</div>
+
+<div class="w-4 h-4 bg-transparent shadow-none relative">
+
+<span class="absolute top-0 right-0 w-3 h-[2px] bg-primary"></span>
+
+<span class="absolute top-0 right-0 w-[2px] h-3 bg-primary"></span>
+
+</div>
+
+</div>
+
+<div class="flex justify-between w-full">
+
+<div class="w-4 h-4 bg-transparent shadow-none relative">
+
+<span class="absolute bottom-0 left-0 w-3 h-[2px] bg-primary"></span>
+
+<span class="absolute bottom-0 left-0 w-[2px] h-3 bg-primary"></span>
+
+</div>
+
+<div class="w-4 h-4 bg-transparent shadow-none relative">
+
+<span class="absolute bottom-0 right-0 w-3 h-[2px] bg-primary"></span>
+
+<span class="absolute bottom-0 right-0 w-[2px] h-3 bg-primary"></span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Center Focus Pixel Crosshair & Tracking Box -->
+
+<div class="relative flex items-center justify-center w-28 h-28">
+
+<!-- Center 1-bit Reticle Target -->
+
+<div class="w-1.5 h-1.5 bg-primary-container"></div>
+
+<div class="absolute top-0 w-[1px] h-3 bg-primary"></div>
+
+<div class="absolute bottom-0 w-[1px] h-3 bg-primary"></div>
+
+<div class="absolute left-0 h-[1px] w-3 bg-primary"></div>
+
+<div class="absolute right-0 h-[1px] w-3 bg-primary"></div>
+
+<!-- Dynamic AF Sub-frame -->
+
+<div class="absolute inset-2 bg-transparent opacity-60">
+
+<div class="absolute top-0 left-0 w-2 h-[1px] bg-primary"></div>
+
+<div class="absolute top-0 left-0 w-[1px] h-2 bg-primary"></div>
+
+<div class="absolute top-0 right-0 w-2 h-[1px] bg-primary"></div>
+
+<div class="absolute top-0 right-0 w-[1px] h-2 bg-primary"></div>
+
+<div class="absolute bottom-0 left-0 w-2 h-[1px] bg-primary"></div>
+
+<div class="absolute bottom-0 left-0 w-[1px] h-2 bg-primary"></div>
+
+<div class="absolute bottom-0 right-0 w-2 h-[1px] bg-primary"></div>
+
+<div class="absolute bottom-0 right-0 w-[1px] h-2 bg-primary"></div>
+
+</div>
+
+<!-- Face Tracking Tag -->
+
+<div class="absolute -bottom-5 bg-surface-container-lowest/90 px-1.5 py-0.5 rounded text-[8px] font-label-technical text-primary font-bold">
+
+              [ AF-LOCK : HOST ]
+
+            </div>
+
+</div>
+
+<!-- Right Sidebar: Modular Stereo VU Level Meter -->
+
+<div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-surface-container-lowest/90 p-1.5 rounded shadow-lg pointer-events-auto">
+
+<!-- Channel L -->
+
+<div class="flex flex-col-reverse gap-[2px] w-1.5 h-28 bg-surface-container-highest/60 p-[1px] rounded-xs">
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary-container"></span>
+
+<span class="w-full h-1 bg-primary-container"></span>
+
+<span class="w-full h-1 bg-primary-container"></span>
+
+<span class="w-full h-1 bg-primary-container"></span>
+
+<span class="w-full h-1 bg-error"></span>
+
+<span class="w-full h-1 bg-surface-container"></span>
+
+</div>
+
+<!-- Channel R -->
+
+<div class="flex flex-col-reverse gap-[2px] w-1.5 h-28 bg-surface-container-highest/60 p-[1px] rounded-xs">
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary"></span>
+
+<span class="w-full h-1 bg-primary-container"></span>
+
+<span class="w-full h-1 bg-primary-container"></span>
+
+<span class="w-full h-1 bg-primary-container"></span>
+
+<span class="w-full h-1 bg-surface-container"></span>
+
+<span class="w-full h-1 bg-surface-container"></span>
+
+<span class="w-full h-1 bg-surface-container"></span>
+
+<span class="w-full h-1 bg-surface-container"></span>
+
+</div>
+
+<div class="flex flex-col justify-between h-28 font-label-technical text-[7px] text-on-surface-variant font-bold leading-none py-0.5">
+
+<span>0dB</span>
+
+<span>-6</span>
+
+<span>-18</span>
+
+<span>-inf</span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- BOTTOM VIEW HUD: Optical Exposure & DSP Scope Bar -->
+
+<div class="relative z-20 flex flex-col gap-1.5 w-full">
+
+<!-- Live Audio Scope & Audio Bitstream -->
+
+<div class="flex items-center justify-between bg-surface-container-lowest/85 px-2.5 py-1 rounded backdrop-blur-md">
+
+<div class="flex items-center gap-2">
+
+<span class="font-label-technical text-label-technical text-primary font-bold">DSP CH-1</span>
+
+<!-- Pixelated Audio Waveform Scope -->
+
+<svg class="w-24 h-4 text-primary-container" fill="none" viewbox="0 0 100 16">
+
+<path d="M0 8 L10 8 L14 3 L18 13 L22 6 L26 10 L30 8 L40 8 L44 1 L48 15 L52 4 L56 12 L60 8 L75 8 L78 5 L82 11 L86 8 L100 8" stroke="currentColor" stroke-linecap="square" stroke-width="1.5"></path>
+
+</svg>
+
+</div>
+
+<div class="flex items-center gap-1 font-label-technical text-label-technical text-on-surface">
+
+<span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+
+<span>48kHz · 24-BIT</span>
+
+</div>
+
+</div>
+
+<!-- Optical Parameters Strip -->
+
+<div class="grid grid-cols-4 gap-1 bg-surface-container px-2 py-1.5 rounded text-center">
+
+<div class="flex flex-col">
+
+<span class="font-label-technical text-label-technical text-on-surface-variant">IRIS</span>
+
+<span class="font-body-sm text-body-sm font-bold text-primary">F/1.8</span>
+
+</div>
+
+<div class="flex flex-col">
+
+<span class="font-label-technical text-label-technical text-on-surface-variant">SHUTTER</span>
+
+<span class="font-body-sm text-body-sm font-bold text-on-surface">1/120s</span>
+
+</div>
+
+<div class="flex flex-col">
+
+<span class="font-label-technical text-label-technical text-on-surface-variant">GAIN</span>
+
+<span class="font-body-sm text-body-sm font-bold text-primary">ISO 320</span>
+
+</div>
+
+<div class="flex flex-col">
+
+<span class="font-label-technical text-label-technical text-on-surface-variant">COLOR</span>
+
+<span class="font-body-sm text-body-sm font-bold text-on-surface">5600K</span>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- HARDWARE OPERATOR DOCK (Teenage Engineering Workstation Controls) -->
+
+<div class="mt-2 p-2 bg-surface-container rounded-lg flex flex-col gap-2 shadow-inner">
+
+<!-- QR Linking & Camera Switcher Button -->
+<div class="w-full pb-1">
+  <button onclick="openCameraSelector()" class="w-full py-2 px-3 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary-container rounded font-label-technical text-label-technical uppercase font-bold tracking-widest shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all border border-primary/40">
+    <span class="material-symbols-outlined text-base">qr_code_scanner</span>
+    <span>VINCULAR / ESCANEAR QR DE LA PC</span>
+  </button>
+</div>
+
+<!-- Lens Focal Length Matrix Stepper -->
+
+<div class="flex flex-col gap-1">
+
+<div class="flex items-center justify-between px-1">
+
+<span class="font-label-technical text-label-technical text-on-surface-variant uppercase font-bold tracking-wider">OPTICAL ARRAY // SELECTOR</span>
+
+<span class="font-label-technical text-label-technical text-primary font-bold">PRIME T2.0</span>
+
+</div>
+
+<div class="grid grid-cols-3 gap-1.5 p-1 bg-surface-container-lowest rounded">
+
+<!-- 0.5x Ultra Wide -->
+
+<button class="py-2 px-1 bg-surface-container-high rounded text-center active:translate-y-0.5 transition-all" id="lens-05" onclick="setLens('05')">
+
+<span class="block font-label-technical text-label-technical text-on-surface-variant">0.5x</span>
+
+<span class="block font-title-sm text-title-sm font-bold text-on-surface">WIDE</span>
+
+</button>
+
+<!-- 1x Main Lens (Selected State: Phosphor Amber Primary) -->
+
+<button class="py-2 px-1 bg-primary-container rounded text-center shadow active:translate-y-0.5 transition-all" id="lens-10" onclick="setLens('10')">
+
+<span class="block font-label-technical text-label-technical text-on-primary-container font-bold">1.0x</span>
+
+<span class="block font-title-sm text-title-sm font-bold text-on-primary-container">MAIN</span>
+
+</button>
+
+<!-- 2.0x Telephoto -->
+
+<button class="py-2 px-1 bg-surface-container-high rounded text-center active:translate-y-0.5 transition-all" id="lens-20" onclick="setLens('20')">
+
+<span class="block font-label-technical text-label-technical text-on-surface-variant">2.0x</span>
+
+<span class="block font-title-sm text-title-sm font-bold text-on-surface">TELE</span>
+
+</button>
+
+</div>
+
+</div>
+
+<!-- Tactile Hardware Toggle Keys (Tripod Ergonomics) -->
+
+<div class="grid grid-cols-3 gap-1.5 pt-0.5">
+
+<!-- Mic Power Toggle -->
+
+<button class="flex flex-col items-center justify-center py-2.5 px-2 bg-surface-container-lowest rounded active:translate-y-0.5 transition-all" id="btn-mic" onclick="toggleMic()">
+
+<div class="flex items-center gap-1 mb-1">
+
+<span class="w-2 h-2 bg-primary rounded-full" id="mic-led"></span>
+
+<span class="material-symbols-outlined text-title-sm text-primary" id="mic-icon">mic</span>
+
+</div>
+
+<span class="font-label-technical text-label-technical text-on-surface font-bold tracking-wider" id="mic-label">MIC LIVE</span>
+
+</button>
+
+<!-- Lock AF/AE Hardware Cap -->
+
+<button class="flex flex-col items-center justify-center py-2.5 px-2 bg-surface-container-lowest rounded active:translate-y-0.5 transition-all" id="btn-lock" onclick="toggleLock()">
+
+<div class="flex items-center gap-1 mb-1">
+
+<span class="w-2 h-2 bg-primary-container rounded-full animate-pulse" id="lock-led"></span>
+
+<span class="material-symbols-outlined text-title-sm text-primary" id="lock-icon">lock</span>
+
+</div>
+
+<span class="font-label-technical text-label-technical text-on-surface font-bold tracking-wider" id="lock-label">AF/AE LOCK</span>
+
+</button>
+
+<!-- OLED Saver / Screen Dimmer -->
+
+<button class="flex flex-col items-center justify-center py-2.5 px-2 bg-surface-container-lowest rounded active:translate-y-0.5 transition-all" id="btn-oled" onclick="toggleOled()">
+
+<div class="flex items-center gap-1 mb-1">
+
+<span class="w-2 h-2 bg-surface-container-highest rounded-full" id="oled-led"></span>
+
+<span class="material-symbols-outlined text-title-sm text-on-surface-variant" id="oled-icon">dark_mode</span>
+
+</div>
+
+<span class="font-label-technical text-label-technical text-on-surface-variant font-bold tracking-wider" id="oled-label">OLED SAVER</span>
+
+</button>
+
+</div>
+
+<!-- Quick Rotary Knob & Scrub Trim Simulation -->
+
+<div class="flex items-center justify-between bg-surface-container-lowest px-3 py-2 rounded">
+
+<div class="flex items-center gap-2">
+
+<!-- Dial Simulation Ring -->
+
+<div class="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center shadow-sm relative">
+
+<span class="w-1.5 h-1.5 bg-primary-container rounded-full absolute top-1"></span>
+
+<span class="material-symbols-outlined text-body-sm text-on-surface">tune</span>
+
+</div>
+
+<div class="flex flex-col">
+
+<span class="font-label-technical text-label-technical text-on-surface-variant">HEADPHONE CUE</span>
+
+<span class="font-body-sm text-body-sm font-bold text-on-surface">-12.5 dB</span>
+
+</div>
+
+</div>
+
+<!-- Quick Snapshot Trigger -->
+
+<button class="flex items-center gap-1.5 bg-surface-container-highest px-3 py-1.5 rounded active:scale-95 transition-transform" onclick="triggerSnapshot()">
+
+<span class="material-symbols-outlined text-title-sm text-primary">photo_camera</span>
+
+<span class="font-label-technical text-label-technical text-on-surface font-bold">STILL MARK</span>
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+  </div>
+
+  <!-- PANTALLA 2: MODO AHORRO TÉRMICO OLED CON TIMECODE (REPOSO / STANDBY) -->
+  <div id="oled-view" class="hidden absolute inset-0 z-50 w-full h-full bg-surface-container-lowest flex flex-col justify-between overflow-y-auto">
+    <div class="flex flex-col w-full min-w-0 px-margin-mobile pb-safe text-on-surface select-none">
+
+<!-- Tally & Eco State Bar -->
+
+<div class="w-full flex items-center justify-between py-space-xs px-space-sm bg-surface-container-lowest rounded">
+
+<div class="flex items-center gap-space-xs">
+
+<span class="w-2 h-2 rounded-full bg-error animate-pulse shadow-sm shadow-error"></span>
+
+<span class="font-label-technical text-label-technical tracking-widest text-error uppercase font-bold">
+
+        <span id="tally-eco-label">ON AIR // TALLY ACTIVE</span>
+
+      </span>
+
+</div>
+
+<div class="flex items-center gap-space-xs bg-surface-container-high px-space-xs py-0.5 rounded">
+
+<span class="material-symbols-outlined text-[13px] text-primary">ac_unit</span>
+
+<span class="font-label-technical text-label-technical text-primary font-semibold tracking-wider">
+
+        OLED LOW-HEAT REV-2
+
+      </span>
+
+</div>
+
+</div>
+
+<!-- Stepped Heat Red Line -->
+
+<div class="w-full h-1 my-space-xs bg-surface-container flex gap-0.5">
+
+<div class="flex-1 bg-error"></div>
+
+<div class="flex-1 bg-error"></div>
+
+<div class="flex-1 bg-error"></div>
+
+<div class="flex-1 bg-error"></div>
+
+<div class="flex-1 bg-error/70"></div>
+
+<div class="flex-1 bg-surface-container-high"></div>
+
+</div>
+
+<!-- Central Timecode & Audio Monitor Unit -->
+
+<div class="w-full mt-space-xs p-space-md bg-surface-container-low rounded flex flex-col items-center">
+
+<div class="w-full flex justify-between items-center text-outline">
+
+<span class="font-label-technical text-label-technical tracking-widest uppercase">REC CH-A1 // SMPTE TIMECODE</span>
+
+<span class="font-label-technical text-label-technical text-primary flex items-center gap-1">
+
+<span class="inline-block w-1.5 h-1.5 bg-primary rounded-full"></span> 29.97 DF
+
+      </span>
+
+</div>
+
+<!-- Big Pixel-Segment Timecode Display -->
+
+<div class="my-space-md py-space-xs px-space-sm bg-surface-container-lowest w-full rounded flex items-baseline justify-center">
+
+<div class="font-headline-lg-mobile text-headline-lg-mobile tracking-widest text-primary-container font-mono font-bold select-all" id="tc-display">
+
+        01:24:21:10
+
+      </div>
+
+</div>
+
+<!-- Metadata Pill Grid -->
+
+<div class="w-full flex flex-wrap items-center justify-center gap-space-xs pb-space-xs">
+
+<span class="font-label-technical text-label-technical px-space-xs py-0.5 bg-surface-container-high text-on-surface rounded">
+
+        PRORES RAW 422
+
+      </span>
+
+<span class="font-label-technical text-label-technical px-space-xs py-0.5 bg-surface-container-high text-on-surface rounded">
+
+        TAPE 01
+
+      </span>
+
+<span class="font-label-technical text-label-technical px-space-xs py-0.5 bg-surface-container-high text-primary rounded">
+
+        LOG-C3
+
+      </span>
+
+<span class="font-label-technical text-label-technical px-space-xs py-0.5 bg-surface-container-high text-secondary rounded">
+
+        LUT: BYPASS
+
+      </span>
+
+</div>
+
+<!-- Segmented Hardware Stereo VU Bar -->
+
+<div class="w-full mt-space-sm pt-space-xs flex flex-col gap-1.5">
+
+<div class="flex justify-between items-center font-label-technical text-label-technical text-outline">
+
+<span>AUDIO PEAK [L/R]</span>
+
+<span class="text-primary font-bold">-6.9 dB RMS</span>
+
+</div>
+
+<!-- Channel L Meter -->
+
+<div class="flex items-center gap-1.5">
+
+<span class="font-label-technical text-label-technical text-outline w-3">L</span>
+
+<div class="flex-1 h-2 bg-surface-container-lowest rounded p-0.5 flex gap-0.5 items-center overflow-hidden">
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-primary-container"></div>
+
+<div class="w-2 h-full bg-primary-container"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+</div>
+
+</div>
+
+<!-- Channel R Meter -->
+
+<div class="flex items-center gap-1.5">
+
+<span class="font-label-technical text-label-technical text-outline w-3">R</span>
+
+<div class="flex-1 h-2 bg-surface-container-lowest rounded p-0.5 flex gap-0.5 items-center overflow-hidden">
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-secondary"></div>
+
+<div class="w-2 h-full bg-primary-container"></div>
+
+<div class="w-2 h-full bg-primary-container"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+<div class="w-2 h-full bg-surface-container-high"></div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Telemetry Sensor Matrix (2x2 Grid) -->
+
+<div class="grid grid-cols-2 gap-gutter-mobile my-space-md">
+
+<!-- Card 1: Core Thermal -->
+
+<div class="bg-surface-container-low p-space-sm rounded flex flex-col justify-between">
+
+<div class="flex items-center justify-between text-outline">
+
+<span class="font-label-technical text-label-technical">SENSOR CORE</span>
+
+<span class="material-symbols-outlined text-[15px] text-secondary">device_thermostat</span>
+
+</div>
+
+<div class="mt-space-xs flex items-baseline gap-1">
+
+<span class="font-title-sm text-title-sm font-bold text-on-surface">32.8°C</span>
+
+<span class="font-label-technical text-label-technical text-secondary font-semibold">[ COOLED ]</span>
+
+</div>
+
+<div class="mt-space-xs w-full bg-surface-container-lowest h-1.5 rounded flex gap-0.5 overflow-hidden">
+
+<div class="w-1/4 bg-secondary"></div>
+
+<div class="w-1/4 bg-secondary"></div>
+
+<div class="w-1/4 bg-surface-container-high"></div>
+
+<div class="w-1/4 bg-surface-container-high"></div>
+
+</div>
+
+</div>
+
+<!-- Card 2: Stream / Transport -->
+
+<div class="bg-surface-container-low p-space-sm rounded flex flex-col justify-between">
+
+<div class="flex items-center justify-between text-outline">
+
+<span class="font-label-technical text-label-technical">NDI|HX STREAM</span>
+
+<span class="material-symbols-outlined text-[15px] text-primary">router</span>
+
+</div>
+
+<div class="mt-space-xs flex flex-col">
+
+<span class="font-title-sm text-title-sm font-bold text-on-surface">1080p 60fps</span>
+
+<span class="font-label-technical text-label-technical text-primary font-semibold">[ 0 DROPPED ]</span>
+
+</div>
+
+<div class="mt-space-xs font-label-technical text-label-technical text-outline truncate">
+
+        <span id="oled-ip-val">NET 192.168.100.70</span>
+
+      </div>
+
+</div>
+
+<!-- Card 3: Battery & Power Draw -->
+
+<div class="bg-surface-container-low p-space-sm rounded flex flex-col justify-between">
+
+<div class="flex items-center justify-between text-outline">
+
+<span class="font-label-technical text-label-technical">POWER DRAW</span>
+
+<span class="material-symbols-outlined text-[15px] text-secondary">battery_horiz_075</span>
+
+</div>
+
+<div class="mt-space-xs flex items-baseline gap-1">
+
+<span class="font-title-sm text-title-sm font-bold text-on-surface"><span id="oled-battery-val">92%</span>
+
+<span class="font-label-technical text-label-technical text-secondary">~4.2h REM</span>
+
+</div>
+
+<div class="mt-space-xs font-label-technical text-label-technical tracking-tighter text-secondary">
+
+        [■■■■■■■■□□] 3.7W
+
+      </div>
+
+</div>
+
+<!-- Card 4: Optic & Exposure Lock -->
+
+<div class="bg-surface-container-low p-space-sm rounded flex flex-col justify-between">
+
+<div class="flex items-center justify-between text-outline">
+
+<span class="font-label-technical text-label-technical">OPTICS LOCK</span>
+
+<span class="material-symbols-outlined text-[15px] text-error">lock</span>
+
+</div>
+
+<div class="mt-space-xs flex flex-col">
+
+<span class="font-title-sm text-title-sm font-bold text-on-surface">1/120s · f/1.8</span>
+
+<span class="font-label-technical text-label-technical text-error font-semibold">ISO 320 [ LOCKED ]</span>
+
+</div>
+
+<div class="mt-space-xs font-label-technical text-label-technical text-outline">
+
+        WB 5600K 0CC
+
+      </div>
+
+</div>
+
+</div>
+
+<!-- Operational Mode Banner -->
+
+<div class="w-full bg-surface-container-low px-space-sm py-space-xs rounded flex items-center justify-between mb-space-md">
+
+<div class="flex items-center gap-space-xs">
+
+<span class="font-label-technical text-label-technical px-1.5 py-0.5 bg-surface-container-highest text-tertiary rounded">OLED IDLE</span>
+
+<span class="font-label-technical text-label-technical text-outline">PIXEL DRAW: &lt; 0.28W</span>
+
+</div>
+
+<span class="font-label-technical text-label-technical text-secondary flex items-center gap-1">
+
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-ping"></span> 100% SUB-OFF
+
+    </span>
+
+</div>
+
+<!-- Bottom Hardware Action Dock -->
+
+<div class="w-full flex flex-col gap-space-sm">
+
+<!-- Primary Heavy Restore Button -->
+
+<button class="w-full py-space-md px-space-lg bg-surface-container rounded flex items-center justify-center gap-space-sm active:translate-y-0.5 active:bg-primary-container transition-transform cursor-pointer shadow-md" id="restore-trigger" type="button">
+
+<span class="material-symbols-outlined text-primary-container text-lg">videocam</span>
+
+<span class="font-headline-md text-headline-md text-primary-container tracking-wider uppercase font-bold">
+
+        RESTORE VIEWFINDER
+
+      </span>
+
+<span class="font-label-technical text-label-technical text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded">
+
+        HOLD 1S
+
+      </span>
+
+</button>
+
+<div class="text-center font-label-technical text-label-technical text-outline uppercase tracking-widest">
+
+      TAP ANYWHERE TO RESUME LIVE PREVIEW FEED
+
+    </div>
+
+<!-- Secondary Modular Toggles -->
+
+<div class="grid grid-cols-2 gap-gutter-mobile mt-space-xs">
+
+<button class="py-space-sm px-space-sm bg-surface-container-low rounded flex items-center justify-center gap-space-xs active:bg-surface-container cursor-pointer" id="btn-mute" type="button">
+
+<span class="material-symbols-outlined text-[16px] text-tertiary">mic_off</span>
+
+<span class="font-label-technical text-label-technical text-on-surface uppercase font-semibold">
+
+          MUTE TALK
+
+        </span>
+
+</button>
+
+<button class="py-space-sm px-space-sm bg-surface-container-low rounded flex items-center justify-center gap-space-xs active:bg-surface-container cursor-pointer" id="btn-disengage" type="button">
+
+<span class="material-symbols-outlined text-[16px] text-error">power_settings_new</span>
+
+<span class="font-label-technical text-label-technical text-error uppercase font-semibold">
+
+          DISENGAGE
+
+        </span>
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+  </div>
+
+</main>
+
+<script src="/static/mobile/jsqr.min.js"></script>
+<script src="/static/mobile/app.js"></script>
+
+<!-- MODAL SELECTOR Y ESCÁNER QR EN EL TELÉFONO -->
+<div id="mobile-qr-modal" style="display: none;" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col justify-between p-4 text-on-surface">
+  <div class="flex items-center justify-between border-b border-outline/20 pb-3">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary text-xl">qr_code_scanner</span>
+      <span class="font-headline-md text-headline-md text-primary uppercase font-bold">VINCULAR CÁMARA</span>
+    </div>
+    <button onclick="closeCameraSelector()" class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-error hover:text-white flex items-center justify-center font-bold text-lg cursor-pointer">&times;</button>
+  </div>
+
+  <div class="flex flex-col gap-4 my-auto">
+    <!-- Opción 1: Selector Táctil Rápido -->
+    <div class="bg-surface-container-low p-4 rounded-xl border border-outline/20 flex flex-col gap-3">
+      <span class="font-label-technical text-label-technical text-primary font-bold uppercase tracking-wider">OPCIÓN 1: SELECCIONA TU ROL EN 1 TOQUE</span>
+      <div class="grid grid-cols-1 gap-2 font-label-technical text-label-technical font-bold">
+        <button onclick="selectCameraRole(1)" class="w-full py-3 px-4 bg-primary-container text-on-primary-container rounded-lg flex items-center justify-between shadow active:scale-95 transition-transform cursor-pointer">
+          <span class="text-sm">CAM 01 // HOST (CONDUCTOR PRINCIPAL)</span>
+          <span class="material-symbols-outlined">arrow_forward_ios</span>
+        </button>
+        <button onclick="selectCameraRole(2)" class="w-full py-3 px-4 bg-secondary-container text-on-secondary rounded-lg flex items-center justify-between shadow active:scale-95 transition-transform cursor-pointer">
+          <span class="text-sm">CAM 02 // INVITADO (PLANO MEDIO)</span>
+          <span class="material-symbols-outlined">arrow_forward_ios</span>
+        </button>
+        <button onclick="selectCameraRole(3)" class="w-full py-3 px-4 bg-surface-container-high text-tertiary rounded-lg flex items-center justify-between shadow active:scale-95 transition-transform cursor-pointer">
+          <span class="text-sm">CAM 03 // GENERAL (PLANO ABIERTO WIDE)</span>
+          <span class="material-symbols-outlined">arrow_forward_ios</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Opción 2: Escaneo en Vivo del QR de la PC -->
+    <div class="bg-surface-container-low p-4 rounded-xl border border-primary/40 flex flex-col items-center gap-2 text-center">
+      <span class="font-label-technical text-label-technical text-primary font-bold uppercase tracking-wider">OPCIÓN 2: ESCANEAR EL MONITOR DE LA PC</span>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        Apunta la cámara de tu teléfono hacia el código QR mostrado en la consola de la PC. El sistema detectará la cámara automáticamente.
+      </p>
+      <div id="qr-scan-box" class="relative w-56 h-56 border-2 border-primary rounded-xl flex items-center justify-center bg-black overflow-hidden shadow-2xl">
+        <canvas id="qr-feed-canvas" class="absolute inset-0 w-full h-full object-cover"></canvas>
+        <div class="absolute inset-0 border border-primary/30 pointer-events-none"></div>
+        <div id="qr-laser-line" class="absolute inset-x-0 h-0.5 bg-primary shadow-[0_0_10px_#ff6200] pointer-events-none animate-bounce" style="animation-duration: 2.2s;"></div>
+        <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary pointer-events-none"></div>
+        <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary pointer-events-none"></div>
+        <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary pointer-events-none"></div>
+        <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary pointer-events-none"></div>
+      </div>
+      <span id="qr-scan-status" class="font-label-technical text-label-technical text-primary font-bold">BUSCANDO CÓDIGO QR EN LA IMAGEN...</span>
+    </div>
+  </div>
+
+  <button onclick="closeCameraSelector()" class="w-full py-3 bg-surface-container-high text-on-surface rounded-lg font-label-technical text-label-technical uppercase font-bold tracking-wider cursor-pointer">
+    CANCELAR Y VOLVER AL VISOR
+  </button>
+</div>
+
+</body>
+</html>

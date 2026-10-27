@@ -1,0 +1,54 @@
+/* Estilos Globales Studio (Teenage Engineering OP-1 / ATEM Broadcast) */
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+    background-color: #111318;
+    color: #e2e2e8;
+  }
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Indicadores TALLY de Cámara */
+.tally-program {
+  border: 2px solid #ff6200 !important;
+  box-shadow: 0 0 20px rgba(255, 98, 0, 0.45) !important;
+}
+
+.tally-preview {
+  border: 2px solid #ffb68b !important;
+  box-shadow: 0 0 15px rgba(255, 182, 139, 0.25) !important;
+}
+
+/* Keycaps físicas iluminadas */
+.key-active {
+  background-color: #ff6200 !important;
+  color: #541b00 !important;
+  box-shadow: 0 0 20px rgba(255, 98, 0, 0.65) !important;
+}
+
+.key-preview {
+  background-color: #9d4900 !important;
+  color: #ffd4bc !important;
+  box-shadow: 0 0 15px rgba(157, 73, 0, 0.5) !important;
+}
+
+/* Parpadeo de Grabación Broadcast */
+.recording-pulse {
+  animation: rec-blink 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes rec-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+}

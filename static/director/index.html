@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+
+
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}
+::-webkit-scrollbar{display:none;}
+.recording-pulse { animation: rec-blink 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes rec-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.tally-program { border: 2px solid #ff6200 !important; box-shadow: 0 0 20px rgba(255,98,0,0.4) !important; }
+.tally-preview { border: 2px solid #ffb68b !important; box-shadow: 0 0 15px rgba(255,182,139,0.2) !important; }
+.key-active { background-color: #ff6200 !important; color: #541b00 !important; box-shadow: 0 0 20px rgba(255,98,0,0.6) !important; }
+.key-preview { background-color: #9d4900 !important; color: #ffd4bc !important; box-shadow: 0 0 15px rgba(157,73,0,0.5) !important; }
+</style>
+<script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"on-secondary-fixed":"#321300","surface-container-high":"#282a2e","primary-fixed":"#ffdbcd","tertiary-fixed":"#dfe2ee","surface-variant":"#333539","on-background":"#e2e2e8","on-tertiary":"#2c3039","outline-variant":"#5a4137","secondary-fixed":"#ffdbc8","on-surface":"#e2e2e8","secondary":"#ffb68b","on-secondary-container":"#ffd4bc","on-surface-variant":"#e3bfb1","surface-container-low":"#1a1c20","on-primary-fixed-variant":"#7e2c00","surface-bright":"#37393e","inverse-on-surface":"#2f3035","on-primary":"#591d00","primary-fixed-dim":"#ffb597","primary-container":"#ff6200","tertiary-fixed-dim":"#c3c6d2","tertiary-container":"#9195a0","secondary-container":"#9d4900","inverse-surface":"#e2e2e8","on-tertiary-fixed-variant":"#434750","secondary-fixed-dim":"#ffb68b","on-primary-fixed":"#360f00","primary":"#ffb597","on-error-container":"#ffdad6","inverse-primary":"#a53d00","on-primary-container":"#541b00","surface-container-lowest":"#0c0e12","outline":"#aa8a7d","error":"#ffb4ab","background":"#111318","surface-container":"#1e2024","surface-container-highest":"#333539","on-secondary-fixed-variant":"#753400","on-tertiary-fixed":"#181c24","surface-dim":"#111318","tertiary":"#c3c6d2","on-error":"#690005","surface-tint":"#ffb597","error-container":"#93000a","surface":"#111318","on-tertiary-container":"#2a2e37","on-secondary":"#522300"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"gutter-mobile":"8px","space-xl":"24px","space-sm":"8px","space-md":"12px","margin-mobile":"12px","gutter":"12px","space-xs":"4px","space-lg":"16px","margin":"20px"},"fontFamily":{"headline-lg-mobile":["Space Grotesk"],"headline-md":["Space Grotesk"],"title-sm":["JetBrains Mono"],"label-technical":["JetBrains Mono"],"label-md":["JetBrains Mono"],"headline-lg":["Space Grotesk"],"body-lg":["JetBrains Mono"],"body-sm":["JetBrains Mono"],"display-lg":["Space Grotesk"]},"fontSize":{"headline-lg-mobile":["22px",{"lineHeight":"26px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-md":["18px",{"lineHeight":"24px","letterSpacing":"0.02em","fontWeight":"600"}],"title-sm":["14px",{"lineHeight":"18px","letterSpacing":"0.05em","fontWeight":"600"}],"label-technical":["9px",{"lineHeight":"10px","letterSpacing":"0.12em","fontWeight":"600"}],"label-md":["10px",{"lineHeight":"12px","letterSpacing":"0.08em","fontWeight":"500"}],"headline-lg":["28px",{"lineHeight":"32px","letterSpacing":"-0.02em","fontWeight":"600"}],"body-lg":["13px",{"lineHeight":"18px","letterSpacing":"0em","fontWeight":"400"}],"body-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"400"}],"display-lg":["40px",{"lineHeight":"44px","letterSpacing":"-0.04em","fontWeight":"700"}]}}}}</script>
+<script>
+// --- MOTOR INMEDIATO DE CONEXIÓN Y CÓDIGOS QR ---
+var currentBaseUrl = window.location.origin;
+
+function updateCameraLinksAndQRs(baseUrl) {
+  if (baseUrl) currentBaseUrl = baseUrl;
+  for (var i = 1; i <= 3; i++) {
+    var camUrl = currentBaseUrl + '/cam/' + i;
+    var qrSrc = '/api/qr?url=' + encodeURIComponent(camUrl);
+    
+    // 1. Modal Elements
+    var urlElem = document.getElementById('qr-url-' + i);
+    var imgElem = document.getElementById('qr-img-' + i);
+    if (urlElem) urlElem.textContent = camUrl;
+    if (imgElem) imgElem.src = qrSrc;
+    
+    // 2. Direct ISO Card Elements
+    var cardImg = document.getElementById('card-qr-img-' + i);
+    var cardUrl = document.getElementById('card-qr-url-' + i);
+    if (cardImg) cardImg.src = qrSrc;
+    if (cardUrl) cardUrl.textContent = camUrl;
+  }
+}
+
+async function fetchNetworkInfo() {
+  try {
+    var res = await fetch('/api/network');
+    var data = await res.json();
+    if (data && data.base_url) {
+      currentBaseUrl = data.base_url;
+      updateCameraLinksAndQRs(currentBaseUrl);
+    }
+    var netInfoElem = document.getElementById('net-info');
+    if (netInfoElem && data.type) {
+      netInfoElem.textContent = data.type + ' (' + data.ip + ':' + data.port + ')';
+    }
+  } catch (err) {
+    console.warn('[Network] Fallback a window.location.origin:', err);
+    updateCameraLinksAndQRs(window.location.origin);
+  }
+}
+
+function openQrModal(camId) {
+  var modal = document.getElementById('qr-modal');
+  if (modal) {
+    modal.style.setProperty('display', 'flex', 'important');
+    modal.classList.remove('hidden');
+  }
+  // 1. Rellenar de inmediato con la URL conocida
+  updateCameraLinksAndQRs(currentBaseUrl);
+  // 2. Refrescar con la IP oficial del servidor
+  fetchNetworkInfo();
+}
+
+function closeQrModal() {
+  var modal = document.getElementById('qr-modal');
+  if (modal) {
+    modal.style.setProperty('display', 'none', 'important');
+    modal.classList.add('hidden');
+  }
+}
+
+function copyCameraLink(camNumber) {
+  var urlElem = document.getElementById('qr-url-' + camNumber);
+  var txt = (urlElem && urlElem.textContent && urlElem.textContent !== 'https://...') 
+            ? urlElem.textContent.trim() 
+            : (currentBaseUrl + '/cam/' + camNumber);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function() {
+      if (window.showToast) window.showToast('📋 Enlace de Cámara 0' + camNumber + ' copiado');
+      else alert('Enlace copiado al portapapeles:\n' + txt);
+    }).catch(function() {
+      prompt('Enlace de Cámara 0' + camNumber + ':', txt);
+    });
+  } else {
+    prompt('Enlace de Cámara 0' + camNumber + ':', txt);
+  }
+}
+
+window.currentBaseUrl = currentBaseUrl;
+window.updateCameraLinksAndQRs = updateCameraLinksAndQRs;
+window.fetchNetworkInfo = fetchNetworkInfo;
+window.openQrModal = openQrModal;
+window.closeQrModal = closeQrModal;
+window.copyCameraLink = copyCameraLink;
+
+// Ejecutar inmediatamente tan pronto como el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+  updateCameraLinksAndQRs();
+  fetchNetworkInfo();
+});
+</script>
+</head><body class="bg-surface font-body-sm text-on-surface antialiased selection:bg-primary-container selection:text-on-primary"><header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/95 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="h-16 w-full px-gutter flex items-center justify-between gap-gutter"><div class="flex items-center gap-gutter"><div class="flex items-center gap-space-xs"><span class="w-2.5 h-2.5 rounded-full bg-surface-variant flex items-center justify-center cursor-pointer hover:bg-error transition-colors"></span><span class="w-2.5 h-2.5 rounded-full bg-surface-variant flex items-center justify-center cursor-pointer hover:bg-secondary transition-colors"></span><span class="w-2.5 h-2.5 rounded-full bg-surface-variant flex items-center justify-center cursor-pointer hover:bg-tertiary transition-colors"></span></div><div class="flex items-center gap-space-sm pl-space-xs"><span class="font-label-technical text-label-technical uppercase tracking-widest text-on-surface-variant bg-surface-container px-1 py-0.5 rounded">SYS::HOST</span><span class="font-headline-md text-headline-md uppercase tracking-tight text-primary">TX//OP-6 PIXEL STUDIO</span></div></div><nav class="hidden xl:flex items-center gap-space-xs bg-surface-container-low p-space-xs rounded-lg" data-active-classes="bg-primary-container text-on-primary-container font-title-sm text-title-sm rounded-lg shadow-inner"><a aria-current="page" class="uppercase tracking-wider px-space-md py-space-xs transition-all bg-primary-container text-on-primary-container font-title-sm text-title-sm rounded-lg shadow-inner" data-path="multicam-matrix" href="#">MULTICAM // MATRIX</a><a class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high px-space-md py-space-xs rounded transition-all" data-path="dsp-synth-audio" href="#">DSP &amp; SYNTH AUDIO</a><a class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high px-space-md py-space-xs rounded transition-all" data-path="pc-telemetry-asic" href="#">PC TELEMETRY &amp; ASIC</a><a class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high px-space-md py-space-xs rounded transition-all" data-path="tape-iso-logs" href="#">TAPE &amp; ISO LOGS</a></nav><div class="flex items-center gap-gutter">
+<!-- CONTROLES DIRECTOR HEADER -->
+<div class="flex items-center gap-2">
+  <!-- Selector de Calidad -->
+  <div class="flex items-center gap-1.5 bg-surface-container-low px-2 py-1 rounded-lg border border-outline/20">
+    <span class="material-symbols-outlined text-sm text-primary">settings_suggest</span>
+    <select id="quality-select" class="bg-transparent text-label-technical text-primary font-bold uppercase tracking-wider outline-none cursor-pointer">
+      <option value="1080p60" selected class="bg-[#1a1c20] text-on-surface">1080p @ 60 FPS (FHD Master)</option>
+      <option value="1440p60" class="bg-[#1a1c20] text-on-surface">1440p @ 60 FPS (2K Pro)</option>
+      <option value="4k30" class="bg-[#1a1c20] text-on-surface">2160p @ 30 FPS (4K Ultra)</option>
+      <option value="1080p30" class="bg-[#1a1c20] text-on-surface">1080p @ 30 FPS (Low CPU)</option>
+    </select>
+  </div>
+
+  <!-- Botón Conectar Cámaras (QR) -->
+  <button id="qr-open-btn" onclick="openQrModal()" class="flex items-center gap-2 bg-primary-container hover:bg-primary text-on-primary-container font-bold px-3.5 py-1.5 rounded-lg font-label-technical text-label-technical uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer border border-primary/50">
+    <span class="material-symbols-outlined text-base">qr_code_scanner</span>
+    <span>CONECTAR MÓVILES</span>
+  </button>
+
+  <!-- Botón Abrir Grabaciones -->
+  <button id="open-folder-btn" title="Abrir carpeta de grabaciones en el explorador" class="flex items-center gap-1 bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface px-2.5 py-1.5 rounded-lg font-label-technical text-label-technical transition-colors">
+    <span class="material-symbols-outlined text-base">folder_open</span>
+  </button>
+
+  <!-- Botón Grabación Real (Master REC) -->
+  <button id="rec-btn" class="flex items-center gap-space-sm bg-surface-container-low hover:bg-primary-container hover:text-on-primary-container px-space-md py-1.5 rounded-lg border border-primary/30 transition-all cursor-pointer shadow">
+    <div class="flex items-center gap-space-xs">
+      <span id="rec-dot" class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+      <span id="rec-text" class="font-label-technical text-label-technical uppercase tracking-widest text-primary font-bold">REC MASTER</span>
+    </div>
+    <div id="timecode" class="font-title-sm text-title-sm text-on-surface font-semibold tracking-wider font-mono">00:00:00</div>
+  </button>
+</div>
+<div class="hidden md:flex items-center gap-space-sm bg-surface-container-low px-space-md py-1 rounded-lg"><div class="flex flex-col gap-0.5"><div class="flex justify-between items-center gap-space-xs font-label-technical text-label-technical text-on-surface-variant"><span>CPU</span><span class="text-primary">42%</span></div><div class="w-10 h-1 bg-surface-container-highest rounded-full overflow-hidden"><div class="w-5/12 h-full bg-primary-container"></div></div></div><div class="flex flex-col gap-0.5"><div class="flex justify-between items-center gap-space-xs font-label-technical text-label-technical text-on-surface-variant"><span>GPU</span><span class="text-secondary">68%</span></div><div class="w-10 h-1 bg-surface-container-highest rounded-full overflow-hidden"><div class="w-8/12 h-full bg-secondary"></div></div></div><div class="flex flex-col gap-0.5"><div class="flex justify-between items-center gap-space-xs font-label-technical text-label-technical text-on-surface-variant"><span>RAM</span><span class="text-tertiary">14G</span></div><div class="w-10 h-1 bg-surface-container-highest rounded-full overflow-hidden"><div class="w-6/12 h-full bg-tertiary"></div></div></div><div class="flex items-center gap-space-xs pl-space-xs font-label-technical text-label-technical text-on-surface-variant"><span class="material-symbols-outlined text-sm text-primary">wifi</span><span id="net-info">P2P 5GHz</span></div></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-[calc(100vh-48px)]"><div class="flex flex-col w-full text-on-surface select-none">
+
+<!-- SUB-HEADER HARDWARE HUD STRIP (TE/TX-6 INSPIRED TELEMETRY) -->
+
+<section class="w-full bg-surface-container-lowest px-margin py-space-xs flex flex-wrap items-center justify-between gap-space-md">
+
+<div class="flex items-center gap-space-lg flex-wrap">
+
+<!-- Session Badge -->
+
+<div class="flex items-center gap-space-xs bg-surface-container-low px-space-sm py-1 rounded">
+
+<svg class="w-4 h-4 text-primary" fill="currentColor" viewbox="0 0 24 24">
+
+<path d="M4 6h16v12H4V6zm2 2v8h12V8H6zm3 2a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4z"></path>
+
+</svg>
+
+<span class="font-label-technical text-label-technical text-primary tracking-widest uppercase">TAPE 01: PODCAST MASTER CLASS // 4K→1080P DOWNSCALE</span>
+
+</div>
+
+<!-- Live Hardware Telemetry Blocks -->
+
+<div class="hidden lg:flex items-center gap-space-md font-label-technical text-label-technical text-on-surface-variant">
+
+<div class="flex items-center gap-space-xs">
+<span class="text-on-surface">CPU HOST</span>
+<span class="text-primary font-bold font-mono" id="tele-cpu-val">--%</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="text-on-surface">RAM DISP</span>
+<span class="text-secondary font-bold font-mono" id="tele-ram-val">--/--G</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="text-on-surface">DISCO LIBRE</span>
+<span class="text-primary font-bold font-mono" id="tele-disk-val">-- GB</span>
+</div>
+
+<div class="flex items-center gap-space-xs">
+
+<span class="text-on-surface">CORE</span>
+
+<span class="text-primary-container font-semibold">48°C</span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Clock / Sync State -->
+
+<div class="flex items-center gap-space-md font-label-technical text-label-technical">
+
+<div class="flex items-center gap-1.5 bg-surface-container-low px-2 py-0.5 rounded">
+
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-ping"></span>
+
+<span class="text-primary tracking-wider">PTP SYNC: 0.04ms LOCKED</span>
+
+</div>
+
+<div class="hidden sm:flex items-center gap-1 text-on-surface-variant">
+
+<span class="material-symbols-outlined text-[14px] text-tertiary">speed</span>
+
+<span>BUFFER: ZERO-DROP</span>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- MAIN WORKSTATION MATRIX VIEWPORT -->
+
+<div class="w-full px-margin py-space-md grid grid-cols-1 xl:grid-cols-12 gap-gutter">
+
+<!-- LEFT 8 COLS: 16:9 MASTER PROGRAM MONITOR & OSCILLOSCOPE HUD -->
+
+<section class="xl:col-span-8 flex flex-col gap-space-sm">
+
+<!-- Screen Housing -->
+
+<div class="relative bg-surface-container-lowest rounded-lg overflow-hidden shadow-2xl p-2.5">
+
+<!-- OP-1 / TX-6 Amber LCD Grid Canvas -->
+
+<div class="relative w-full aspect-video bg-[#140b05] rounded overflow-hidden flex flex-col justify-between p-3.5">
+
+<!-- Background Synthetic Dot-Matrix Grid -->
+
+<div class="absolute inset-0 opacity-25 pointer-events-none" style="background-image: radial-gradient(circle, #ff6200 1px, transparent 1px); background-size: 10px 10px;"></div>
+
+<!-- Master Camera Video Feed Simulation -->
+
+<div class="absolute inset-0 bg-black flex items-center justify-center overflow-hidden">
+  <canvas id="program-canvas" width="1920" height="1080" class="w-full h-full object-contain"></canvas>
+</div>
+
+<!-- LCD Vignette / Phosphor Glass Overlay -->
+
+<div class="absolute inset-0 bg-gradient-to-t from-[#140b05] via-transparent to-[#140b05]/60 pointer-events-none"></div>
+
+<!-- TOP HUD: Tally & Telemetry -->
+
+<div class="relative z-10 flex items-start justify-between">
+
+<div class="flex items-center gap-space-xs">
+
+<div class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded text-title-sm font-title-sm tracking-wider flex items-center gap-1.5 shadow-md">
+
+<span class="w-2 h-2 rounded-full bg-surface-container-lowest animate-pulse"></span>
+
+<span id="program-source-lbl">● ON AIR // CAM 01 [HOST]</span>
+
+</div>
+
+<span class="bg-surface-container-low/90 text-primary px-1.5 py-0.5 rounded font-label-technical text-label-technical">UHD 3840×2160 @ 59.94p</span>
+
+</div>
+
+<!-- Optical Values (Teenage Engineering Monospace) -->
+
+<div class="bg-surface-container-lowest/80 px-2.5 py-1 rounded font-label-technical text-label-technical text-primary-fixed tracking-widest flex items-center gap-3">
+
+<span>F/1.8</span>
+
+<span class="text-outline-variant">|</span>
+
+<span>1/120s</span>
+
+<span class="text-outline-variant">|</span>
+
+<span>ISO 320</span>
+
+<span class="text-outline-variant">|</span>
+
+<span>5600K WB</span>
+<span class="text-outline-variant">|</span>
+<button id="grid-toggle-btn" onclick="cycleFramingGuide()" title="Alternar guías de encuadre [G]" class="text-primary hover:text-white font-bold cursor-pointer transition-colors flex items-center gap-1">
+  <span class="material-symbols-outlined text-[12px]">grid_4x4</span>
+  <span id="grid-mode-label">SAFE [80%]</span>
+</button>
+
+</div>
+
+</div>
+
+<!-- CENTER: Dynamic Framing Guides & Reticle (Toggled with G) -->
+<div id="framing-guide-overlay" class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+  <!-- Mode 1: Safe Title 80% (Default) -->
+  <div id="guide-safe-area" class="w-[80%] h-[80%] border border-dashed border-primary/30 rounded flex flex-col justify-between p-2">
+    <div class="flex justify-between font-label-technical text-[9px] text-primary/50">
+      <span>SAFE 80%</span><span>59.94 FIXED</span>
+    </div>
+    <div class="self-center">
+      <svg class="w-16 h-16 text-primary/40" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="12" stroke-dasharray="2, 2"></circle>
+        <line x1="50" x2="50" y1="40" y2="60"></line>
+        <line x1="40" x2="60" y1="50" y2="50"></line>
+      </svg>
+    </div>
+    <div class="flex justify-between font-label-technical text-[9px] text-primary/50">
+      <span>PODCAST FRAMING</span><span>TIKTOK-REC OK</span>
+    </div>
+  </div>
+
+  <!-- Mode 2: 9:16 Social Cut Box (Hidden by default) -->
+  <div id="guide-social-box" class="hidden absolute inset-y-0 w-[31.6%] border-x-2 border-dashed border-secondary/70 bg-secondary/5 flex flex-col justify-between py-4 items-center">
+    <span class="bg-secondary text-on-secondary px-1.5 py-0.5 rounded font-label-technical text-[9px] font-bold">REELS / TIKTOK (9:16 SAFE)</span>
+    <span class="bg-secondary text-on-secondary px-1.5 py-0.5 rounded font-label-technical text-[9px] font-bold">ZONA VERTICAL</span>
+  </div>
+
+  <!-- Mode 3: Rule of Thirds (Hidden by default) -->
+  <div id="guide-thirds" class="hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
+    <div class="border-r border-b border-primary/25"></div>
+    <div class="border-r border-b border-primary/25"></div>
+    <div class="border-b border-primary/25"></div>
+    <div class="border-r border-b border-primary/25"></div>
+    <div class="border-r border-b border-primary/25"></div>
+    <div class="border-b border-primary/25"></div>
+    <div class="border-r border-primary/25"></div>
+    <div class="border-r border-primary/25"></div>
+    <div></div>
+  </div>
+</div>
+
+<!-- BOTTOM OVERLAY: Live Synthesizer Waveform & VU Segment Display -->
+
+<div class="relative z-10 flex flex-col gap-1.5 bg-surface-container-lowest/90 p-2.5 rounded">
+
+<div class="flex items-center justify-between font-label-technical text-label-technical text-primary-fixed">
+
+<span class="flex items-center gap-1.5">
+
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+
+<span>DSP MASTER SCOPE (TX-ENGINE VER 2.4)</span>
+
+</span>
+
+<div class="flex items-center gap-4">
+
+<span>RMS: <strong id="rms-val" class="text-primary font-mono">-inf dB</strong></span>
+
+<span>PEAK: <strong id="peak-val" class="text-secondary font-mono">-inf dB</strong></span>
+
+<span id="lufs-val" class="text-primary-container font-bold font-mono">LUFS: -inf INT</span>
+
+</div>
+
+</div>
+
+<!-- Vector Stepped Oscilloscope & VU Grid -->
+
+<div class="w-full flex items-center gap-3">
+
+<!-- Realtime Stepped Vector Scope (SVG inline) -->
+
+<div class="flex-1 h-10 bg-[#0e0703] rounded p-1 overflow-hidden relative">
+
+<div class="absolute inset-0 opacity-20" style="background-image: linear-gradient(to right, #ff6200 1px, transparent 1px), linear-gradient(to bottom, #ff6200 1px, transparent 1px); background-size: 8px 8px;"></div>
+
+<svg class="w-full h-full text-primary-container relative z-10" fill="none" preserveaspectratio="none" viewbox="0 0 500 40">
+
+<path id="dsp-waveform" d="M0,20 L30,20 L40,16 L50,26 L65,8 L80,32 L95,12 L110,24 L130,20 L150,20 L160,10 L170,35 L180,6 L195,30 L210,18 L225,20 L260,20 L270,14 L280,30 L295,4 L310,38 L325,10 L340,22 L360,20 L390,20 L405,12 L420,28 L435,7 L450,33 L465,18 L480,20 L500,20" stroke="currentColor" stroke-linecap="square" stroke-width="1.75"></path>
+
+</svg>
+
+</div>
+
+<!-- Segmented Hardware Bar VU Peak (Left / Right) -->
+<div class="w-48 flex flex-col gap-1 font-label-technical text-label-technical bg-surface-container-low/80 p-1.5 rounded">
+  <div class="flex items-center gap-1.5">
+    <span class="text-on-surface-variant w-3 font-bold">L</span>
+    <div class="flex-1 h-2 bg-[#140b05] rounded-[2px] overflow-hidden flex border border-outline/20">
+      <div id="vu-bar-l" class="h-full bg-gradient-to-r from-primary-container via-secondary to-error transition-all duration-75" style="width: 0%;"></div>
+    </div>
+  </div>
+  <div class="flex items-center gap-1.5">
+    <span class="text-on-surface-variant w-3 font-bold">R</span>
+    <div class="flex-1 h-2 bg-[#140b05] rounded-[2px] overflow-hidden flex border border-outline/20">
+      <div id="vu-bar-r" class="h-full bg-gradient-to-r from-primary-container via-secondary to-error transition-all duration-75" style="width: 0%;"></div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Feed Telemetry Micro-Bar -->
+
+<div class="w-full flex items-center justify-between px-space-xs font-label-technical text-label-technical text-on-surface-variant">
+
+<div class="flex items-center gap-space-md">
+
+<span>PROGRAM BUS: [CAM 01] DIRECT</span>
+
+<span>COLOR METRIC: BT.709-LE</span>
+
+<span>LATENCY: <strong class="text-primary">12.4ms</strong></span>
+
+</div>
+
+<div class="flex items-center gap-space-sm">
+
+<span>AUTO-CHOP: OFF</span>
+
+<span>COLOR SPACE: DCI-P3 FLAT</span>
+
+<span class="text-primary">GENLOCK: 0° PHASE</span>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- RIGHT 4 COLS: MULTICAM DECK & TX-6 DSP AUDIO CONTROLLER -->
+
+<section class="xl:col-span-4 flex flex-col gap-space-md">
+
+<!-- 3 CAM ISO MULTICAM DECK -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-space-xs">
+  <div class="flex items-center justify-between pb-1 px-1">
+    <span class="font-headline-md text-headline-md uppercase text-primary">ISO CAM MONITORS</span>
+    <span class="font-label-technical text-label-technical text-on-surface-variant">MATRIX ROUTE // NDI-6</span>
+  </div>
+  <div class="grid grid-cols-3 xl:grid-cols-1 gap-2">
+    <!-- CAM 01 [HOST] -->
+    <div id="card-cam-1" class="bg-surface-container-lowest p-2 rounded cursor-pointer relative shadow transition-all duration-200 tally-program" onclick="switchToCamera(1)">
+      <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-1.5">
+          <span class="bg-primary-container text-on-primary-container font-label-technical text-label-technical px-1 rounded font-bold">CAM 01</span>
+          <span class="font-title-sm text-title-sm uppercase text-primary font-bold">HOST TIGHT</span>
+        </div>
+        <div class="flex items-center gap-1.5 font-label-technical text-label-technical text-primary">
+          <span id="bat-cam-1">🔋 100%</span>
+          <span id="res-cam-1" class="text-primary-container font-semibold">1080p 60fps</span>
+        </div>
+      </div>
+      <div class="relative w-full aspect-video bg-black rounded overflow-hidden">
+        <video id="view-cam-1" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        <div id="nosig-cam-1" class="absolute inset-0 bg-[#140b05]/95 flex flex-col items-center justify-center gap-1 font-label-technical text-label-technical text-primary text-center p-2 z-10">
+          <div class="flex items-center gap-2.5 bg-black/40 p-2 rounded-lg border border-primary/30 w-full justify-center">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white p-1 rounded flex items-center justify-center shrink-0 shadow-lg">
+              <img id="card-qr-img-1" src="" alt="QR Cam 1" class="w-full h-full object-contain" />
+            </div>
+            <div class="flex flex-col items-start text-left gap-1 overflow-hidden">
+              <span class="font-bold text-[10px] text-primary uppercase tracking-wider flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span> ESCANEA PARA INICIAR
+              </span>
+              <span id="card-qr-url-1" class="text-[9px] text-on-surface-variant font-mono truncate max-w-[140px]">https://.../cam/1</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <button onclick="event.stopPropagation(); openQrModal(1)" class="bg-primary-container hover:bg-primary text-on-primary-container font-bold px-2 py-0.5 rounded shadow text-[9px] uppercase tracking-wider cursor-pointer">
+                  AMPLIAR
+                </button>
+                <button onclick="event.stopPropagation(); copyCameraLink(1)" class="bg-surface-container-high hover:bg-surface-bright text-on-surface font-bold px-2 py-0.5 rounded shadow text-[9px] uppercase tracking-wider cursor-pointer">
+                  COPIAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span id="pill-cam-1" class="absolute bottom-1 left-1 bg-primary-container text-on-primary-container font-label-technical text-label-technical px-1 rounded uppercase tracking-wider font-bold">ON AIR</span>
+      </div>
+      <!-- Tactical Camera Remote Toolbar -->
+      <div class="flex items-center justify-between gap-1 mt-1 pt-1 border-t border-outline/10 font-label-technical text-label-technical">
+        <button onclick="event.stopPropagation(); sendCameraCommand(1, 'switch_lens')" title="Cambiar lente (0.5x / 1x)" class="flex-1 bg-surface-container-high hover:bg-primary hover:text-on-primary py-0.5 rounded text-center transition-colors">0.5x/1x</button>
+        <button onclick="event.stopPropagation(); sendCameraCommand(1, 'toggle_torch')" title="Encender linterna de apoyo" class="flex-1 bg-surface-container-high hover:bg-secondary hover:text-on-secondary py-0.5 rounded text-center transition-colors">⚡ FLASH</button>
+        <button onclick="event.stopPropagation(); sendCameraCommand(1, 'lock_exposure')" title="Bloquear enfoque y luz" class="flex-1 bg-surface-container-high hover:bg-tertiary hover:text-on-tertiary py-0.5 rounded text-center transition-colors">🔒 LOCK</button>
+      </div>
+    </div>
+
+    <!-- CAM 02 [GUEST] -->
+    <div id="card-cam-2" class="bg-surface-container-lowest p-2 rounded cursor-pointer relative shadow transition-all duration-200" onclick="switchToCamera(2)">
+      <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-1.5">
+          <span class="bg-secondary-container text-on-secondary font-label-technical text-label-technical px-1 rounded font-bold">CAM 02</span>
+          <span class="font-title-sm text-title-sm uppercase text-secondary font-bold">GUEST MED</span>
+        </div>
+        <div class="flex items-center gap-1.5 font-label-technical text-label-technical text-secondary">
+          <span id="bat-cam-2">🔋 100%</span>
+          <span id="res-cam-2" class="text-secondary font-semibold">1080p 60fps</span>
+        </div>
+      </div>
+      <div class="relative w-full aspect-video bg-black rounded overflow-hidden">
+        <video id="view-cam-2" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        <div id="nosig-cam-2" class="absolute inset-0 bg-[#140b05]/95 flex flex-col items-center justify-center gap-1 font-label-technical text-label-technical text-secondary text-center p-2 z-10">
+          <div class="flex items-center gap-2.5 bg-black/40 p-2 rounded-lg border border-secondary/30 w-full justify-center">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white p-1 rounded flex items-center justify-center shrink-0 shadow-lg">
+              <img id="card-qr-img-2" src="" alt="QR Cam 2" class="w-full h-full object-contain" />
+            </div>
+            <div class="flex flex-col items-start text-left gap-1 overflow-hidden">
+              <span class="font-bold text-[10px] text-secondary uppercase tracking-wider flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span> ESCANEA PARA INICIAR
+              </span>
+              <span id="card-qr-url-2" class="text-[9px] text-on-surface-variant font-mono truncate max-w-[140px]">https://.../cam/2</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <button onclick="event.stopPropagation(); openQrModal(2)" class="bg-secondary-container hover:bg-secondary text-on-secondary font-bold px-2 py-0.5 rounded shadow text-[9px] uppercase tracking-wider cursor-pointer">
+                  AMPLIAR
+                </button>
+                <button onclick="event.stopPropagation(); copyCameraLink(2)" class="bg-surface-container-high hover:bg-surface-bright text-on-surface font-bold px-2 py-0.5 rounded shadow text-[9px] uppercase tracking-wider cursor-pointer">
+                  COPIAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span id="pill-cam-2" class="absolute bottom-1 left-1 bg-surface-container-highest text-on-surface font-label-technical text-label-technical px-1 rounded uppercase tracking-wider font-bold">STANDBY</span>
+      </div>
+      <!-- Tactical Camera Remote Toolbar -->
+      <div class="flex items-center justify-between gap-1 mt-1 pt-1 border-t border-outline/10 font-label-technical text-label-technical">
+        <button onclick="event.stopPropagation(); sendCameraCommand(2, 'switch_lens')" title="Cambiar lente (0.5x / 1x)" class="flex-1 bg-surface-container-high hover:bg-primary hover:text-on-primary py-0.5 rounded text-center transition-colors">0.5x/1x</button>
+        <button onclick="event.stopPropagation(); sendCameraCommand(2, 'toggle_torch')" title="Encender linterna de apoyo" class="flex-1 bg-surface-container-high hover:bg-secondary hover:text-on-secondary py-0.5 rounded text-center transition-colors">⚡ FLASH</button>
+        <button onclick="event.stopPropagation(); sendCameraCommand(2, 'lock_exposure')" title="Bloquear enfoque y luz" class="flex-1 bg-surface-container-high hover:bg-tertiary hover:text-on-tertiary py-0.5 rounded text-center transition-colors">🔒 LOCK</button>
+      </div>
+    </div>
+
+    <!-- CAM 03 [WIDE MASTER] -->
+    <div id="card-cam-3" class="bg-surface-container-lowest p-2 rounded cursor-pointer relative shadow transition-all duration-200" onclick="switchToCamera(3)">
+      <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-1.5">
+          <span class="bg-surface-container-high text-tertiary font-label-technical text-label-technical px-1 rounded font-bold">CAM 03</span>
+          <span class="font-title-sm text-title-sm uppercase text-on-surface">WIDE STAGE</span>
+        </div>
+        <div class="flex items-center gap-1.5 font-label-technical text-label-technical text-on-surface-variant">
+          <span id="bat-cam-3">🔋 100%</span>
+          <span id="res-cam-3" class="text-tertiary font-semibold">1080p 60fps</span>
+        </div>
+      </div>
+      <div class="relative w-full aspect-video bg-black rounded overflow-hidden">
+        <video id="view-cam-3" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        <div id="nosig-cam-3" class="absolute inset-0 bg-[#140b05]/95 flex flex-col items-center justify-center gap-1 font-label-technical text-label-technical text-tertiary text-center p-2 z-10">
+          <div class="flex items-center gap-2.5 bg-black/40 p-2 rounded-lg border border-outline/30 w-full justify-center">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white p-1 rounded flex items-center justify-center shrink-0 shadow-lg">
+              <img id="card-qr-img-3" src="" alt="QR Cam 3" class="w-full h-full object-contain" />
+            </div>
+            <div class="flex flex-col items-start text-left gap-1 overflow-hidden">
+              <span class="font-bold text-[10px] text-tertiary uppercase tracking-wider flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span> ESCANEA PARA INICIAR
+              </span>
+              <span id="card-qr-url-3" class="text-[9px] text-on-surface-variant font-mono truncate max-w-[140px]">https://.../cam/3</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <button onclick="event.stopPropagation(); openQrModal(3)" class="bg-surface-container-high hover:bg-surface-bright text-tertiary font-bold px-2 py-0.5 rounded shadow text-[9px] uppercase tracking-wider cursor-pointer border border-outline/20">
+                  AMPLIAR
+                </button>
+                <button onclick="event.stopPropagation(); copyCameraLink(3)" class="bg-surface-container-high hover:bg-surface-bright text-on-surface font-bold px-2 py-0.5 rounded shadow text-[9px] uppercase tracking-wider cursor-pointer">
+                  COPIAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span id="pill-cam-3" class="absolute bottom-1 left-1 bg-surface-container-highest text-tertiary font-label-technical text-label-technical px-1 rounded uppercase tracking-wider font-bold">STANDBY</span>
+      </div>
+      <!-- Tactical Camera Remote Toolbar -->
+      <div class="flex items-center justify-between gap-1 mt-1 pt-1 border-t border-outline/10 font-label-technical text-label-technical">
+        <button onclick="event.stopPropagation(); sendCameraCommand(3, 'switch_lens')" title="Cambiar lente (0.5x / 1x)" class="flex-1 bg-surface-container-high hover:bg-primary hover:text-on-primary py-0.5 rounded text-center transition-colors">0.5x/1x</button>
+        <button onclick="event.stopPropagation(); sendCameraCommand(3, 'toggle_torch')" title="Encender linterna de apoyo" class="flex-1 bg-surface-container-high hover:bg-secondary hover:text-on-secondary py-0.5 rounded text-center transition-colors">⚡ FLASH</button>
+        <button onclick="event.stopPropagation(); sendCameraCommand(3, 'lock_exposure')" title="Bloquear enfoque y luz" class="flex-1 bg-surface-container-high hover:bg-tertiary hover:text-on-tertiary py-0.5 rounded text-center transition-colors">🔒 LOCK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TE TX-6 INSPIRED DSP SYNTH & AUDIO UNIT -->
+
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-space-sm shadow-xl">
+
+<div class="flex items-center justify-between px-1">
+
+<div class="flex items-center gap-2">
+
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+
+<span class="font-headline-md text-headline-md uppercase text-primary tracking-tight">TX-6 DSP AUDIO MATRIX</span>
+
+</div>
+
+<span class="font-label-technical text-label-technical bg-surface-container-highest px-1.5 py-0.5 rounded text-tertiary">32-BIT FLOAT</span>
+
+</div>
+
+<!-- Reference Homage: OP-1 / TX-6 Pixel Modular Blocks -->
+
+<div class="grid grid-cols-4 gap-1.5 bg-[#0e0703] p-2 rounded">
+
+<!-- CELL 1: EQ 1 Pixel Graph -->
+
+<div class="bg-[#190c04] p-1.5 rounded flex flex-col justify-between h-24">
+
+<div class="flex items-center justify-between font-label-technical text-label-technical text-primary">
+
+<span class="font-bold">EQ 1</span>
+
+<span>2.5k</span>
+
+</div>
+
+<!-- Curve SVG -->
+
+<svg class="w-full h-10 text-primary-container" fill="none" viewbox="0 0 60 30">
+
+<path d="M0,25 Q20,25 30,12 T60,8" fill="none" stroke="currentColor" stroke-width="2"></path>
+
+<path d="M0,25 Q20,25 30,12 T60,8 L60,30 L0,30 Z" fill="currentColor" fill-opacity="0.2"></path>
+
+</svg>
+
+<div class="flex justify-between font-label-technical text-label-technical text-secondary">
+
+<span>+4.2dB</span>
+
+<span>Q 1.4</span>
+
+</div>
+
+</div>
+
+<!-- CELL 2: TREMO Pulse -->
+
+<div class="bg-[#190c04] p-1.5 rounded flex flex-col justify-between h-24">
+
+<div class="flex items-center justify-between font-label-technical text-label-technical text-primary">
+
+<span class="font-bold">TREMO</span>
+
+<span>16</span>
+
+</div>
+
+<!-- Stepped Square Pulse -->
+
+<svg class="w-full h-8 text-primary" fill="none" viewbox="0 0 60 20">
+
+<path d="M0,15 L12,15 L12,4 L24,4 L24,15 L36,15 L36,4 L48,4 L48,15 L60,15" stroke="currentColor" stroke-width="2"></path>
+
+</svg>
+
+<div class="flex justify-between font-label-technical text-label-technical text-primary">
+
+<span>SYNC</span>
+
+<span>1/8D</span>
+
+</div>
+
+</div>
+
+<!-- CELL 3: COMPRESSOR Grid -->
+
+<div class="bg-[#190c04] p-1.5 rounded flex flex-col justify-between h-24">
+
+<div class="flex items-center justify-between font-label-technical text-label-technical text-primary">
+
+<span class="font-bold">COMP</span>
+
+<span>CH 1</span>
+
+</div>
+
+<!-- Dynamic reduction ladder -->
+
+<div class="flex flex-col gap-0.5">
+
+<div class="h-1.5 w-full bg-primary-container rounded-[1px]"></div>
+
+<div class="h-1.5 w-4/5 bg-primary-container rounded-[1px]"></div>
+
+<div class="h-1.5 w-3/5 bg-secondary rounded-[1px]"></div>
+
+<div class="h-1.5 w-1/3 bg-surface-container-highest rounded-[1px]"></div>
+
+</div>
+
+<div class="flex justify-between font-label-technical text-label-technical text-on-surface-variant">
+
+<span>GR -6dB</span>
+
+<span>4:1</span>
+
+</div>
+
+</div>
+
+<!-- CELL 4: TAPE LOOPER / SPOOLS -->
+
+<div class="bg-[#190c04] p-1.5 rounded flex flex-col justify-between h-24">
+
+<div class="flex items-center justify-between font-label-technical text-label-technical text-primary">
+
+<span class="font-bold">TAPE</span>
+
+<span>CUE</span>
+
+</div>
+
+<!-- Cassette spools icon homage -->
+
+<div class="flex items-center justify-center gap-1.5 my-auto">
+
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-on-primary font-bold text-[9px] animate-spin" style="animation-duration: 4s;">
+
+                *
+
+              </div>
+
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-on-primary font-bold text-[9px] animate-spin" style="animation-duration: 4s;">
+
+                *
+
+              </div>
+
+</div>
+
+<div class="flex justify-between font-label-technical text-label-technical text-primary">
+
+<span>WARM</span>
+
+<span>15ips</span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Microphone Hardware Interface Selector & Potentiometers -->
+<div class="flex flex-col gap-2 pt-1">
+  <!-- Mic Selector Dropdown -->
+  <div class="bg-surface-container-lowest p-2 rounded flex flex-col gap-1 border border-outline/20">
+    <div class="flex items-center justify-between font-label-technical text-label-technical">
+      <span class="text-primary font-bold flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">mic</span>
+        MIC INTERFACE (ASIO / USB)
+      </span>
+      <span class="text-secondary font-mono">48 kHz 24-BIT</span>
+    </div>
+    <select id="mic-device-select" class="w-full bg-[#140b05] text-on-surface text-label-technical rounded px-2 py-1.5 border border-outline/30 outline-none cursor-pointer">
+      <option value="default">Cargando micrófonos del sistema...</option>
+    </select>
+  </div>
+
+  <!-- Potentiometer Sliders -->
+  <div class="grid grid-cols-2 gap-2">
+    <!-- Lip Sync Delay -->
+    <div class="bg-surface-container-lowest p-2 rounded flex flex-col gap-1.5 border border-outline/20">
+      <div class="flex items-center justify-between">
+        <span class="font-title-sm text-title-sm text-on-surface">LIP SYNC DELAY</span>
+        <span id="delay-val" class="font-label-technical text-label-technical text-primary font-bold">+85 ms</span>
+      </div>
+      <input type="range" id="delay-slider" min="0" max="300" step="5" value="85" class="w-full h-1.5 bg-[#140b05] rounded-lg appearance-none cursor-pointer accent-[#ff6200]">
+      <span class="font-label-technical text-label-technical text-on-surface-variant flex justify-between">
+        <span>0ms</span><span>COMPENSACIÓN LIP-SYNC</span><span>300ms</span>
+      </span>
+    </div>
+
+    <!-- Monitor Output / Gain -->
+    <div class="bg-surface-container-lowest p-2 rounded flex flex-col gap-1.5 border border-outline/20">
+      <div class="flex items-center justify-between">
+        <span class="font-title-sm text-title-sm text-on-surface">MONITOR HP</span>
+        <span id="headphone-val" class="font-label-technical text-label-technical text-secondary font-bold">80%</span>
+      </div>
+      <input type="range" id="headphone-slider" min="0" max="100" value="80" class="w-full h-1.5 bg-[#140b05] rounded-lg appearance-none cursor-pointer accent-[#ffb68b]">
+      <span class="font-label-technical text-label-technical text-on-surface-variant flex justify-between">
+        <span id="cue-mute-toggle" onclick="toggleCueMute()" class="text-secondary font-bold cursor-pointer hover:underline">MUTE [H]</span><span>AURICULARES</span><span>100%</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Hardware Audio DSP Toggles -->
+<div class="grid grid-cols-4 gap-1.5 font-label-technical text-label-technical">
+  <button id="comp-toggle-btn" onclick="toggleAudioCompressor()" class="bg-primary-container text-on-primary-container font-bold py-1.5 rounded uppercase tracking-wider shadow cursor-pointer transition-all">COMP ON</button>
+  <button id="lowcut-toggle-btn" onclick="toggleLowCutFilter()" class="bg-primary-container text-on-primary-container font-bold py-1.5 rounded uppercase tracking-wider shadow cursor-pointer transition-all">LOW-CUT 80</button>
+  <button id="tape-toggle-btn" onclick="toggleTapeWarmth()" class="bg-surface-container-high text-secondary hover:bg-secondary hover:text-on-secondary py-1.5 rounded uppercase tracking-wider cursor-pointer transition-all">TAPE WARM</button>
+  <button id="mute-all-btn" onclick="toggleMasterMute()" class="bg-surface-container-highest text-error hover:bg-error hover:text-white py-1.5 rounded uppercase tracking-wider font-bold cursor-pointer transition-all">MUTE ALL [M]</button>
+</div>
+
+</div>
+
+</section>
+
+</div>
+
+<!-- BOTTOM DOCK: TACTILE MECHANICAL SWITCHER CONSOLE (VINTAGE SYNTH KEYS) -->
+
+<section class="w-full px-margin pb-space-lg pt-space-xs">
+
+<div class="w-full bg-surface-container-low rounded-xl p-space-md shadow-2xl flex flex-col gap-space-md">
+
+<!-- Console Header Metadata -->
+
+<div class="flex items-center justify-between pb-1">
+
+<div class="flex items-center gap-space-md">
+
+<span class="font-headline-md text-headline-md uppercase tracking-tight text-primary">HARDWARE TAKEOVER // BUS 01</span>
+
+<span class="font-label-technical text-label-technical text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">KEYBINDINGS: [1], [2], [3], [SPACE], [M]</span>
+
+</div>
+
+<div class="flex items-center gap-space-lg font-label-technical text-label-technical text-on-surface-variant">
+
+<span>T-BAR ENGAGED: <strong class="text-primary font-mono">0.00% (STABLE)</strong></span>
+
+<button id="emergency-black-btn" onclick="toggleEmergencyBlack()" title="Corte instantáneo a negro [B]" class="bg-surface-container-high hover:bg-error hover:text-white px-2.5 py-0.5 rounded font-label-technical text-label-technical text-on-surface cursor-pointer transition-colors font-bold">BLACK OUT [B]</button>
+
+</div>
+
+</div>
+
+<!-- Keycap Control Deck Grid -->
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center">
+
+<!-- DIRECT PROGRAM SELECTOR KEYCAPS (6 COLS) -->
+<div class="lg:col-span-6 grid grid-cols-3 gap-space-sm">
+  <!-- Key 1: CAM 1 [HOST] -->
+  <button id="key-cam-1" data-cam="1" class="switch-btn key-active p-3 rounded-lg flex flex-col items-center justify-center gap-1 shadow-lg transform active:scale-95 transition-all text-left cursor-pointer">
+    <div class="w-full flex items-center justify-between">
+      <span class="font-label-technical text-label-technical uppercase tracking-widest font-bold">KEY [ 1 ]</span>
+      <span class="w-2.5 h-2.5 rounded-full bg-surface-container-lowest animate-pulse"></span>
+    </div>
+    <span class="font-headline-lg text-headline-lg tracking-tight uppercase font-bold mt-1">CAM 01</span>
+    <span class="font-label-technical text-label-technical tracking-wider font-semibold opacity-90">LIVE ON-AIR</span>
+  </button>
+
+  <!-- Key 2: CAM 2 [GUEST] -->
+  <button id="key-cam-2" data-cam="2" class="switch-btn bg-surface-container-high hover:bg-secondary-container hover:text-on-secondary-container text-on-surface p-3 rounded-lg flex flex-col items-center justify-center gap-1 shadow transform active:scale-95 transition-all text-left cursor-pointer">
+    <div class="w-full flex items-center justify-between">
+      <span class="font-label-technical text-label-technical uppercase tracking-widest text-on-surface-variant font-bold">KEY [ 2 ]</span>
+      <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+    </div>
+    <span class="font-headline-lg text-headline-lg tracking-tight uppercase font-bold mt-1">CAM 02</span>
+    <span class="font-label-technical text-label-technical tracking-wider text-secondary font-semibold">PREVIEW ARMED</span>
+  </button>
+
+  <!-- Key 3: CAM 3 [WIDE] -->
+  <button id="key-cam-3" data-cam="3" class="switch-btn bg-surface-container-high hover:bg-surface-container-highest text-on-surface p-3 rounded-lg flex flex-col items-center justify-center gap-1 shadow transform active:scale-95 transition-all text-left cursor-pointer">
+    <div class="w-full flex items-center justify-between">
+      <span class="font-label-technical text-label-technical uppercase tracking-widest text-on-surface-variant font-bold">KEY [ 3 ]</span>
+      <span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+    </div>
+    <span class="font-headline-lg text-headline-lg tracking-tight uppercase font-bold mt-1">CAM 03</span>
+    <span class="font-label-technical text-label-technical tracking-wider text-on-surface-variant">WIDE STAGE</span>
+  </button>
+</div>
+
+<!-- TRANSITION BUS & MECHANICAL T-BAR (4 COLS) -->
+<div class="lg:col-span-4 bg-surface-container-lowest p-space-sm rounded-lg flex flex-col gap-2 border border-outline/20">
+  <div class="flex items-center justify-between font-label-technical text-label-technical text-on-surface-variant">
+    <span>TRANSITION ENGINE</span>
+    <span class="text-primary font-bold">RATE: 300 MS</span>
+  </div>
+  <!-- Transition Action Buttons -->
+  <div class="grid grid-cols-3 gap-1 font-label-technical text-label-technical">
+    <button id="trans-cut" class="bg-primary text-on-primary py-2 rounded font-bold uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow">HARD CUT</button>
+    <button id="trans-fade" class="bg-surface-container-high text-on-surface py-2 rounded uppercase tracking-wider hover:bg-surface-container-highest transition-all cursor-pointer">MIX 300ms</button>
+    <button id="dip-black-btn" onclick="triggerDipToBlack()" title="Fundido a negro y apertura [D]" class="bg-surface-container-high text-on-surface py-2 rounded uppercase tracking-wider hover:bg-surface-container-highest transition-all cursor-pointer">DIP BLACK [D]</button>
+  </div>
+  <!-- Tactile Pixel T-Bar Slider -->
+  <div class="relative w-full flex items-center gap-2 pt-1">
+    <span class="font-label-technical text-label-technical text-primary font-bold">PGM</span>
+    <div id="tbar-track" class="flex-1 h-5 bg-[#0e0703] border border-outline/30 rounded relative overflow-hidden flex items-center px-1 cursor-ew-resize">
+      <div id="tbar-fill" class="absolute left-0 top-0 bottom-0 w-0 bg-primary/30 pointer-events-none transition-none"></div>
+      <input type="range" id="tbar-slider" min="0" max="100" value="0" class="w-full h-full opacity-0 absolute inset-0 cursor-ew-resize z-10" />
+      <div id="tbar-handle" class="w-6 h-4 bg-primary text-on-primary rounded-[2px] flex items-center justify-center font-bold text-[9px] shadow pointer-events-none absolute left-0 transition-none">
+        |||
+      </div>
+    </div>
+    <span class="font-label-technical text-label-technical text-secondary font-bold">PVW</span>
+  </div>
+</div>
+
+<!-- DEDICATED UTILITY MACRO KEYS (2 COLS) -->
+<div class="lg:col-span-2 grid grid-cols-2 lg:grid-cols-1 gap-1.5 font-label-technical text-label-technical">
+  <button id="auto-mix-btn" onclick="switchToCamera(activeCam === 3 ? 1 : 3, 'fade')" class="bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface py-2.5 px-3 rounded flex items-center justify-between transition-colors shadow cursor-pointer">
+    <span class="font-bold">AUTO MIX</span>
+    <span class="text-outline-variant font-mono">[SPACE]</span>
+  </button>
+  <button id="rec-flag-btn" onclick="addMarkerFlag()" title="Marcar momento clave para Shorts/Reels [R]" class="bg-surface-container-high hover:bg-secondary hover:text-on-secondary text-on-surface py-2.5 px-3 rounded flex items-center justify-between transition-colors shadow cursor-pointer">
+    <span class="font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">flag</span> REC FLAG</span>
+    <span class="text-outline-variant font-mono">[R]</span>
+  </button>
+  <button id="tap-sync-btn" onclick="cycleSyncPreset()" class="bg-surface-container-high hover:bg-tertiary hover:text-on-tertiary text-on-surface py-2.5 px-3 rounded flex items-center justify-between transition-colors shadow cursor-pointer">
+    <span class="font-bold">TAP SYNC</span>
+    <span class="text-outline-variant font-mono">[T]</span>
+  </button>
+</div>
+</div>
+
+<!-- FOOTER TELEMETRY & CHASSIS STATUS STRIP -->
+
+<div class="w-full flex items-center justify-between pt-1 font-label-technical text-label-technical text-on-surface-variant">
+
+<div class="flex items-center gap-space-md">
+
+<span>NDI 6.0: LOCKED (3 OF 3 ACTIVE)</span>
+
+<span>DROPPED FRAMES: <strong class="text-primary font-bold">0 (0.000%)</strong></span>
+
+<span>AUDIO ENGINE: ASIO LOW-LATENCY 96kHz</span>
+
+</div>
+
+<div class="flex items-center gap-space-sm">
+
+<span>TX//OP-6 HARDWARE FIRMWARE 2.4.1</span>
+
+<span class="text-primary font-bold uppercase">● OPERATIONAL STABLE</span>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+</div></main><footer class="w-full bg-surface-container-lowest py-space-xs shadow-[0_-1px_8px_rgba(0,0,0,0.3)]"><div class="w-full px-gutter flex items-center justify-between font-label-technical text-label-technical text-on-surface-variant"><span>CHASSIS::TX6-WORKSTATION-REV2 // BUFFER: 128SMPL @ 96KHZ 32BIT-FLOAT</span><div class="flex items-center gap-space-md"><span>NDI: LOCKED</span><span>SYNC: GENLOCK-OK</span><span>FPS: 59.94 FIXED</span></div></div></footer>
+<!-- MODAL DE CONEXIÓN QR PARA CÁMARAS MÓVILES -->
+<!-- MODAL DE CONEXIÓN QR PARA CÁMARAS MÓVILES -->
+<div id="qr-modal" style="display: none !important;" onclick="if(event.target === this) closeQrModal()" class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md items-center justify-center p-4">
+  <div class="bg-surface-container-low border border-outline/30 rounded-2xl max-w-4xl w-full p-6 shadow-2xl flex flex-col gap-5" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between border-b border-outline/20 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-2xl">qr_code_2</span>
+        <h2 class="font-headline-md text-headline-md text-primary uppercase tracking-tight">CONECTAR CÁMARAS MÓVILES (PWA)</h2>
+      </div>
+      <button id="qr-close-btn" onclick="closeQrModal()" class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-error hover:text-white flex items-center justify-center font-bold text-lg cursor-pointer transition-colors">&times;</button>
+    </div>
+
+    <p class="font-body-sm text-body-sm text-on-surface-variant">
+      Asegúrate de que tus teléfonos estén conectados a la red Wi-Fi de 5 GHz o Zona con Cobertura del Director. Escanea el código QR correspondiente con la cámara del teléfono o abre el enlace en Google Chrome / Safari.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- CÁMARA 1 (HOST) -->
+      <div class="bg-surface-container-lowest p-4 rounded-xl border border-primary/40 flex flex-col items-center text-center gap-3">
+        <div class="flex items-center justify-between w-full">
+          <span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded font-label-technical text-label-technical font-bold">CAM 01</span>
+          <span class="font-title-sm text-title-sm text-primary font-bold">HOST TIGHT</span>
+        </div>
+        <div class="w-48 h-48 bg-white p-2 rounded-lg flex items-center justify-center shadow">
+          <img id="qr-img-1" src="" alt="QR Cam 1" class="w-full h-full object-contain" />
+        </div>
+        <div class="font-label-technical text-label-technical text-on-surface-variant truncate w-full" id="qr-url-1">https://...</div>
+        <div id="qr-status-1" class="font-label-technical text-label-technical text-outline-variant font-semibold">⚪ Esperando escaneo...</div>
+        <button onclick="copyCameraLink(1)" class="w-full bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface font-label-technical text-label-technical py-1 rounded uppercase tracking-wider transition-colors flex items-center justify-center gap-1 cursor-pointer shadow">
+          <span class="material-symbols-outlined text-xs">content_copy</span> Copiar Enlace
+        </button>
+      </div>
+
+      <!-- CÁMARA 2 (INVITADO) -->
+      <div class="bg-surface-container-lowest p-4 rounded-xl border border-secondary/40 flex flex-col items-center text-center gap-3">
+        <div class="flex items-center justify-between w-full">
+          <span class="bg-secondary-container text-on-secondary px-2 py-0.5 rounded font-label-technical text-label-technical font-bold">CAM 02</span>
+          <span class="font-title-sm text-title-sm text-secondary font-bold">GUEST MED</span>
+        </div>
+        <div class="w-48 h-48 bg-white p-2 rounded-lg flex items-center justify-center shadow">
+          <img id="qr-img-2" src="" alt="QR Cam 2" class="w-full h-full object-contain" />
+        </div>
+        <div class="font-label-technical text-label-technical text-on-surface-variant truncate w-full" id="qr-url-2">https://...</div>
+        <div id="qr-status-2" class="font-label-technical text-label-technical text-outline-variant font-semibold">⚪ Esperando escaneo...</div>
+        <button onclick="copyCameraLink(2)" class="w-full bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface font-label-technical text-label-technical py-1 rounded uppercase tracking-wider transition-colors flex items-center justify-center gap-1 cursor-pointer shadow">
+          <span class="material-symbols-outlined text-xs">content_copy</span> Copiar Enlace
+        </button>
+      </div>
+
+      <!-- CÁMARA 3 (GENERAL) -->
+      <div class="bg-surface-container-lowest p-4 rounded-xl border border-tertiary/40 flex flex-col items-center text-center gap-3">
+        <div class="flex items-center justify-between w-full">
+          <span class="bg-surface-container-high text-tertiary px-2 py-0.5 rounded font-label-technical text-label-technical font-bold">CAM 03</span>
+          <span class="font-title-sm text-title-sm text-tertiary font-bold">WIDE STAGE</span>
+        </div>
+        <div class="w-48 h-48 bg-white p-2 rounded-lg flex items-center justify-center shadow">
+          <img id="qr-img-3" src="" alt="QR Cam 3" class="w-full h-full object-contain" />
+        </div>
+        <div class="font-label-technical text-label-technical text-on-surface-variant truncate w-full" id="qr-url-3">https://...</div>
+        <div id="qr-status-3" class="font-label-technical text-label-technical text-outline-variant font-semibold">⚪ Esperando escaneo...</div>
+        <button onclick="copyCameraLink(3)" class="w-full bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface font-label-technical text-label-technical py-1 rounded uppercase tracking-wider transition-colors flex items-center justify-center gap-1 cursor-pointer shadow">
+          <span class="material-symbols-outlined text-xs">content_copy</span> Copiar Enlace
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/director/app.js"></script>
+
+
+<!-- TOAST NOTIFICACIÓN FLOTANTE PARA MARCADORES Y ACCIONES -->
+<div id="toast-marker" class="fixed top-20 right-6 z-50 bg-primary-container text-on-primary-container px-4 py-2.5 rounded-lg shadow-2xl font-title-sm text-title-sm font-bold flex items-center gap-2 transform -translate-y-4 opacity-0 transition-all duration-300 pointer-events-none">
+  <span class="material-symbols-outlined">flag</span>
+  <span id="toast-marker-text">MARCADOR CREADO</span>
+</div>
+
+</body></html>

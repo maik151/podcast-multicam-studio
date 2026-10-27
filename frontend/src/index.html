@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es" class="h-full bg-[#0a0c10] text-[#e1e4ea] select-none dark">
+<head>
+  <meta charset="utf-8">
+  <title>TX-STUDIO // PROFESSIONAL BROADCAST SUITE</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="tx_studio_Isotipo_naranja.svg">
+  <link rel="alternate icon" type="image/png" href="tx_studio_Isotipo_naranja.png">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="tx_studio_Isotipo_naranja.png">
+
+  <!-- Technical Monospace & Display Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Share+Tech+Mono&family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config" data-purpose="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            tx: {
+              orange: '#ff6200',
+              'orange-bright': '#ff7a1a',
+              'orange-dark': '#b84200',
+              black: '#090a0d',
+              surface: '#11141a',
+              panel: '#151922',
+              border: '#262c38',
+              borderLight: '#353e4f',
+              green: '#22c55e',
+              red: '#ef4444'
+            },
+            "surface-container-high": "#282a2e",
+            "surface-container-low": "#1a1c20",
+            "surface-container-lowest": "#0c0e12",
+            "surface-container": "#1e2024",
+            "primary-container": "#ff6200",
+            "primary": "#ffb597",
+            "secondary": "#ffb68b",
+            "error": "#ef4444",
+            "on-surface": "#e2e2e8",
+            "on-surface-variant": "#8b949e",
+            "outline": "#262c38"
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'monospace'],
+            tech: ['"Chakra Petch"', 'sans-serif'],
+            display: ['"Share Tech Mono"', 'monospace'],
+            pixel: ['"Silkscreen"', 'monospace'],
+            "headline-md": ['"Chakra Petch"', 'sans-serif'],
+            "label-technical": ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style data-purpose="custom-broadcast-styles">
+    /* Custom scanline and broadcast monitor styling */
+    .crt-grid {
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 98, 0, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 98, 0, 0.04) 1px, transparent 1px);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0d0f14;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #2b3342;
+      border-radius: 2px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #ff6200;
+    }
+    /* Discrete LED segments */
+    .led-bar {
+      box-shadow: inset 0 0 4px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col font-mono text-[11px] leading-tight bg-[#090b0e] text-[#c9d1d9] antialiased select-none">
+  <app-root class="h-full w-full flex flex-col overflow-hidden"></app-root>
+</body>
+</html>

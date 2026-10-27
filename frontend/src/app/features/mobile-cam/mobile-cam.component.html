@@ -1,0 +1,117 @@
+<!-- PWA CAMERA CLIENT FOR SMARTPHONE (iOS / Android) -->
+<div class="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black select-none"
+  [ngClass]="{
+    'border-[8px] border-primary-container': isProgram(),
+    'border-[6px] border-secondary': isPreview() && !isProgram(),
+    'border-2 border-outline/20': !isProgram() && !isPreview()
+  }">
+
+  <!-- Background Camera Preview Video -->
+  <video #cameraVideo autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover z-0"></video>
+
+  <!-- TOP OVERLAY: Tally State & Battery -->
+  <div class="relative z-10 w-full p-4 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent font-mono">
+    <div class="flex items-center gap-2">
+      <img src="/tx_studio_Isotipo_naranja.svg" class="w-7 h-7 object-contain drop-shadow" alt="TX Logo">
+      <span class="w-3.5 h-3.5 rounded-full"
+        [ngClass]="isProgram() ? 'bg-primary-container animate-ping' : (isConnected() ? 'bg-emerald-500' : 'bg-rose-500')"></span>
+      <span class="text-white font-bold text-lg">CAM 0{{ camId() }}</span>
+      <span class="text-xs px-2 py-0.5 rounded font-bold"
+        [ngClass]="isProgram() ? 'bg-primary-container text-black font-extrabold' : 'bg-black/60 text-white border border-white/20'">
+        {{ isProgram() ? 'EN VIVO (ON AIR)' : (isPreview() ? 'PREVISTO (PREVIEW)' : 'STANDBY') }}
+      </span>
+    </div>
+
+    <!-- Battery, OLED & Flash Toggles -->
+    <div class="flex items-center gap-2">
+      <!-- OLED Saver Button -->
+      <button (click)="toggleOled()" id="btn-oled" title="Modo Ahorro Térmico OLED" class="flex items-center gap-1 bg-black/60 px-2.5 py-1.5 rounded-full border border-white/20 text-white cursor-pointer active:scale-95 text-xs font-mono">
+        <span class="material-symbols-outlined text-sm">dark_mode</span>
+        <span class="font-bold">OLED</span>
+      </button>
+
+      <!-- Torch / Flash Button -->
+      <button (click)="toggleTorch()" id="btn-torch" title="Linterna de Apoyo (Fill Torch)"
+              class="p-2 rounded-full border border-white/20 cursor-pointer active:scale-95 transition-all"
+              [ngClass]="isTorchOn() ? 'bg-amber-400 text-black shadow-lg shadow-amber-500/50 scale-105' : 'bg-black/60 text-white'">
+        <span class="material-symbols-outlined text-lg">{{ isTorchOn() ? 'flashlight_on' : 'flashlight_off' }}</span>
+      </button>
+      <span class="text-sm text-white font-bold bg-black/60 px-2.5 py-1 rounded-full border border-white/20">
+        {{ batteryLevel() }}% {{ isCharging() ? '⚡' : '🔋' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- CENTER TALLY INDICATOR WATERMARK -->
+  <div *ngIf="isProgram()" class="relative z-10 self-center bg-primary-container text-black font-extrabold text-2xl px-6 py-2 rounded-xl shadow-2xl tracking-widest animate-pulse border-2 border-white">
+    ● ON AIR (TRANSMITIENDO EN VIVO)
+  </div>
+
+  <!-- MULTI-LENS OPTICAL SELECTOR (0.5x Ultra-Wide, 1x Main, 2x Tele) -->
+  <div class="relative z-10 self-center mb-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 flex items-center gap-2 font-mono text-xs select-none shadow-xl">
+    <button *ngFor="let z of availableZooms()"
+            (click)="setZoom(z)"
+            [id]="'btn-zoom-' + (z === 0.5 ? '05' : (z === 1.0 ? '10' : '20'))"
+            class="px-2.5 py-1 rounded-full font-bold transition-all cursor-pointer active:scale-95 text-xs"
+            [ngClass]="currentZoom() === z ? 'bg-primary-container text-black font-extrabold shadow-md scale-105' : 'text-white/80 hover:text-white hover:bg-white/10'">
+      {{ z }}x
+    </button>
+  </div>
+
+  <!-- BOTTOM OVERLAY: Connection Status -->
+  <div class="relative z-10 w-full p-4 bg-gradient-to-t from-black/90 to-transparent flex items-center justify-between text-xs text-white/90 font-mono">
+    <span>ESTADO: <strong>{{ statusText() }}</strong></span>
+    <span class="text-emerald-400 font-bold">1080p60 WEBRTC</span>
+  </div>
+
+  <!-- PANTALLA DE AHORRO TÉRMICO OLED (#oled-view) -->
+  <div *ngIf="isOledActive()"
+       id="oled-view"
+       (click)="exitOledSaver()"
+       class="absolute inset-0 z-50 w-full h-full bg-[#000000] flex flex-col justify-between p-4 cursor-pointer select-none transition-opacity duration-300"
+       [ngClass]="{
+         'border-[6px] border-[#ff3b30]': isProgram(),
+         'border-[4px] border-[#ffb68b]': isPreview() && !isProgram(),
+         'border-2 border-[#1a1c20]': !isProgram() && !isPreview()
+       }">
+
+    <!-- Top OLED Status Bar -->
+    <div class="w-full flex items-center justify-between text-xs font-mono">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full"
+              [ngClass]="isProgram() ? 'bg-[#ff3b30] animate-ping' : (isPreview() ? 'bg-[#ffb68b]' : 'bg-neutral-700')"></span>
+        <span class="text-neutral-400 font-bold tracking-wider">CAM 0{{ camId() }}</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold"
+              [ngClass]="isProgram() ? 'bg-[#ff3b30] text-white' : (isPreview() ? 'bg-[#ffb68b] text-black' : 'bg-neutral-800 text-neutral-400')">
+          {{ isProgram() ? '● ON AIR' : (isPreview() ? 'PREVIEW' : 'STANDBY') }}
+        </span>
+      </div>
+
+      <!-- Battery Readout -->
+      <div class="flex items-center gap-1.5 text-neutral-400 font-bold">
+        <span>{{ batteryLevel() }}% {{ isCharging() ? '⚡' : '🔋' }}</span>
+      </div>
+    </div>
+
+    <!-- Center Minimum Pixel Footprint -->
+    <div class="self-center flex flex-col items-center gap-2 text-center">
+      <img src="/tx_studio_Isotipo_gris.svg" class="w-10 h-10 object-contain opacity-30 select-none pointer-events-none" alt="TX Logo">
+      <div class="font-mono text-3xl font-extrabold tracking-widest"
+           [ngClass]="isProgram() ? 'text-[#ff3b30] animate-pulse' : (isPreview() ? 'text-[#ffb68b]' : 'text-neutral-600')">
+        {{ isProgram() ? '● AL AIRE' : (isPreview() ? 'EN PREVIO' : 'DISPONIBLE') }}
+      </div>
+      <div class="font-mono text-[10px] text-neutral-500 uppercase tracking-widest">
+        OLED LOW-HEAT SAVER // PIXEL DRAW &lt; 0.25W
+      </div>
+    </div>
+
+    <!-- Bottom Tap to Restore Pill -->
+    <div class="w-full flex flex-col items-center gap-1">
+      <div class="bg-neutral-900 border border-neutral-800 text-neutral-400 font-mono text-[10px] px-3 py-1 rounded-full flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-xs">touch_app</span>
+        <span>TOCA EN CUALQUIER LUGAR PARA REGRESAR</span>
+      </div>
+    </div>
+  </div>
+
+</div>

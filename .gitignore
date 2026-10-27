@@ -1,0 +1,26 @@
+# Python & Virtualenv
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller & MSI Build Artifacts (Subir mediante GitHub Releases)
+build/
+dist/
+
+# Node / Angular Dependencies
+frontend/node_modules/
+frontend/.angular/
+
+# Local Runtime Data (Certificados auto-generados, Grabaciones y Logs locales)
+certs/*.pem
+certs/*.crt
+Grabaciones/
+Logs/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

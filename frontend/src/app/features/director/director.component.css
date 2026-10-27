@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #090b0e;
+  color: #c9d1d9;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  line-height: 1.25;
+  user-select: none;
+}
