@@ -61,6 +61,8 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   private localStream: MediaStream | null = null;
   private ws: WebSocket | null = null;
   private pc: RTCPeerConnection | null = null;
+  private pendingCandidates: RTCIceCandidateInit[] = [];
+  private renegotiateTimeout: number | null = null;
   private batteryInterval: number | null = null;
   private reconnectTimer: number | null = null;
   private noticeTimeout: number | null = null;
@@ -69,11 +71,44 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     iceServers: []
   };
 
+  @HostListener('document:visibilitychange')
+  public onVisibilityChange(): void {
+    if (document.visibilityState === 'visible' && !this.isManuallyStopped()) {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        this.connectWs();
+      }
+      if (this.localStream) {
+        const track = this.localStream.getVideoTracks()[0];
+        if (!track || track.readyState !== 'live') {
+          this.startCamera();
+        }
+      }
+      if (!this.pc || this.pc.connectionState !== 'connected') {
+        this.requestRenegotiation();
+      }
+    }
+  }
+
   @HostListener('window:beforeinstallprompt', ['$event'])
   public onBeforeInstallPrompt(e: Event): void {
     e.preventDefault();
     this.deferredPwaPrompt = e;
     this.canInstallPwa.set(true);
+  }
+
+  public requestRenegotiation(): void {
+    if (this.isManuallyStopped()) return;
+    if (this.renegotiateTimeout) return;
+    this.renegotiateTimeout = window.setTimeout(() => {
+      this.renegotiateTimeout = null;
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        console.log('[MobileCam] Solicitando oferta WebRTC al Director...');
+        this.sendWs({
+          type: 'ready_for_offer',
+          camId: this.camId()
+        });
+      }
+    }, 800);
   }
 
   async ngOnInit(): Promise<void> {
@@ -209,33 +244,20 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     }
 
     const fallbacks: { constraints: MediaStreamConstraints; isFallback: boolean }[] = [
-      // 1. Intento exacto / ideal de la resolución y FPS pedidos por el usuario
+      // 1. Solicitud adaptada a la orientación y capacidades del sensor móvil
       {
         isFallback: false,
         constraints: {
           video: {
             facingMode: { ideal: 'environment' },
-            width: { exact: target.width },
-            height: { exact: target.height },
-            frameRate: { exact: target.fps }
-          },
-          audio: false
-        }
-      },
-      // 2. Misma resolución pero con FPS flexible (ej. si pidió 60fps pero el sensor solo da 30fps en esa resolución)
-      {
-        isFallback: true,
-        constraints: {
-          video: {
-            facingMode: { ideal: 'environment' },
             width: { ideal: target.width },
             height: { ideal: target.height },
-            frameRate: { ideal: target.fps }
+            frameRate: { ideal: target.fps, max: target.fps }
           },
           audio: false
         }
       },
-      // 3. Fallback seguro 1080p @ 30 FPS
+      // 2. Fallback seguro 1080p @ 30 FPS
       {
         isFallback: true,
         constraints: {
@@ -248,7 +270,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
           audio: false
         }
       },
-      // 4. Fallback seguro 720p @ 30 FPS
+      // 3. Fallback seguro 720p @ 30 FPS
       {
         isFallback: true,
         constraints: {
@@ -261,7 +283,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
           audio: false
         }
       },
-      // 5. Fallback universal del sensor
+      // 4. Fallback universal del sensor
       {
         isFallback: true,
         constraints: {
@@ -417,26 +439,37 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         }
       };
 
-      this.pc.onconnectionstatechange = () => {
-        if (this.pc?.connectionState === 'connected') {
-          this.statusText.set(`EN VIVO // ${this.actualResolutionText()}`);
+      this.pc.oniceconnectionstatechange = () => {
+        if (this.pc?.iceConnectionState === 'failed' || this.pc?.iceConnectionState === 'disconnected') {
+          console.warn('[MobileCam] ICE desconectado. Solicitando recuperación...');
+          this.requestRenegotiation();
         }
       };
 
-      await this.pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      this.pc.onconnectionstatechange = () => {
+        if (this.pc?.connectionState === 'connected') {
+          this.statusText.set(`EN VIVO // ${this.actualResolutionText()}`);
+        } else if (this.pc?.connectionState === 'failed' || this.pc?.connectionState === 'disconnected') {
+          console.warn('[MobileCam] WebRTC desconectado. Solicitando recuperación...');
+          this.requestRenegotiation();
+        }
+      };
 
       if (this.localStream) {
-        const transceivers = this.pc.getTransceivers();
-        const videoTrack = this.localStream.getVideoTracks()[0];
-        if (videoTrack && transceivers.length > 0 && transceivers[0].sender) {
-          await transceivers[0].sender.replaceTrack(videoTrack);
-          transceivers[0].direction = 'sendonly';
-        } else {
-          this.localStream.getTracks().forEach(track => {
-            this.pc!.addTrack(track, this.localStream!);
-          });
-        }
+        this.localStream.getTracks().forEach(track => {
+          this.pc!.addTrack(track, this.localStream!);
+        });
       }
+
+      await this.pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+
+      // Vaciar candidatos ICE acumulados mientras se configuraba la oferta
+      for (const cand of this.pendingCandidates) {
+        try {
+          await this.pc.addIceCandidate(new RTCIceCandidate(cand));
+        } catch {}
+      }
+      this.pendingCandidates = [];
 
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
@@ -447,8 +480,12 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         sdp: answer
       });
     } else if ((msg.type === 'ice' || msg.type === 'candidate') && msg.candidate) {
-      if (this.pc && this.pc.remoteDescription) {
-        await this.pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+      if (this.pc && this.pc.remoteDescription && this.pc.remoteDescription.type) {
+        try {
+          await this.pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+        } catch {}
+      } else {
+        this.pendingCandidates.push(msg.candidate);
       }
     } else if (msg.type === 'tally') {
       if (msg.activeCam !== undefined) {
@@ -570,13 +607,15 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
   /**
    * Lee únicamente datos reales de la Battery Status API del dispositivo.
-   * Si el navegador (ej. iOS Safari) no expone la API, NO inventa un 100% falso.
+   * Detecta y anula valores falseados por escudos de privacidad (Brave Shields / anti-fingerprinting).
    */
   private monitorBattery(): void {
     const nav = navigator as unknown as {
       getBattery?: () => Promise<{
         level: number;
         charging: boolean;
+        chargingTime?: number;
+        dischargingTime?: number;
         addEventListener: (t: string, fn: () => void) => void;
       }>;
     };
@@ -585,9 +624,21 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       nav.getBattery().then(batt => {
         const update = () => {
           if (typeof batt.level === 'number' && !isNaN(batt.level)) {
-            this.isBatterySupported.set(true);
-            this.batteryLevel.set(Math.round(batt.level * 100));
-            this.isCharging.set(Boolean(batt.charging));
+            // Protección contra escudos de privacidad (Brave Shields) que devuelven siempre 1.0 (100%) fijo
+            const isSpoofed = batt.level === 1.0 && batt.charging === true &&
+                              batt.dischargingTime === Infinity && batt.chargingTime === 0;
+            const isBrave = typeof (navigator as any).brave !== 'undefined' ||
+                            navigator.userAgent.toLowerCase().includes('brave');
+
+            if (isSpoofed && isBrave) {
+              // Brave enmascaró la batería por privacidad. No mostrar un 100% inventado.
+              this.isBatterySupported.set(false);
+              this.batteryLevel.set(null);
+            } else {
+              this.isBatterySupported.set(true);
+              this.batteryLevel.set(Math.round(batt.level * 100));
+              this.isCharging.set(Boolean(batt.charging));
+            }
             this.reportBattery();
           }
         };

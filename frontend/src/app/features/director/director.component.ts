@@ -595,14 +595,16 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
             videoElements[i] = domVid;
             if (stream && domVid.srcObject !== stream) {
               domVid.srcObject = stream;
-              domVid.play().catch(() => {});
-            } else if (stream && domVid.paused && domVid.readyState >= 2) {
+            }
+            if (stream && domVid.paused) {
               domVid.play().catch(() => {});
             }
           } else {
             const v = videoElements[i];
             if (stream && v.srcObject !== stream) {
               v.srcObject = stream;
+            }
+            if (stream && v.paused) {
               v.play().catch(() => {});
             }
           }
@@ -615,12 +617,19 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
           const liveVid = (document.getElementById(`iso-video-${camId}`) as HTMLVideoElement | null) || vid;
-          if (liveVid && liveVid.srcObject && liveVid.readyState >= 2 && liveVid.videoWidth > 0) {
+          const hasStream = liveVid && liveVid.srcObject;
+          const hasFrames = Boolean(hasStream && (liveVid.videoWidth > 0 || liveVid.readyState >= 2));
+
+          if (hasFrames) {
             if (liveVid.paused) {
               liveVid.play().catch(() => {});
             }
             ctx.drawImage(liveVid, 0, 0, width, height);
           } else {
+            // Si tiene stream pero aún está cargando el primer frame, intentar reproducir
+            if (hasStream && liveVid.paused) {
+              liveVid.play().catch(() => {});
+            }
             // Test Pattern Profesional Broadcast cuando no hay cámara conectada
             this.drawBroadcastTestPattern(ctx, width, height, camId);
           }

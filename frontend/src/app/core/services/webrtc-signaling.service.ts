@@ -211,6 +211,13 @@ export class WebRtcSignalingService {
       });
     };
 
+    pc.oniceconnectionstatechange = () => {
+      console.log(`[WebRtcService] ICE Cam 0${camId}:`, pc.iceConnectionState);
+      if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+        this.scheduleReconnect(camId);
+      }
+    };
+
     pc.onconnectionstatechange = () => {
       console.log(`[WebRtcService] Estado conexión Cam 0${camId}:`, pc.connectionState);
       if (pc.connectionState === 'connected') {
@@ -222,7 +229,7 @@ export class WebRtcSignalingService {
         this.ngZone.run(() => {
           this.updateCameraState(camId, { isConnected: true });
         });
-      } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed' || pc.connectionState === 'disconnected') {
         console.warn(`[WebRtcService] Conexión WebRTC Cam 0${camId} en estado ${pc.connectionState}`);
         if (pc.connectionState === 'failed') {
           this.reportWebRtcLog('ERROR', 'WEBRTC_P2P_FAILED', `Fallo de negociación ICE/DTLS con CAM 0${camId}`, {
@@ -234,10 +241,29 @@ export class WebRtcSignalingService {
             exception_reason: `RTCPeerConnection state=${pc.connectionState}, ice=${pc.iceConnectionState}`
           });
         }
+        if (pc.connectionState !== 'closed') {
+          this.scheduleReconnect(camId);
+        }
       }
     };
 
     return pc;
+  }
+
+  private reconnectTimers: { [camId: number]: number } = {};
+
+  private scheduleReconnect(camId: number): void {
+    if (this.reconnectTimers[camId]) {
+      clearTimeout(this.reconnectTimers[camId]);
+    }
+    this.reconnectTimers[camId] = window.setTimeout(async () => {
+      delete this.reconnectTimers[camId];
+      const cam = this.cameras().find(c => c.id === camId);
+      if (cam && this.ws && this.ws.readyState === WebSocket.OPEN) {
+        console.log(`[WebRtcService] Reconectando enlace WebRTC automáticamente para CAM 0${camId}...`);
+        await this.initiateCall(camId);
+      }
+    }, 1200);
   }
 
   private reportWebRtcLog(
