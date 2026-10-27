@@ -34,6 +34,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   public isBatterySupported = signal<boolean>(false);
   public isCharging = signal<boolean>(false);
 
+  public isMicEnabled = signal<boolean>(true);
   public isTorchOn = signal<boolean>(false);
   public isOledActive = signal<boolean>(false);
   public currentZoom = signal<number>(1.0);
@@ -243,6 +244,12 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       }
     }
 
+    const audioConstraints = this.isMicEnabled() ? {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    } : false;
+
     const fallbacks: { constraints: MediaStreamConstraints; isFallback: boolean }[] = [
       // 1. Solicitud adaptada a la orientación y capacidades del sensor móvil
       {
@@ -254,7 +261,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
             height: { ideal: target.height },
             frameRate: { ideal: target.fps, max: target.fps }
           },
-          audio: false
+          audio: audioConstraints
         }
       },
       // 2. Fallback seguro 1080p @ 30 FPS
@@ -267,7 +274,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
             height: { ideal: 1080 },
             frameRate: { ideal: 30 }
           },
-          audio: false
+          audio: audioConstraints
         }
       },
       // 3. Fallback seguro 720p @ 30 FPS
@@ -280,7 +287,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
             height: { ideal: 720 },
             frameRate: { ideal: 30 }
           },
-          audio: false
+          audio: audioConstraints
         }
       },
       // 4. Fallback universal del sensor
@@ -288,14 +295,14 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         isFallback: true,
         constraints: {
           video: { facingMode: 'environment' },
-          audio: false
+          audio: audioConstraints
         }
       },
       {
         isFallback: true,
         constraints: {
           video: true,
-          audio: false
+          audio: audioConstraints
         }
       }
     ];
@@ -536,6 +543,15 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   public exitOledSaver(): void {
     this.isOledActive.set(false);
     this.reportBattery();
+  }
+
+  public toggleMic(): void {
+    const next = !this.isMicEnabled();
+    this.isMicEnabled.set(next);
+    if (this.localStream) {
+      this.localStream.getAudioTracks().forEach(t => (t.enabled = next));
+    }
+    this.statusText.set(`Micrófono del celular: ${next ? 'ENCENDIDO' : 'SILENCIADO'}`);
   }
 
   public async toggleTorch(): Promise<void> {

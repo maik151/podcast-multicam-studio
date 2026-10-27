@@ -195,14 +195,20 @@ export class WebRtcSignalingService {
     };
 
     pc.ontrack = (e) => {
-      console.log(`[WebRtcService] 🎥 Track de video recibido de Cámara 0${camId}`);
-      this.reportWebRtcLog('INFO', 'WEBRTC_TRACK_RECEIVED', `Flujo RTP de video recibido desde CAM 0${camId}`, {
+      console.log(`[WebRtcService] 🎥 Track ${e.track.kind} recibido de Cámara 0${camId}`);
+      this.reportWebRtcLog('INFO', 'WEBRTC_TRACK_RECEIVED', `Flujo RTP ${e.track.kind} recibido desde CAM 0${camId}`, {
         camId,
         trackKind: e.track?.kind,
         trackState: e.track?.readyState
       });
-      const stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream([e.track]);
-      this.remoteStreams[camId] = stream;
+      let stream = this.remoteStreams[camId];
+      if (!stream) {
+        stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream();
+        this.remoteStreams[camId] = stream;
+      }
+      if (!stream.getTracks().includes(e.track)) {
+        stream.addTrack(e.track);
+      }
       this.ngZone.run(() => {
         this.updateCameraState(camId, {
           stream: stream,
@@ -213,8 +219,10 @@ export class WebRtcSignalingService {
 
     pc.oniceconnectionstatechange = () => {
       console.log(`[WebRtcService] ICE Cam 0${camId}:`, pc.iceConnectionState);
-      if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-        this.scheduleReconnect(camId);
+      if (pc.iceConnectionState === 'failed') {
+        this.scheduleReconnect(camId, 800);
+      } else if (pc.iceConnectionState === 'disconnected') {
+        this.scheduleReconnect(camId, 3500);
       }
     };
 
@@ -229,21 +237,19 @@ export class WebRtcSignalingService {
         this.ngZone.run(() => {
           this.updateCameraState(camId, { isConnected: true });
         });
-      } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed' || pc.connectionState === 'disconnected') {
-        console.warn(`[WebRtcService] Conexión WebRTC Cam 0${camId} en estado ${pc.connectionState}`);
-        if (pc.connectionState === 'failed') {
-          this.reportWebRtcLog('ERROR', 'WEBRTC_P2P_FAILED', `Fallo de negociación ICE/DTLS con CAM 0${camId}`, {
-            camId,
-            connectionState: pc.connectionState,
-            iceConnectionState: pc.iceConnectionState,
-            where_file: 'webrtc-signaling.service.ts',
-            where_function: 'onconnectionstatechange',
-            exception_reason: `RTCPeerConnection state=${pc.connectionState}, ice=${pc.iceConnectionState}`
-          });
-        }
-        if (pc.connectionState !== 'closed') {
-          this.scheduleReconnect(camId);
-        }
+      } else if (pc.connectionState === 'failed') {
+        this.reportWebRtcLog('ERROR', 'WEBRTC_P2P_FAILED', `Fallo de negociación ICE/DTLS con CAM 0${camId}`, {
+          camId,
+          connectionState: pc.connectionState,
+          iceConnectionState: pc.iceConnectionState,
+          where_file: 'webrtc-signaling.service.ts',
+          where_function: 'onconnectionstatechange',
+          exception_reason: `RTCPeerConnection state=${pc.connectionState}, ice=${pc.iceConnectionState}`
+        });
+        this.scheduleReconnect(camId, 800);
+      } else if (pc.connectionState === 'disconnected') {
+        // Red local Wi-Fi con jitter temporal; esperar 3.5s antes de forzar renegociación
+        this.scheduleReconnect(camId, 3500);
       }
     };
 
@@ -252,18 +258,19 @@ export class WebRtcSignalingService {
 
   private reconnectTimers: { [camId: number]: number } = {};
 
-  private scheduleReconnect(camId: number): void {
+  private scheduleReconnect(camId: number, delayMs: number = 1500): void {
     if (this.reconnectTimers[camId]) {
       clearTimeout(this.reconnectTimers[camId]);
     }
     this.reconnectTimers[camId] = window.setTimeout(async () => {
       delete this.reconnectTimers[camId];
       const cam = this.cameras().find(c => c.id === camId);
-      if (cam && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const pc = this.peerConnections[camId];
+      if (cam && pc && (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') && this.ws && this.ws.readyState === WebSocket.OPEN) {
         console.log(`[WebRtcService] Reconectando enlace WebRTC automáticamente para CAM 0${camId}...`);
         await this.initiateCall(camId);
       }
-    }, 1200);
+    }, delayMs);
   }
 
   private reportWebRtcLog(
@@ -291,6 +298,7 @@ export class WebRtcSignalingService {
     try {
       const pc = this.createPeerForCamera(camId);
       pc.addTransceiver('video', { direction: 'recvonly' });
+      pc.addTransceiver('audio', { direction: 'recvonly' });
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);

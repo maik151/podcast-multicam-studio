@@ -186,27 +186,64 @@ export class AudioDspService {
 
       const audioConstraints: MediaStreamConstraints = {
         audio: {
-          deviceId: deviceId !== 'default' ? { exact: deviceId } : undefined,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
+          deviceId: deviceId !== 'default' && !deviceId.startsWith('cam:') ? { exact: deviceId } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
         }
       };
 
       try {
-        this.micStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+        if (!deviceId.startsWith('cam:')) {
+          this.micStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+        }
       } catch {
         // Fallback al micrófono predeterminado si el deviceId exacto falla
-        this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true }
+        });
       }
 
-      this.micSourceNode = this.audioCtx.createMediaStreamSource(this.micStream);
-      this.micSourceNode.connect(this.lowCutNode!);
+      if (this.micStream) {
+        this.micSourceNode = this.audioCtx.createMediaStreamSource(this.micStream);
+        this.micSourceNode.connect(this.lowCutNode!);
+      }
 
       this.startVuMeterLoop();
       console.log('[AudioDspService] Cadena DSP calibrada activa a 48 kHz');
     } catch (err) {
       console.warn('[AudioDspService] Micrófono no disponible:', err);
+    }
+  }
+
+  /**
+   * Conmuta la fuente de audio en caliente entre micrófonos locales USB y el audio de celulares WebRTC.
+   */
+  public async switchAudioInput(
+    deviceId: string,
+    cameraStreamGetter?: (camId: number) => MediaStream | null
+  ): Promise<void> {
+    this.selectedDeviceId.set(deviceId);
+    if (deviceId.startsWith('cam:')) {
+      const camId = parseInt(deviceId.split(':')[1], 10);
+      if (this.micSourceNode) {
+        try { this.micSourceNode.disconnect(); } catch {}
+        this.micSourceNode = null;
+      }
+      if (this.micStream) {
+        this.micStream.getTracks().forEach(t => t.stop());
+        this.micStream = null;
+      }
+      const camStream = cameraStreamGetter ? cameraStreamGetter(camId) : null;
+      if (camStream && camStream.getAudioTracks().length > 0 && this.audioCtx && this.lowCutNode) {
+        this.micSourceNode = this.audioCtx.createMediaStreamSource(camStream);
+        this.micSourceNode.connect(this.lowCutNode);
+        console.log(`[AudioDspService] Entrada de audio ruteada a CAM 0${camId} (Móvil)`);
+      } else {
+        console.warn(`[AudioDspService] CAM 0${camId} no tiene pista de audio activa`);
+      }
+    } else {
+      await this.initAudioPipeline(deviceId);
     }
   }
 

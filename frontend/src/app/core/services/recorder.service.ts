@@ -25,6 +25,7 @@ export class RecorderService {
   private mediaRecorder: MediaRecorder | null = null;
   private recordInterval: number | null = null;
   private pendingChunkUploads: Promise<Response>[] = [];
+  private chunkUploadChain: Promise<void> = Promise.resolve();
 
   constructor() {
     const optimal = this.getOptimalMimeType();
@@ -94,11 +95,17 @@ export class RecorderService {
 
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
-          const uploadPromise = fetch('/api/record/chunk', {
-            method: 'POST',
-            body: event.data
+          const chunkBlob = event.data;
+          const uploadPromise = this.chunkUploadChain.then(() =>
+            fetch('/api/record/chunk', {
+              method: 'POST',
+              body: chunkBlob
+            })
+          );
+          this.chunkUploadChain = uploadPromise.then(() => {}, (err) => {
+            console.error('[RecorderService] Error en secuencia de chunk:', err);
           });
-          this.pendingChunkUploads.push(uploadPromise);
+          this.pendingChunkUploads.push(uploadPromise as Promise<Response>);
         }
       };
 
@@ -152,6 +159,7 @@ export class RecorderService {
         });
       }
 
+      await this.chunkUploadChain;
       await Promise.all(this.pendingChunkUploads);
 
       const res = await fetch('/api/record/stop', { method: 'POST' });

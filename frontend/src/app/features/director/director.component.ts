@@ -361,8 +361,8 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     const devId = select.value;
     const label = select.options[select.selectedIndex]?.text || devId;
     this.audio.selectedDeviceId.set(devId);
-    this.audio.initAudioPipeline(devId);
-    this.showToast(`Micrófono activo: ${label}`);
+    this.audio.switchAudioInput(devId, (camId) => this.webrtc.getCameraStream(camId));
+    this.showToast(`Fuente de Audio: ${label}`);
   }
 
   public onAudioDelayInput(event: Event): void {
