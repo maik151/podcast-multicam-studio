@@ -117,7 +117,30 @@ def run_tests():
         }
         res_json = WebRtcRouter.deobfuscate_mdns(sample_cand, "192.168.100.70")
         has_real_ip = "192.168.100.70" in res_json and ".local" not in res_json
-        record("Reemplazo mDNS .local -> IP LAN", has_real_ip, "Candidato ICE des-ofuscado a IPv4 real correctamente")
+
+        # Test para mensaje tipo "ice" (como envía el frontend) y SDP
+        sample_ice = {
+            "type": "ice",
+            "camId": 1,
+            "candidate": {
+                "candidate": "candidate:100 1 udp 2122260223 a1b2c3d4-e5f6.local 50000 typ host"
+            }
+        }
+        res_ice = WebRtcRouter.deobfuscate_mdns(sample_ice, "192.168.100.70")
+        has_real_ice = "192.168.100.70" in res_ice and ".local" not in res_ice
+
+        sample_sdp = {
+            "type": "offer",
+            "camId": 1,
+            "sdp": {
+                "type": "offer",
+                "sdp": "v=0\r\no=- 123 2 IN IP4 9999.local\r\n"
+            }
+        }
+        res_sdp = WebRtcRouter.deobfuscate_mdns(sample_sdp, "192.168.100.70")
+        has_real_sdp = "192.168.100.70" in res_sdp and ".local" not in res_sdp
+
+        record("Reemplazo mDNS .local -> IP LAN", has_real_ip and has_real_ice and has_real_sdp, "Candidato ICE des-ofuscado a IPv4 real correctamente")
     except Exception as e:
         record("De-ofuscador mDNS", False, f"Excepción: {e}")
 

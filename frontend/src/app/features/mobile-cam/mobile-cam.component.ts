@@ -34,7 +34,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   public isBatterySupported = signal<boolean>(false);
   public isCharging = signal<boolean>(false);
 
-  public isMicEnabled = signal<boolean>(true);
+  public isMicEnabled = signal<boolean>(false);
   public isTorchOn = signal<boolean>(false);
   public isOledActive = signal<boolean>(false);
   public currentZoom = signal<number>(1.0);
@@ -97,9 +97,12 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     this.canInstallPwa.set(true);
   }
 
-  public requestRenegotiation(): void {
+  public requestRenegotiation(delayMs: number = 800): void {
     if (this.isManuallyStopped()) return;
-    if (this.renegotiateTimeout) return;
+    if (this.renegotiateTimeout) {
+      clearTimeout(this.renegotiateTimeout);
+      this.renegotiateTimeout = null;
+    }
     this.renegotiateTimeout = window.setTimeout(() => {
       this.renegotiateTimeout = null;
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -109,7 +112,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
           camId: this.camId()
         });
       }
-    }, 800);
+    }, delayMs);
   }
 
   async ngOnInit(): Promise<void> {
@@ -118,8 +121,10 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       this.camId.set(parseInt(idParam, 10) || 1);
     }
 
+    // 1. Iniciar hardware de cámara primero antes de anunciar conexión
+    await this.startCamera(this.qualityPresets[1]); // 1080p30 por defecto inicial seguro
+    // 2. Conectar al bus de señalización sólo con el sensor estabilizado
     this.connectWs();
-    await this.startCamera(this. qualityPresets[1]); // 1080p30 por defecto inicial seguro
     this.monitorBattery();
   }
 
@@ -179,8 +184,8 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     this.isManuallyStopped.set(false);
     this.statusText.set('Reanudando sensor y conexión con el estudio...');
     const preset = this.qualityPresets.find(p => p.id === this.selectedPresetId()) || this.qualityPresets[1];
-    this.connectWs();
     await this.startCamera(preset);
+    this.connectWs();
     this.monitorBattery();
   }
 
@@ -322,6 +327,8 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
     if (this.localStream) {
       if (this.cameraVideoRef && this.cameraVideoRef.nativeElement) {
+        this.cameraVideoRef.nativeElement.muted = true;
+        this.cameraVideoRef.nativeElement.volume = 0;
         this.cameraVideoRef.nativeElement.srcObject = this.localStream;
         this.cameraVideoRef.nativeElement.play().catch(() => {});
       }
@@ -447,28 +454,34 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       };
 
       this.pc.oniceconnectionstatechange = () => {
-        if (this.pc?.iceConnectionState === 'failed' || this.pc?.iceConnectionState === 'disconnected') {
-          console.warn('[MobileCam] ICE desconectado. Solicitando recuperación...');
-          this.requestRenegotiation();
+        if (this.pc?.iceConnectionState === 'failed') {
+          console.warn('[MobileCam] ICE fallido. Solicitando recuperación...');
+          this.requestRenegotiation(800);
+        } else if (this.pc?.iceConnectionState === 'disconnected') {
+          // Período de gracia ante fluctuaciones temporales de red Wi-Fi
+          this.requestRenegotiation(3500);
         }
       };
 
       this.pc.onconnectionstatechange = () => {
         if (this.pc?.connectionState === 'connected') {
           this.statusText.set(`EN VIVO // ${this.actualResolutionText()}`);
-        } else if (this.pc?.connectionState === 'failed' || this.pc?.connectionState === 'disconnected') {
-          console.warn('[MobileCam] WebRTC desconectado. Solicitando recuperación...');
-          this.requestRenegotiation();
+        } else if (this.pc?.connectionState === 'failed') {
+          console.warn('[MobileCam] WebRTC fallido. Solicitando recuperación...');
+          this.requestRenegotiation(800);
+        } else if (this.pc?.connectionState === 'disconnected') {
+          // Período de gracia ante fluctuaciones temporales de red Wi-Fi
+          this.requestRenegotiation(3500);
         }
       };
+
+      await this.pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
 
       if (this.localStream) {
         this.localStream.getTracks().forEach(track => {
           this.pc!.addTrack(track, this.localStream!);
         });
       }
-
-      await this.pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
 
       // Vaciar candidatos ICE acumulados mientras se configuraba la oferta
       for (const cand of this.pendingCandidates) {
