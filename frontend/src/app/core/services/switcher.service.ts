@@ -16,10 +16,11 @@ export class SwitcherService {
   public readonly tbarProgress = signal<number>(0.0); // 0.0 a 1.0 (Manual T-Bar position)
   public readonly isEmergencyBlack = signal<boolean>(false);
   public readonly framingMode = signal<number>(0); // 0: Off, 1: Safe 80%, 2: TikTok 9:16, 3: Tercios
+  public readonly transitionDurationMs = signal<number>(500); // 300ms rápido, 500ms broadcast estándar, 800ms suave
 
   private prevCamId = 1;
   private transitionStartTime = 0;
-  private transitionDuration = 300; // ms
+  private transitionDuration = 500; // ms
   private dipDuration = 600; // 300ms fade down, 300ms fade up
   private dipStartTime = 0;
 
@@ -54,6 +55,10 @@ export class SwitcherService {
     this.transitionMode.set(mode);
   }
 
+  public setTransitionDuration(ms: number): void {
+    this.transitionDurationMs.set(ms);
+  }
+
   public triggerDipToBlack(targetCam?: number): void {
     if (this.isDipToBlack()) return;
 
@@ -64,14 +69,15 @@ export class SwitcherService {
     this.isDipToBlack.set(true);
     this.dipProgress.set(0.0);
     this.dipStartTime = performance.now();
+    const duration = Math.max(400, this.transitionDurationMs() * 1.4);
 
     const loop = (now: number) => {
       if (!this.isDipToBlack()) return;
       const elapsed = now - this.dipStartTime;
-      const progress = Math.min(1.0, elapsed / this.dipDuration);
+      const progress = Math.min(1.0, elapsed / duration);
       this.dipProgress.set(progress);
 
-      // En el punto medio (50% = 300ms), conmutar fuente en fondo negro
+      // En el punto medio (50%), conmutar fuente en fondo negro
       if (progress >= 0.5 && this.activeCam() !== target) {
         this.activeCam.set(target);
       }
@@ -130,9 +136,10 @@ export class SwitcherService {
   }
 
   private animateFade(): void {
+    const duration = this.transitionDurationMs();
     const step = (now: number) => {
       const elapsed = now - this.transitionStartTime;
-      const progress = Math.min(1.0, elapsed / this.transitionDuration);
+      const progress = Math.min(1.0, elapsed / duration);
       this.transitionProgress.set(progress);
       if (progress < 1.0) {
         requestAnimationFrame(step);

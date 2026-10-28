@@ -259,7 +259,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public onSelectCamera(camId: number, mode?: TransitionMode): void {
-    const effectiveMode = mode || (this.switcher.transitionMode() === 'fade' ? 'fade' : 'cut');
+    const effectiveMode = mode || this.switcher.transitionMode();
     this.switcher.switchToCamera(camId, effectiveMode);
     this.webrtc.sendTallyUpdate(this.switcher.activeCam(), this.switcher.previewCam());
     this.telemetry.logEvent('SWITCHER', 'BUS_PGM', 'SWITCH_CAM', `Cambio de cámara a CAM 0${camId} (${effectiveMode})`, {
@@ -267,7 +267,6 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
       previewCam: this.switcher.previewCam(),
       transitionMode: effectiveMode
     });
-    this.showToast(`PGM -> CAM 0${camId} (${effectiveMode.toUpperCase()})`);
   }
 
   public onSelectPreviewCamera(camId: number, event?: Event): void {
@@ -295,11 +294,15 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   public onTriggerDipToBlack(): void {
     this.switcher.triggerDipToBlack();
-    this.telemetry.logEvent('SWITCHER', 'DIP_TO_BLACK', 'EXECUTE_DIP', 'Transición cinemática Dip to Black (600ms)');
-    this.showToast('Transición Dip to Black [600ms]');
+    this.telemetry.logEvent('SWITCHER', 'DIP_TO_BLACK', 'EXECUTE_DIP', 'Transición cinemática Dip to Black');
     setTimeout(() => {
       this.webrtc.sendTallyUpdate(this.switcher.activeCam(), this.switcher.previewCam());
     }, 320);
+  }
+
+  public onTransitionDurationChange(event: Event): void {
+    const val = parseInt((event.target as HTMLSelectElement).value, 10) || 500;
+    this.switcher.setTransitionDuration(val);
   }
 
   public onCycleFramingGuide(): void {
@@ -531,15 +534,15 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
       return next;
     });
 
+    const keyMode = (this.switcher.transitionMode() === 'fade' || this.switcher.transitionMode() === 'dip_black')
+      ? this.switcher.transitionMode()
+      : (e.shiftKey ? 'fade' : 'cut');
     if (e.key === '1') {
-      this.switcher.switchToCamera(1, e.shiftKey ? 'fade' : 'cut');
-      this.webrtc.sendTallyUpdate(this.switcher.activeCam(), this.switcher.previewCam());
+      this.onSelectCamera(1, keyMode);
     } else if (e.key === '2') {
-      this.switcher.switchToCamera(2, e.shiftKey ? 'fade' : 'cut');
-      this.webrtc.sendTallyUpdate(this.switcher.activeCam(), this.switcher.previewCam());
+      this.onSelectCamera(2, keyMode);
     } else if (e.key === '3') {
-      this.switcher.switchToCamera(3, e.shiftKey ? 'fade' : 'cut');
-      this.webrtc.sendTallyUpdate(this.switcher.activeCam(), this.switcher.previewCam());
+      this.onSelectCamera(3, keyMode);
     } else if (e.code === 'Space') {
       e.preventDefault();
       this.onAutoMix();
@@ -642,6 +645,10 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
           const liveVid = (document.getElementById(`iso-video-${camId}`) as HTMLVideoElement | null) || vid;
+          if (liveVid && !liveVid.muted) {
+            liveVid.muted = true;
+            liveVid.volume = 0;
+          }
           const hasStream = liveVid && liveVid.srcObject;
           const hasFrames = Boolean(hasStream && (liveVid.videoWidth > 0 || liveVid.readyState >= 2));
           const now = performance.now();

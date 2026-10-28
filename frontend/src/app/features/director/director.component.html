@@ -5,7 +5,7 @@
   <div class="flex items-center space-x-2">
     <!-- TX-STUDIO Icon / Logo -->
     <div class="flex items-center space-x-1.5 pr-1 border-r border-[#262c38]">
-      <img alt="TX-STUDIO" class="h-[20px] w-auto object-contain" src="/favicon.ico"/>
+      <img alt="TX-STUDIO" class="h-[20px] w-auto object-contain" src="/tx_studio_logoNaranja.svg"/>
       <span class="font-tech font-black tracking-wider text-[12px] text-white">TX<span class="text-[#ff6200]">STUDIO</span></span>
     </div>
 
@@ -197,6 +197,7 @@
                  [ngClass]="(!cam.isConnected || !cam.stream) ? 'opacity-0 pointer-events-none absolute inset-0' : 'opacity-100 relative'"
                  autoplay
                  playsinline
+                 [muted]="true"
                  muted
                  class="w-full h-full object-cover z-10"></video>
 
@@ -490,14 +491,17 @@
           <!-- OBS Monitor Toggle & Master Mute Buttons -->
           <div class="flex items-center space-x-1">
             <button id="cue-mute-toggle" (click)="onToggleCueMute()"
-              title="Monitoreo de Audio tipo OBS: Escuchar tu micrófono procesado en tus audífonos en tiempo real [Atajo: H]"
+              title="Monitoreo CUE tipo OBS: Escuchar tu micrófono en tus audífonos [Atajo: H]. ¡CONECTA AUDÍFONOS! Si usas parlantes de PC se creará retorno/eco."
               class="px-2 py-1 border rounded text-[9px] font-mono font-bold cursor-pointer transition-all whitespace-nowrap flex items-center gap-1"
               [class.ring-2]="isKeyActive('h')" [class.ring-secondary]="isKeyActive('h')" [class.scale-95]="isKeyActive('h')"
               [ngClass]="!audio.isCueMuted()
                 ? 'bg-[#22c55e] text-black border-[#22c55e] shadow-[0_0_10px_rgba(34,197,94,0.4)]'
                 : 'bg-[#1c222e] hover:bg-[#252c3c] border-[#2d3748] text-[#9ca3af]'">
-              <span>{{ !audio.isCueMuted() ? 'MONITOREO AUDÍFONOS: ON [H]' : 'ESCUCHAR EN AUDÍFONOS [H]' }}</span>
+              <span>{{ !audio.isCueMuted() ? '🎧 AUDÍFONOS: ON [H]' : '🎧 AUDÍFONOS: OFF [H]' }}</span>
             </button>
+            <span *ngIf="!audio.isCueMuted()" class="text-[8px] text-[#22c55e] font-mono font-bold animate-pulse whitespace-nowrap">
+              ¡USAR AUDÍFONOS!
+            </span>
             <button id="mute-all-btn" (click)="onToggleMasterMute()"
               title="Silenciar el micrófono en la grabación Master [Atajo: M]"
               class="px-2 py-1 border rounded text-[9px] font-mono font-bold cursor-pointer transition-all whitespace-nowrap"
@@ -628,24 +632,36 @@
       </div>
     </div>
 
-    <!-- Transition FX Type Switches -->
+    <!-- Transition FX Type Switches & Speed Selector -->
     <div class="flex items-center space-x-1">
-      <button (click)="switcher.setTransitionMode('cut'); showToast('Modo Transición: CUT Directo')"
+      <button (click)="switcher.setTransitionMode('cut')"
+        title="Modo Corte Directo: [1] [2] [3] y clics conmutan de forma instantánea sin transición"
         class="px-2 py-1.5 font-mono rounded text-[9.5px] cursor-pointer transition-colors whitespace-nowrap"
         [ngClass]="switcher.transitionMode() === 'cut' ? 'bg-[#ff6200] text-black font-black shadow' : 'bg-[#1a1f2c] hover:bg-[#252c3c] border border-[#2b3444] text-[#c9d1d9]'">
         CUT
       </button>
-      <button (click)="switcher.setTransitionMode('fade'); showToast('Modo Transición: MIX Disolvencia')"
+      <button (click)="switcher.setTransitionMode('fade')"
+        title="Modo Disolvencia (MIX): [1] [2] [3] y clics realizan un fundido suave y cinemático"
         class="px-2 py-1.5 font-mono rounded text-[9.5px] cursor-pointer transition-colors whitespace-nowrap"
         [ngClass]="switcher.transitionMode() === 'fade' ? 'bg-[#ff6200] text-black font-black shadow' : 'bg-[#1a1f2c] hover:bg-[#252c3c] border border-[#2b3444] text-[#c9d1d9]'">
         MIX
       </button>
-      <button id="dip-black-btn" (click)="onTriggerDipToBlack()"
+      <button id="dip-black-btn" (click)="switcher.setTransitionMode('dip_black')"
+        title="Modo Dip to Black: [1] [2] [3] y clics realizan un fundido a negro antes de entrar [Atajo: D]"
         class="px-2 py-1.5 font-mono rounded text-[9.5px] cursor-pointer transition-all whitespace-nowrap"
         [class.ring-2]="isKeyActive('d')" [class.ring-primary]="isKeyActive('d')" [class.scale-95]="isKeyActive('d')"
-        [ngClass]="switcher.isDipToBlack() ? 'bg-[#ff6200] text-black font-black shadow' : 'bg-[#1a1f2c] hover:bg-[#252c3c] border border-[#2b3444] text-[#c9d1d9]'">
+        [ngClass]="switcher.transitionMode() === 'dip_black' ? 'bg-[#ff6200] text-black font-black shadow' : 'bg-[#1a1f2c] hover:bg-[#252c3c] border border-[#2b3444] text-[#c9d1d9]'">
         DIP [D]
       </button>
+      <!-- Selector de Duración de Transición (Broadcast Speed) -->
+      <select [value]="switcher.transitionDurationMs()"
+              (change)="onTransitionDurationChange($event)"
+              title="Velocidad del fundido suave entre tomas"
+              class="bg-[#10141d] text-[#ff7a1a] border border-[#2b3444] rounded px-1.5 py-1 text-[9px] font-mono outline-none cursor-pointer">
+        <option [value]="300">0.3s (Rápido)</option>
+        <option [value]="500">0.5s (Normal)</option>
+        <option [value]="800">0.8s (Suave)</option>
+      </select>
     </div>
   </div>
 
