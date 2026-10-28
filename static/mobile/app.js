@@ -107,7 +107,10 @@ async function startCamera(targetWidth = 1920, targetHeight = 1080, targetFps = 
 
   localStream = stream;
   if (videoElem) {
-    videoElem.srcObject = localStream;
+    videoElem.muted = true;
+    videoElem.volume = 0;
+    const vTracks = localStream.getVideoTracks();
+    videoElem.srcObject = vTracks.length > 0 ? new MediaStream(vTracks) : localStream;
     videoElem.play().catch(() => {});
   }
   if (tapOverlay) tapOverlay.style.display = 'none';

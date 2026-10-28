@@ -445,7 +445,11 @@ export class AudioDspService {
     const clamped = Math.max(0, Math.min(100, Math.round(vol)));
     this.headphoneVolume.set(clamped);
     if (this.cueGainNode && this.audioCtx && !this.isCueMuted()) {
-      this.cueGainNode.gain.setTargetAtTime(clamped / 100.0, this.audioCtx.currentTime, 0.02);
+      const target = clamped / 100.0;
+      this.cueGainNode.gain.value = target;
+      try {
+        this.cueGainNode.gain.setTargetAtTime(target, this.audioCtx.currentTime, 0.02);
+      } catch {}
     }
   }
 
@@ -457,7 +461,10 @@ export class AudioDspService {
         this.audioCtx.resume().catch(() => {});
       }
       const targetGain = next ? 0.0 : (this.headphoneVolume() / 100.0);
-      this.cueGainNode.gain.setTargetAtTime(targetGain, this.audioCtx.currentTime, 0.02);
+      this.cueGainNode.gain.value = targetGain;
+      try {
+        this.cueGainNode.gain.setTargetAtTime(targetGain, this.audioCtx.currentTime, 0.02);
+      } catch {}
     }
     return next;
   }

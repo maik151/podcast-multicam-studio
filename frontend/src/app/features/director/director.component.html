@@ -114,7 +114,9 @@
                  [srcObject]="getPreviewStream()"
                  autoplay
                  playsinline
+                 [muted]="true"
                  muted
+                 [volume]="0"
                  class="w-full h-full object-contain">
           </video>
           <div *ngIf="!getPreviewStream()"
@@ -252,7 +254,9 @@
               <video [id]="'iso-video-' + cam.id"
                      autoplay
                      playsinline
+                     [muted]="true"
                      muted
+                     [volume]="0"
                      class="w-full h-full object-cover">
               </video>
 
@@ -325,10 +329,17 @@
           <select [value]="audio.selectedDeviceId()"
                   (change)="onAudioDeviceChange($event)"
                   class="w-full bg-surface-container border border-surface-container-highest rounded px-1.5 py-0.5 text-on-surface outline-none truncate">
-            <option *ngIf="audio.audioDevices().length === 0" value="default">Micrófono Predeterminado</option>
-            <option *ngFor="let dev of audio.audioDevices()" [value]="dev.deviceId">
-              {{ dev.label || 'Entrada Micrófono USB' }}
-            </option>
+            <optgroup label="Micrófonos de la PC / USB">
+              <option *ngIf="audio.audioDevices().length === 0" value="default">Micrófono Predeterminado</option>
+              <option *ngFor="let dev of audio.audioDevices()" [value]="dev.deviceId">
+                {{ dev.label || 'Micrófono USB / PC' }}
+              </option>
+            </optgroup>
+            <optgroup label="Audio de Celulares WebRTC">
+              <option *ngFor="let cam of webrtc.cameras().slice(0, 3)" [value]="'cam:' + cam.id">
+                Audio Celular CAM 0{{ cam.id }} {{ cam.isConnected ? '(En Línea)' : '(Desconectado)' }}
+              </option>
+            </optgroup>
           </select>
 
           <!-- DSP Filters Strip (LowCut, Comp, Tape) -->
@@ -399,19 +410,32 @@
             </button>
           </div>
 
+          <!-- Headphone Monitoring Volume -->
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-outline text-[7.5px]">VOL HP:</span>
+            <input type="range" min="0" max="100" step="5"
+                   [value]="audio.headphoneVolume()"
+                   (input)="onHeadphoneVolumeInput($event)"
+                   class="flex-1 h-1 bg-surface-container rounded cursor-pointer accent-tertiary">
+            <span class="text-tertiary font-bold text-[8px]">{{ audio.headphoneVolume() }}%</span>
+          </div>
+
           <!-- CUE Audífonos & Master Mute Buttons -->
           <div class="grid grid-cols-2 gap-1">
-            <button (click)="onToggleCueMute()"
+            <button id="cue-mute-toggle" (click)="onToggleCueMute()"
               [class.ring-2]="isKeyActive('h')"
-              class="py-0.5 border rounded font-mono font-bold cursor-pointer text-center text-[8px]"
-              [ngClass]="!audio.isCueMuted() ? 'bg-tertiary-container text-black border-tertiary' : 'bg-surface-container text-outline border-surface-container-highest'">
-              CUE [H]
+              [title]="!audio.isCueMuted() ? 'Monitoreo CUE Activo. ¡Usa audífonos para evitar retorno acústico!' : 'Activar Monitoreo CUE en Audífonos [Atajo: H]'"
+              class="py-0.5 border rounded font-mono font-bold cursor-pointer text-center text-[7.5px] flex items-center justify-center gap-0.5"
+              [ngClass]="!audio.isCueMuted() ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-surface-container text-outline border-surface-container-highest'">
+              <span>🎧</span>
+              <span>{{ !audio.isCueMuted() ? 'CUE ON [H]' : 'CUE OFF [H]' }}</span>
             </button>
-            <button (click)="onToggleMasterMute()"
+            <button id="mute-all-btn" (click)="onToggleMasterMute()"
               [class.ring-2]="isKeyActive('m')"
-              class="py-0.5 border rounded font-mono font-bold cursor-pointer text-center text-[8px]"
+              title="Silenciar micrófono Master en grabación [Atajo: M]"
+              class="py-0.5 border rounded font-mono font-bold cursor-pointer text-center text-[7.5px]"
               [ngClass]="audio.isMasterMuted() ? 'bg-secondary-container text-white border-white animate-pulse' : 'bg-surface-container text-secondary border-surface-container-highest'">
-              MUTE [M]
+              {{ audio.isMasterMuted() ? 'MUTED [M]' : 'MUTE [M]' }}
             </button>
           </div>
         </div>

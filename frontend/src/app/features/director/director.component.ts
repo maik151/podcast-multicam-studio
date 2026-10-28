@@ -248,8 +248,25 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showToast('Tono de prueba 440Hz enviado a osciloscopio y audífonos');
   }
 
+  private previewVideoStream: MediaStream | null = null;
+  private lastPreviewCamId: number | null = null;
+
   public getPreviewStream(): MediaStream | null {
-    return this.webrtc.getCameraStream(this.switcher.previewCam());
+    const camId = this.switcher.previewCam();
+    const stream = this.webrtc.getCameraStream(camId);
+    if (!stream) {
+      this.previewVideoStream = null;
+      this.lastPreviewCamId = null;
+      return null;
+    }
+    const vTracks = stream.getVideoTracks();
+    if (vTracks.length === 0) return null;
+    if (this.lastPreviewCamId === camId && this.previewVideoStream && this.previewVideoStream.active) {
+      return this.previewVideoStream;
+    }
+    this.lastPreviewCamId = camId;
+    this.previewVideoStream = new MediaStream(vTracks);
+    return this.previewVideoStream;
   }
 
   public async toggleFullscreen(): Promise<void> {
@@ -633,8 +650,14 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
             videoElements[i] = domVid;
             domVid.muted = true;
             domVid.volume = 0;
-            if (stream && domVid.srcObject !== stream) {
-              domVid.srcObject = stream;
+            if (stream) {
+              const vTracks = stream.getVideoTracks();
+              if (vTracks.length > 0) {
+                const currentVTrack = domVid.srcObject ? (domVid.srcObject as MediaStream).getVideoTracks()[0] : null;
+                if (!currentVTrack || currentVTrack.id !== vTracks[0].id) {
+                  domVid.srcObject = new MediaStream(vTracks);
+                }
+              }
             }
             if (stream && domVid.paused) {
               domVid.play().catch(() => {});
@@ -644,12 +667,18 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
             v.muted = true;
             v.volume = 0;
             if (stream && v.srcObject !== stream) {
-              v.srcObject = stream;
+              const vTracks = stream.getVideoTracks();
+              v.srcObject = vTracks.length > 0 ? new MediaStream(vTracks) : stream;
             }
             if (stream && v.paused) {
               v.play().catch(() => {});
             }
           }
+        }
+        const pvwVid = document.getElementById('preview-viewport-video') as HTMLVideoElement | null;
+        if (pvwVid) {
+          pvwVid.muted = true;
+          pvwVid.volume = 0;
         }
 
         const width = canvas.width;

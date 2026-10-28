@@ -329,7 +329,10 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       if (this.cameraVideoRef && this.cameraVideoRef.nativeElement) {
         this.cameraVideoRef.nativeElement.muted = true;
         this.cameraVideoRef.nativeElement.volume = 0;
-        this.cameraVideoRef.nativeElement.srcObject = this.localStream;
+        this.cameraVideoRef.nativeElement.muted = true;
+      this.cameraVideoRef.nativeElement.volume = 0;
+      const vTracks = this.localStream.getVideoTracks();
+      this.cameraVideoRef.nativeElement.srcObject = vTracks.length > 0 ? new MediaStream(vTracks) : this.localStream;
         this.cameraVideoRef.nativeElement.play().catch(() => {});
       }
 
