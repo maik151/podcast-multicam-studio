@@ -248,6 +248,20 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showToast('Tono de prueba 440Hz enviado a osciloscopio y audífonos');
   }
 
+  public getPreviewStream(): MediaStream | null {
+    return this.webrtc.getCameraStream(this.switcher.previewCam());
+  }
+
+  public async toggleFullscreen(): Promise<void> {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {}
+  }
+
   public getConnectedCamerasCount(): number {
     return this.webrtc.cameras().filter(c => c.isConnected).length;
   }

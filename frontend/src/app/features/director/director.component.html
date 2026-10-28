@@ -1,804 +1,627 @@
-<!-- BEGIN: TopHeader -->
-<header class="h-[44px] bg-[#10131a] border-b border-[#232936] px-3 flex items-center justify-between shrink-0 z-50 transition-all shadow-md select-none"
-  [ngClass]="isTutorialZoneActive('header-rec') ? 'ring-2 ring-[#ff6200] shadow-[0_0_25px_rgba(255,98,0,0.6)] relative' : ''">
-  <!-- Brand & Windows Native Menu Bar -->
-  <div class="flex items-center space-x-2">
-    <!-- TX-STUDIO Icon / Logo -->
-    <div class="flex items-center space-x-1.5 pr-1 border-r border-[#262c38]">
-      <img alt="TX-STUDIO" class="h-[20px] w-auto object-contain" src="/tx_studio_logoNaranja.svg"/>
-      <span class="font-tech font-black tracking-wider text-[12px] text-white">TX<span class="text-[#ff6200]">STUDIO</span></span>
-    </div>
+<!-- =========================================================================
+     TX-STUDIO PRO: CONSOLA DE DIRECCIÓN MULTICÁMARA BROADCAST
+     Diseño Compacto en Pantalla Única (100vh - CERO SCROLL VERTICAL)
+     ========================================================================= -->
+<div class="h-screen w-screen overflow-hidden flex flex-col bg-surface text-on-surface select-none font-sans">
 
-    <!-- Windows Native Style Menu Items: ARCHIVO, VISTA, GRABACIONES, AYUDA -->
-    <div class="flex items-center space-x-0.5 text-[11px] font-mono">
-      <button (click)="onOpenRecordingsFolder()" title="Archivo -> Abrir Grabaciones" class="px-2 py-1 text-[#c9d1d9] hover:text-white hover:bg-[#1c222e] rounded transition-colors cursor-pointer uppercase">
-        ARCHIVO
-      </button>
-      <button (click)="onCycleFramingGuide()" title="Vista -> Alternar Guías de Encuadre (Safe Area, 9:16, Tercios)" class="px-2 py-1 text-[#c9d1d9] hover:text-white hover:bg-[#1c222e] rounded transition-colors cursor-pointer uppercase">
-        VISTA
-      </button>
-      <button (click)="onOpenRecordingsFolder()" title="Explorar carpeta física de Grabaciones en Windows" class="flex items-center space-x-1 px-2 py-1 text-[#ff7a1a] hover:bg-[#ff6200]/15 rounded transition-colors cursor-pointer font-bold uppercase">
-        <svg class="w-3 h-3 text-[#ff7a1a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-        </svg>
-        <span>GRABACIONES</span>
-      </button>
-      <button (click)="openTutorial()" title="Ayuda -> Iniciar Tutorial Interactivo" class="px-2 py-1 text-[#8b949e] hover:text-white hover:bg-[#1c222e] rounded transition-colors cursor-pointer uppercase">
-        AYUDA (?)
+  <!-- =========================================================================
+       1. TOP HEADER BAR: Single Official Logo Mark, Telemetry & Master Recording
+       ========================================================================= -->
+  <header class="h-10 w-full px-2.5 flex items-center justify-between gap-2 bg-surface-container-lowest border-b border-surface-container-highest shrink-0 z-30">
+    <!-- Brand Mark (Única presencia de marca oficial en la consola) -->
+    <div class="flex items-center gap-2 shrink-0">
+      <img src="/tx_studio_logoNaranja.svg" alt="TX-Studio" class="h-6 w-auto object-contain" />
+      <span class="text-[9.5px] font-mono px-1 py-0.2 rounded bg-surface-container text-primary font-bold border border-surface-container-highest">v3.2</span>
+      <div class="h-3 w-[1px] bg-surface-container-highest mx-0.5"></div>
+      <button (click)="onOpenRecordingsFolder()" title="Abrir Carpeta de Grabaciones"
+        class="flex items-center gap-1 text-[9.5px] font-mono text-on-surface-variant hover:text-white px-1.5 py-0.5 rounded hover:bg-surface-container transition-colors cursor-pointer uppercase">
+        <span class="material-symbols-outlined text-[13px]">folder</span>
+        <span>ARCHIVOS</span>
       </button>
     </div>
-  </div>
 
-  <!-- Center System Telemetry Metrics (Clean & Compact) -->
-  <div class="flex items-center space-x-4 text-[10px] font-tech text-[#8b949e]">
-    <div class="flex items-center space-x-1.5">
-      <span class="w-1.5 h-1.5 rounded-full bg-[#ff6200]"></span>
-      <span>RAM: <strong class="text-[#f0f6fc] font-mono">{{ telemetry.telemetry().ramPercent }}%</strong></span>
-    </div>
-    <div class="h-3 w-[1px] bg-[#2d3442]"></div>
-    <div>
-      <span>DISCO: <strong class="text-[#f0f6fc] font-mono">{{ telemetry.telemetry().diskFreeGb }} GB</strong></span>
-    </div>
-    <div class="h-3 w-[1px] bg-[#2d3442]"></div>
-    <div (click)="onCopyLanUrl()" title="Clic para copiar URL y abrir códigos QR" class="flex items-center space-x-1 cursor-pointer hover:opacity-90">
-      <span class="text-[#ff7a1a]">LAN:</span>
-      <span class="text-[#f0f6fc] font-mono bg-[#090b0e] px-1.5 py-0.5 rounded border border-[#212733] text-[9.5px]">{{ webrtc.baseUrl() }}</span>
-    </div>
-  </div>
-
-  <!-- Right Controls: Custom Filename, Pairing & Intuitive Program Rec -->
-  <div class="flex items-center space-x-2">
-    <!-- Custom Recording Filename Input -->
-    <div class="flex items-center bg-[#090b0e] border border-[#2d3546] focus-within:border-[#ff6200] rounded px-2 py-1 space-x-1.5 transition-colors"
-         title="Escribe el nombre del proyecto o episodio antes de grabar (Ej: RUTA33_EPISODIO3_GRABACION)">
-      <svg class="w-3.5 h-3.5 text-[#ff7a1a] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-      </svg>
-      <span class="text-[9px] text-[#8b949e] font-tech uppercase whitespace-nowrap">NOMBRE ARCHIVO:</span>
-      <input type="text"
-             [value]="recorder.customRecordingName()"
-             (input)="onCustomNameInput($event)"
-             [disabled]="recorder.recordingState().isRecording"
-             placeholder="RUTA33_EPISODIO3_GRABACION"
-             class="bg-transparent text-white font-mono text-[10px] font-bold border-none outline-none focus:ring-0 p-0 w-[175px] placeholder-[#4b5563] disabled:opacity-60"/>
+    <!-- Center System Telemetry Matrix (CPU, RAM, DISCO, REC CLOCK) -->
+    <div class="flex items-center gap-1 font-mono text-[9px] shrink-0">
+      <div class="flex items-center gap-1 bg-surface-container-low px-1.5 py-0.5 rounded border border-surface-container-highest">
+        <span class="text-outline">CPU</span>
+        <span class="font-bold" [ngClass]="telemetry.telemetry().cpuPercent > 80 ? 'text-secondary' : 'text-primary'">{{ telemetry.telemetry().cpuPercent }}%</span>
+      </div>
+      <div class="flex items-center gap-1 bg-surface-container-low px-1.5 py-0.5 rounded border border-surface-container-highest">
+        <span class="text-outline">RAM</span>
+        <span class="font-bold text-on-surface">{{ telemetry.telemetry().ramPercent }}%</span>
+      </div>
+      <div class="flex items-center gap-1 bg-surface-container-low px-1.5 py-0.5 rounded border border-surface-container-highest">
+        <span class="text-outline">DISCO</span>
+        <span class="font-bold text-on-surface">{{ telemetry.telemetry().diskFreeGb }} GB</span>
+      </div>
+      <div class="flex items-center gap-1 bg-surface-container-low px-2 py-0.5 rounded border border-surface-container-highest">
+        <span class="text-primary font-semibold">REC TIME</span>
+        <span class="font-bold text-white text-[10px]">{{ recorder.recordingState().timecode }}</span>
+      </div>
     </div>
 
-    <!-- QR Pairing Button -->
-    <button (click)="openQrModal()" class="flex items-center space-x-1.5 px-2.5 py-1 bg-[#171c26] hover:bg-[#202735] border border-[#2f3747] text-[#c9d1d9] hover:text-white rounded text-[10px] font-tech uppercase tracking-wide transition-all shadow-inner cursor-pointer active:scale-95">
-      <svg class="w-3.5 h-3.5 text-[#ff7a1a]" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-5 5h2v3h-2v-3zm3 0h5v2h-5v-2zm-3-5h3v2h-3v-2zm3 3h2v2h-2v-2z"></path>
-      </svg>
-      <span>QR CÁMARAS</span>
-      <span class="text-[#ff7a1a] font-mono text-[9px] ml-0.5">{{ getConnectedCamerasCount() }}/3</span>
-    </button>
+    <!-- Right Controls: Profile, Filename, QR Cameras & Master REC -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <!-- Resolution Profile Switcher -->
+      <button (click)="onCycleVideoProfile()" title="Alternar Resolución y FPS"
+        class="bg-surface-container text-primary font-mono text-[9.5px] px-2 py-0.5 rounded border border-surface-container-highest hover:bg-surface-container-high transition-colors cursor-pointer">
+        {{ recorder.currentProfile() === '1080p60' ? '1080p 60fps' : (recorder.currentProfile() === '2K60' ? '2K 60fps' : '4K 60fps') }}
+      </button>
 
-    <!-- Intuitive Recording State Trigger (Clearly separates STANDBY vs GRABANDO EN VIVO) -->
-    <button (click)="onToggleRecording()"
-      title="Iniciar o detener grabación Master en Documentos\TX-STUDIO\Grabaciones [Atajo: Ctrl+R]"
-      class="flex items-center space-x-2 px-3 py-1 rounded text-[11px] font-tech font-bold tracking-wider transition-all cursor-pointer active:scale-95"
-      [ngClass]="recorder.recordingState().isRecording
-        ? 'bg-[#ef4444] hover:bg-[#dc2626] text-black border-2 border-white shadow-[0_0_20px_rgba(239,68,68,0.75)] recording-pulse'
-        : 'bg-[#171c26] hover:bg-[#222938] border border-[#3b4455] hover:border-[#ef4444] text-white'">
-      <!-- Icon changes between Record Circle (Standby) and Stop Square (Recording) -->
-      <svg *ngIf="!recorder.recordingState().isRecording" class="w-3.5 h-3.5 text-[#ef4444]" fill="currentColor" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="8"/>
-      </svg>
-      <svg *ngIf="recorder.recordingState().isRecording" class="w-3.5 h-3.5 text-black animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-        <rect x="5" y="5" width="14" height="14" rx="2"/>
-      </svg>
-      <span>{{ recorder.recordingState().isRecording ? 'DETENER GRABACIÓN' : 'INICIAR GRABACIÓN' }}</span>
-      <span *ngIf="recorder.recordingState().isRecording"
-            class="font-mono text-[11px] bg-black text-[#ef4444] px-1.5 py-0.5 rounded font-black tracking-normal">
-        {{ recorder.recordingState().timecode }}
-      </span>
-      <span *ngIf="!recorder.recordingState().isRecording"
-            class="font-mono text-[9.5px] bg-[#090b0e] text-[#8b949e] border border-[#262c38] px-1.5 py-0.2 rounded font-semibold tracking-normal">
-        LISTO // TOMA 0{{ recorder.recordingState().take }}
-      </span>
-    </button>
-  </div>
-</header>
-<!-- END: TopHeader -->
+      <!-- Custom Recording Filename -->
+      <div class="flex items-center bg-surface-container-low border border-surface-container-highest focus-within:border-primary rounded px-1.5 py-0.5 gap-1 transition-colors">
+        <span class="text-[8px] text-outline font-mono uppercase">TOMA:</span>
+        <input type="text"
+               [value]="recorder.customRecordingName()"
+               (input)="onCustomNameInput($event)"
+               placeholder="NOMBRE_TOMA..."
+               class="bg-transparent text-white font-mono text-[9.5px] w-24 outline-none placeholder:text-outline/40">
+      </div>
 
-<!-- BEGIN: MainWorkspace -->
-<main class="flex-1 flex overflow-hidden p-2 gap-2 min-h-0">
-  <!-- BEGIN: LeftMulticamDeck -->
-  <section class="w-[430px] shrink-0 flex flex-col bg-[#0e1117] border border-[#212734] rounded min-h-0 transition-all"
-    [ngClass]="isTutorialZoneActive('iso-deck') ? 'ring-2 ring-[#ff6200] shadow-[0_0_25px_rgba(255,98,0,0.6)] z-50 relative' : ''"
-    data-purpose="multicam-iso-deck">
-    <!-- Deck Sub-header -->
-    <div class="h-7 px-2.5 bg-[#141821] border-b border-[#212734] flex items-center justify-between text-[10px] font-tech shrink-0">
-      <span class="text-[#8b949e] font-semibold tracking-wider flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 bg-[#ff6200] rounded-xs"></span>
-        ISO BUS ENTRADAS (WEBRTC P2P)
-      </span>
-      <span class="text-[#ff7a1a] font-mono">3 CÁMARAS MÓVILES</span>
+      <!-- QR Pairing Button -->
+      <button (click)="openQrModal()"
+        title="Vincular Cámaras Móviles por QR"
+        class="flex items-center gap-1 bg-surface-container hover:bg-surface-container-high text-on-surface px-2 py-0.5 rounded border border-surface-container-highest text-[9.5px] font-mono transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-[13px] text-primary">qr_code_2</span>
+        <span>CÁMARAS ({{ getConnectedCamerasCount() }}/3)</span>
+      </button>
+
+      <!-- Master REC Button -->
+      <button (click)="onToggleRecording()"
+        [class.ring-2]="isKeyActive('r')"
+        title="Iniciar/Detener Grabación Master [Ctrl+R o R]"
+        class="flex items-center gap-1.5 px-2.5 py-0.5 rounded font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer shadow"
+        [ngClass]="recorder.recordingState().isRecording
+          ? 'bg-secondary-container hover:bg-red-700 text-white border border-secondary shadow-[0_0_12px_rgba(204,0,60,0.6)] animate-pulse'
+          : 'bg-surface-container-high hover:bg-surface-bright text-on-surface border border-outline-variant hover:border-primary'">
+        <span class="w-2 h-2 rounded-full" [ngClass]="recorder.recordingState().isRecording ? 'bg-white animate-ping' : 'bg-secondary-container'"></span>
+        <span>{{ recorder.recordingState().isRecording ? 'REC MASTER' : 'INICIAR REC' }}</span>
+      </button>
+
+      <!-- Fullscreen Toggle -->
+      <button (click)="toggleFullscreen()" title="Pantalla Completa"
+        class="w-6 h-6 flex items-center justify-center rounded bg-surface-container text-on-surface-variant hover:text-on-surface border border-surface-container-highest cursor-pointer">
+        <span class="material-symbols-outlined text-[14px]">fullscreen</span>
+      </button>
     </div>
+  </header>
 
-    <!-- Vertically Stacked Camera ISO Cards (All 3 fit in viewport with flex-1 min-h-0, zero scroll needed) -->
-    <div class="flex-1 p-2 gap-2 overflow-hidden flex flex-col min-h-0">
-      <article *ngFor="let cam of webrtc.cameras()"
-        (click)="onSelectCamera(cam.id)"
-        (contextmenu)="onSelectPreviewCamera(cam.id, $event)"
-        class="flex-1 min-h-0 bg-[#08090d] rounded relative flex flex-col transition-all cursor-pointer overflow-hidden"
-        [ngClass]="{
-          'border border-[#ff6200] shadow-[0_0_8px_rgba(255,98,0,0.18)]': switcher.activeCam() === cam.id,
-          'border border-[#22c55e]/80 shadow-[0_0_6px_rgba(34,197,94,0.12)]': switcher.previewCam() === cam.id && switcher.activeCam() !== cam.id,
-          'border border-[#262c39] hover:border-[#3b4455]': switcher.activeCam() !== cam.id && switcher.previewCam() !== cam.id
-        }">
+  <!-- =========================================================================
+       2. MAIN WORKSPACE: NO-SCROLL CONTAINER (Upper Monitors + Lower Deck)
+       ========================================================================= -->
+  <main class="flex-1 min-h-0 flex flex-col p-1.5 gap-1.5 overflow-hidden">
 
-        <!-- Card Header Bar -->
-        <div class="h-6 px-2 bg-[#171b24] flex items-center justify-between text-[10px] shrink-0"
-          [ngClass]="switcher.activeCam() === cam.id ? 'border-b border-[#ff6200]/50' : 'border-b border-[#252c3a]'">
-          <div class="flex items-center space-x-1.5">
-            <span class="px-1.5 py-0.2 font-black font-mono rounded-xs text-[9px]"
-              [ngClass]="{
-                'bg-[#ff6200] text-black': switcher.activeCam() === cam.id,
-                'bg-[#2d3748] text-[#e2e8f0]': switcher.previewCam() === cam.id && switcher.activeCam() !== cam.id,
-                'bg-[#232936] text-[#8b949e]': switcher.activeCam() !== cam.id && switcher.previewCam() !== cam.id
-              }">CAM 0{{ cam.id }}</span>
-            <span class="font-semibold text-white tracking-wide">{{ cam.label }}</span>
+    <!-- -----------------------------------------------------------------------
+         UPPER ROW: DUAL BROADCAST MONITORS (PVW vs PGM) - 48% height
+         ----------------------------------------------------------------------- -->
+    <div class="h-[48%] min-h-0 grid grid-cols-2 gap-1.5 shrink-0">
+      <!-- LEFT MONITOR: PREVIEW (PVW) BUS -->
+      <div class="flex flex-col bg-surface-container-lowest rounded border border-emerald-500/40 overflow-hidden shadow">
+        <!-- PVW Header -->
+        <div class="h-6 px-2 flex items-center justify-between bg-surface-container-low border-b border-surface-container-highest shrink-0">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="font-mono text-[9px] font-bold text-emerald-400 tracking-wider uppercase">PREVIEW (PVW) BUS</span>
           </div>
-
-          <div class="flex items-center space-x-1">
-            <!-- Active Resolution & FPS Telemetry -->
-            <span *ngIf="cam.isConnected" class="px-1.5 py-0.2 bg-[#11151d] border border-[#283040] rounded text-[8.5px] font-mono text-[#ff7a1a] font-bold">
-              {{ cam.resolution }} &#64; {{ cam.fps }}FPS
-            </span>
-
-            <!-- Remote OLED Toggle Button -->
-            <button (click)="$event.stopPropagation(); toggleRemoteOled(cam.id)" title="Conmutar Modo Ahorro Térmico OLED en este teléfono"
-              class="px-1.5 py-0.2 rounded text-[8.5px] font-mono border cursor-pointer transition-colors"
-              [ngClass]="cam.isOledActive ? 'bg-[#ff6200] text-black border-[#ff7a1a] font-bold' : 'bg-[#232a38] hover:bg-[#2d3648] text-[#8b949e] hover:text-white border-[#30384a]'">
-              OLED
-            </button>
-
-            <!-- Real Battery & Thermal Status Badge -->
-            <span [id]="'bat-cam-' + cam.id"
-                  *ngIf="cam.isConnected"
-                  [attr.data-icon]="cam.isCharging ? '⚡' : '🔋'"
-                  class="px-1.5 py-0.2 bg-[#11151d] border border-[#283040] rounded text-[8.5px] font-mono flex items-center space-x-1 text-[#c9d1d9]"
-                  [title]="cam.batteryLevel !== undefined && cam.batteryLevel !== null ? ('Batería Móvil: ' + cam.batteryLevel + '%') : 'Cámara Conectada'">
-              <svg *ngIf="cam.batteryLevel !== undefined && cam.batteryLevel !== null" class="w-3 h-3" [ngClass]="cam.isCharging ? 'text-[#22c55e]' : 'text-[#ff7a1a]'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <rect x="2" y="7" width="16" height="10" rx="2" ry="2"/>
-                <line x1="22" y1="11" x2="22" y2="13"/>
-              </svg>
-              <span *ngIf="cam.batteryLevel !== undefined && cam.batteryLevel !== null">{{ cam.batteryLevel }}%</span>
-              <span *ngIf="cam.batteryLevel === undefined || cam.batteryLevel === null" class="text-[#22c55e] font-bold">ONLINE</span>
-              <span *ngIf="cam.thermalStatus" [ngClass]="cam.thermalStatus === 'COOLED' ? 'text-cyan-400' : (cam.thermalStatus === 'WARM' ? 'text-amber-400' : 'text-[#8b949e]')" class="ml-0.5">[{{ cam.thermalStatus }}]</span>
-            </span>
-
-            <!-- Connection Status Badge -->
-            <span (click)="$event.stopPropagation(); openQrModal()" class="px-1.5 py-0.2 font-mono text-[8.5px] rounded border"
-              [ngClass]="cam.isConnected
-                ? 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/40 font-bold'
-                : 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/40'">
-              {{ cam.isConnected ? 'EN VIVO' : 'ESPERANDO QR' }}
-            </span>
+          <div class="flex items-center gap-2 font-mono text-[9px]">
+            <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">ARMADA: CAM 0{{ switcher.previewCam() }}</span>
+            <span class="text-outline">{{ recorder.currentProfile() }}</span>
           </div>
         </div>
-
-        <!-- Video Frame / QR Canvas -->
-        <div class="flex-1 min-h-0 relative flex flex-col items-center justify-center bg-[#050608] crt-grid overflow-hidden">
-          <!-- Tally Indicator Badge -->
-          <span *ngIf="switcher.activeCam() === cam.id" class="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 bg-[#ff6200] text-black font-black font-tech text-[9.5px] rounded tracking-wider shadow">
-            PROGRAM
-          </span>
-          <span *ngIf="switcher.previewCam() === cam.id && switcher.activeCam() !== cam.id" class="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 bg-[#22c55e] text-black font-black font-tech text-[9.5px] rounded tracking-wider shadow">
-            PREVIEW
-          </span>
-          <span *ngIf="switcher.activeCam() !== cam.id && switcher.previewCam() !== cam.id" class="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 bg-[#232936] text-[#9ca3af] font-tech text-[9px] rounded tracking-wider">
-            STANDBY
-          </span>
-
-          <!-- LIVE WEBRTC VIDEO STREAM (Kept active in DOM without display:none so hardware decoder never pauses) -->
-          <video [id]="'iso-video-' + cam.id"
-                 [srcObject]="cam.stream"
-                 [ngClass]="(!cam.isConnected || !cam.stream) ? 'opacity-0 pointer-events-none absolute inset-0' : 'opacity-100 relative'"
+        <!-- PVW Viewport -->
+        <div class="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
+          <video id="preview-viewport-video"
+                 [srcObject]="getPreviewStream()"
                  autoplay
                  playsinline
-                 [muted]="true"
                  muted
-                 class="w-full h-full object-cover z-10"></video>
-
-          <!-- REAL SCANNABLE PAIRING QR BOX WHEN WAITING FOR CONNECTION -->
-          <div *ngIf="!cam.isConnected || !cam.stream"
-               (click)="$event.stopPropagation(); openQrModal()"
-               title="Clic para ampliar el código QR de CAM 0{{ cam.id }}"
-               class="flex flex-col items-center justify-center p-1 z-10 hover:scale-105 transition-transform">
-            <div class="p-1.5 bg-white rounded flex flex-col items-center shadow-lg">
-              <img [src]="getQrImageUrl(cam.id)" [alt]="'QR CAM 0' + cam.id" class="w-[74px] h-[74px] object-contain block"/>
-            </div>
-            <span class="mt-1 text-[9.5px] text-[#8b949e] font-tech uppercase tracking-wide">Escanear para conectar CAM 0{{ cam.id }}</span>
+                 class="w-full h-full object-contain">
+          </video>
+          <div *ngIf="!getPreviewStream()"
+               class="absolute inset-0 flex flex-col items-center justify-center text-outline/50 bg-surface-container-lowest/90 font-mono text-[10px]">
+            <span class="material-symbols-outlined text-[24px] mb-1">videocam_off</span>
+            <span>CAM 0{{ switcher.previewCam() }} NO CONECTADA</span>
+          </div>
+          <div class="absolute inset-0 pointer-events-none border border-emerald-500/40"></div>
+          <!-- PVW Tally Badge -->
+          <div class="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 bg-emerald-600/90 text-white font-mono font-bold text-[8.5px] rounded border border-emerald-400 shadow">
+            PVW ARMED
           </div>
         </div>
+      </div>
 
-        <!-- Lens, Resolution/FPS & Hardware Controls Bar -->
-        <div class="h-6 px-1.5 bg-[#12161f] border-t border-[#232a39] flex items-center justify-between text-[8.5px] text-[#a5adba] shrink-0">
-          <!-- Optical Lens Buttons -->
-          <div class="flex items-center space-x-1">
-            <span class="text-[#64748b] font-semibold">LENTE:</span>
-            <button [id]="'btn-remote-lens-05-' + cam.id"
-                    (click)="$event.stopPropagation(); setRemoteLens(cam.id, 0.5)"
-                    class="px-1.5 py-0.5 rounded border cursor-pointer transition-colors"
-                    [ngClass]="cam.currentZoom === 0.5 ? 'bg-[#ff6200]/20 text-[#ff7a1a] border-[#ff6200]/60 font-bold' : 'bg-[#1b212c] hover:bg-[#252c3a] border-[#2e3748]'">0.5x</button>
-            <button [id]="'btn-remote-lens-10-' + cam.id"
-                    (click)="$event.stopPropagation(); setRemoteLens(cam.id, 1.0)"
-                    class="px-1.5 py-0.5 rounded border cursor-pointer transition-colors"
-                    [ngClass]="(cam.currentZoom === 1.0 || !cam.currentZoom) ? 'bg-[#ff6200]/20 text-[#ff7a1a] border-[#ff6200]/60 font-bold' : 'bg-[#1b212c] hover:bg-[#252c3a] border-[#2e3748]'">1.0x</button>
-            <button [id]="'btn-remote-lens-20-' + cam.id"
-                    (click)="$event.stopPropagation(); setRemoteLens(cam.id, 2.0)"
-                    class="px-1.5 py-0.5 rounded border cursor-pointer transition-colors"
-                    [ngClass]="cam.currentZoom === 2.0 ? 'bg-[#ff6200]/20 text-[#ff7a1a] border-[#ff6200]/60 font-bold' : 'bg-[#1b212c] hover:bg-[#252c3a] border-[#2e3748]'">2.0x</button>
+      <!-- RIGHT MONITOR: PROGRAM (PGM) BUS (Master Compositor Canvas) -->
+      <div class="flex flex-col bg-surface-container-lowest rounded border border-secondary-container/80 overflow-hidden shadow">
+        <!-- PGM Header -->
+        <div class="h-6 px-2 flex items-center justify-between bg-surface-container-low border-b border-surface-container-highest shrink-0">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+            <span class="font-mono text-[9px] font-bold text-secondary tracking-wider uppercase">PROGRAM (PGM) BUS • ON-AIR</span>
           </div>
-
-          <!-- Remote Resolution & FPS Presets -->
-          <div class="flex items-center space-x-1" (click)="$event.stopPropagation()">
-            <span class="text-[#64748b] font-semibold">CALIDAD:</span>
-            <button (click)="setRemoteResolution(cam.id, '720p30')"
-                    title="Solicitar 720p @ 30 FPS a esta cámara"
-                    class="px-1.5 py-0.5 rounded border cursor-pointer transition-colors"
-                    [ngClass]="cam.resolution === '720p' ? 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/60 font-bold' : 'bg-[#1b212c] hover:bg-[#252c3a] border-[#2e3748]'">720p</button>
-            <button (click)="setRemoteResolution(cam.id, '1080p30')"
-                    title="Solicitar 1080p @ 30 FPS a esta cámara"
-                    class="px-1.5 py-0.5 rounded border cursor-pointer transition-colors"
-                    [ngClass]="cam.resolution === '1080p' && cam.fps <= 30 ? 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/60 font-bold' : 'bg-[#1b212c] hover:bg-[#252c3a] border-[#2e3748]'">1080p</button>
-            <button (click)="setRemoteResolution(cam.id, '1080p60')"
-                    title="Solicitar 1080p @ 60 FPS a esta cámara (con fallback automático si no lo soporta)"
-                    class="px-1.5 py-0.5 rounded border cursor-pointer transition-colors"
-                    [ngClass]="cam.resolution === '1080p' && cam.fps > 30 ? 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/60 font-bold' : 'bg-[#1b212c] hover:bg-[#252c3a] border-[#2e3748]'">60FPS</button>
-            <button (click)="setRemoteResolution(cam.id, '4k30')"
-                    title="Solicitar 4K UHD @ 30 FPS a esta cámara (con fallback automático si no lo soporta)"
-                    class="px-1.5 py-0.5 rounded border cursor-pointer transition-colors"
-                    [ngClass]="cam.resolution === '4K' ? 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/60 font-bold' : 'bg-[#1b212c] hover:bg-[#252c3a] border-[#2e3748]'">4K</button>
-          </div>
-
-          <!-- Remote Flash Button -->
-          <button [id]="'btn-remote-torch-' + cam.id"
-                  (click)="$event.stopPropagation(); toggleRemoteTorch(cam.id)"
-                  class="px-1.5 py-0.5 rounded border flex items-center space-x-1 cursor-pointer transition-colors"
-                  [ngClass]="cam.isTorchOn ? 'bg-[#ff6200] text-black border-[#ff7a1a] font-bold' : 'bg-[#1b212c] hover:bg-[#2e261f] hover:text-[#ff9800] border-[#2e3748] text-[#e2e8f0]'">
-            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            <span>FLASH</span>
-          </button>
-        </div>
-      </article>
-    </div>
-  </section>
-  <!-- END: LeftMulticamDeck -->
-
-  <!-- BEGIN: RightMasterSuite -->
-  <section class="flex-1 flex flex-col gap-2 min-w-0 min-h-0" data-purpose="master-and-dsp-workspace">
-    <!-- MASTER PGM BROADCAST MONITOR VIEW -->
-    <div class="flex-1 min-h-0 bg-[#090b0f] border border-[#232936] rounded flex flex-col overflow-hidden relative transition-all"
-      [ngClass]="isTutorialZoneActive('master-pgm') ? 'ring-2 ring-[#ff6200] shadow-[0_0_25px_rgba(255,98,0,0.6)] z-50' : ''">
-      <!-- Master Monitor Bar -->
-      <div class="h-7 px-3 bg-[#131720] border-b border-[#232936] flex items-center justify-between text-[11px] font-tech shrink-0">
-        <div class="flex items-center space-x-2">
-          <span class="w-2 h-2 rounded-full bg-[#ff6200] animate-pulse"></span>
-          <span class="text-white font-bold tracking-wider">SALIDA DE PROGRAMA MASTER // PGM 01</span>
-          <span class="text-[#ff7a1a] font-mono">[ACTUAL: CAM 0{{ switcher.activeCam() }}]</span>
-        </div>
-        <div class="flex items-center space-x-3 text-[10px] text-[#8b949e]">
-          <button (click)="onCycleFramingGuide()" title="Rotar guías de encuadre [Atajo: G]" class="px-2 py-0.5 bg-[#1a202c] hover:bg-[#252d3d] border border-[#2d3748] rounded text-[#cbd5e1] cursor-pointer transition-colors">
+          <!-- Framing Guide Toggle -->
+          <button (click)="onCycleFramingGuide()" title="Rotar guías de encuadre [Atajo: G]"
+            class="px-1.5 py-0.2 rounded text-[8px] font-mono border border-surface-container-highest cursor-pointer text-outline hover:text-white">
             GUÍA [G]: {{ ['OFF', 'SAFE 80%', 'TIKTOK 9:16', 'TERCIOS'][switcher.framingMode()] }}
           </button>
-          <button (click)="onCycleVideoProfile()" title="Clic para cambiar perfil de grabación" class="font-mono text-[#ff7a1a] hover:text-white font-semibold cursor-pointer">
-            {{ recorder.currentProfile() === '1080p60' ? '1920x1080 @ 60 FPS' : (recorder.currentProfile() === '2K60' ? '2560x1440 @ 60 FPS' : '3840x2160 @ 60 FPS') }}
-          </button>
+          <div class="flex items-center gap-1.5 font-mono text-[9px]">
+            <span class="px-1.5 py-0.2 rounded bg-secondary-container text-white font-bold border border-secondary/40 animate-pulse">ON-AIR 60 FPS</span>
+            <span class="text-primary font-bold">{{ recorder.recordingState().timecode }}</span>
+          </div>
         </div>
-      </div>
-
-      <!-- Master View Canvas (60 FPS Clean Video Compositor - Framing guides are HTML overlays so they are NEVER burned into recordings) -->
-      <div class="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
-        <canvas #programCanvas width="1920" height="1080" class="w-full h-full object-contain relative z-10"></canvas>
-
-        <!-- TOP-LEFT LIVE RECORDING ON-SCREEN TALLY OVERLAY (Never burned into video file) -->
-        <div *ngIf="recorder.recordingState().isRecording"
-             class="absolute top-3 left-3 z-20 px-3 py-1 bg-[#ef4444] text-black font-tech font-black text-xs rounded shadow-[0_0_20px_rgba(239,68,68,0.8)] border border-white flex items-center gap-2 pointer-events-none">
-          <span class="w-2.5 h-2.5 rounded-full bg-black animate-ping"></span>
-          <span>GRABANDO EN DISCO // {{ recorder.customRecordingName() || 'TOMA_0' + recorder.recordingState().take }}</span>
-          <span class="font-mono bg-black text-white px-1.5 py-0.5 rounded text-[11px]">{{ recorder.recordingState().timecode }}</span>
-        </div>
-
-        <!-- NON-RECORDED VISUAL FRAMING GUIDES OVERLAY (Safe Area 80%, TikTok 9:16, Rule of Thirds) -->
-        <div *ngIf="switcher.framingMode() !== 0" class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-          <!-- Mode 1: Safe Area 80% -->
-          <div *ngIf="switcher.framingMode() === 1" class="w-[80%] h-[80%] border-2 border-dashed border-[#ff6200]/75 relative flex flex-col justify-between p-2">
-            <div class="flex justify-between text-[10px] font-mono text-[#ff7a1a] bg-black/60 px-1.5 py-0.5 rounded self-start">
-              <span>SAFE AREA 80% (GUÍA VISUAL - NO SE GRABA)</span>
+        <!-- PGM Viewport Screen -->
+        <div class="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
+          <canvas #programCanvas width="1920" height="1080" class="w-full h-full object-contain relative z-10"></canvas>
+          <div class="absolute inset-0 pointer-events-none border border-secondary-container/80 z-20"></div>
+          <!-- PGM On-Air Badge -->
+          <div class="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 bg-secondary-container text-white font-mono font-bold text-[8.5px] rounded border border-secondary shadow animate-pulse">
+            PGM ON-AIR
+          </div>
+          <!-- Recording On-Screen Bug -->
+          <div *ngIf="recorder.recordingState().isRecording"
+               class="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 bg-[#ef4444] text-black font-mono font-black text-[8.5px] rounded shadow flex items-center gap-1 pointer-events-none">
+            <span class="w-1.5 h-1.5 rounded-full bg-black animate-ping"></span>
+            <span>GRABANDO: {{ recorder.customRecordingName() || 'TOMA_0' + recorder.recordingState().take }}</span>
+          </div>
+          <!-- Visual Framing Guides Overlay -->
+          <div class="absolute inset-0 pointer-events-none z-15">
+            <div *ngIf="switcher.framingMode() === 1" class="absolute inset-[10%] border border-cyan-400/50">
+              <span class="absolute top-0.5 left-0.5 text-[7px] font-mono text-cyan-300">SAFE 80%</span>
+            </div>
+            <div *ngIf="switcher.framingMode() === 2" class="absolute inset-y-0 left-1/2 -translate-x-1/2 aspect-[9/16] border-x border-amber-400/60 bg-amber-400/5">
+              <span class="absolute top-0.5 left-0.5 text-[7px] font-mono text-amber-300">TIKTOK 9:16</span>
+            </div>
+            <div *ngIf="switcher.framingMode() === 3" class="absolute inset-0">
+              <div class="absolute left-1/3 top-0 bottom-0 border-l border-white/20"></div>
+              <div class="absolute left-2/3 top-0 bottom-0 border-l border-white/20"></div>
+              <div class="absolute top-1/3 left-0 right-0 border-t border-white/20"></div>
+              <div class="absolute top-2/3 left-0 right-0 border-t border-white/20"></div>
             </div>
           </div>
-          <!-- Mode 2: TikTok / Reels 9:16 -->
-          <div *ngIf="switcher.framingMode() === 2" class="h-full aspect-[9/16] border-2 border-[#ff6200] bg-[#ff6200]/5 relative flex items-start justify-center pt-2">
-            <span class="text-[10px] font-mono text-[#ff7a1a] bg-black/80 px-2 py-0.5 rounded border border-[#ff6200]/50">
-              RECORTE VERTICAL 9:16 (SOLO GUÍA VISUAL)
-            </span>
-          </div>
-          <!-- Mode 3: Rule of Thirds -->
-          <div *ngIf="switcher.framingMode() === 3" class="w-full h-full grid grid-cols-3 grid-rows-3">
-            <div class="border-r border-b border-dashed border-[#ff6200]/50"></div>
-            <div class="border-r border-b border-dashed border-[#ff6200]/50"></div>
-            <div class="border-b border-dashed border-[#ff6200]/50"></div>
-            <div class="border-r border-b border-dashed border-[#ff6200]/50"></div>
-            <div class="border-r border-b border-dashed border-[#ff6200]/50"></div>
-            <div class="border-b border-dashed border-[#ff6200]/50"></div>
-            <div class="border-r border-dashed border-[#ff6200]/50"></div>
-            <div class="border-r border-dashed border-[#ff6200]/50"></div>
-            <div></div>
-          </div>
-        </div>
-
-        <!-- Bottom Audio Phase Overlay Bug -->
-        <div class="absolute bottom-3 right-3 z-20 px-2 py-1 bg-black/80 border border-[#2a3240] rounded text-[9px] font-mono flex items-center space-x-1.5 pointer-events-none"
-          [ngClass]="audio.isMasterMuted() ? 'text-[#ef4444]' : 'text-[#10b981]'">
-          <span class="w-1.5 h-1.5 rounded-full animate-ping" [ngClass]="audio.isMasterMuted() ? 'bg-[#ef4444]' : 'bg-[#10b981]'"></span>
-          <span>AUDIO BUS 1: 48kHz PCM {{ audio.isMasterMuted() ? 'MUTED' : 'ON-AIR' }}</span>
         </div>
       </div>
     </div>
 
-    <!-- DSP MASTER AUDIO SCOPE & PROCESSOR SECTION -->
-    <div class="h-[185px] bg-[#0c0e14] border border-[#212734] rounded flex flex-col shrink-0 p-2 gap-1.5 transition-all"
-      [ngClass]="isTutorialZoneActive('dsp-audio') ? 'ring-2 ring-[#ff6200] shadow-[0_0_25px_rgba(255,98,0,0.6)] z-50 relative' : ''"
-      data-purpose="dsp-audio-rack">
-      <!-- Scope Header & Metrics -->
-      <div class="flex items-center justify-between text-[10px] font-tech border-b border-[#1c222e] pb-1 shrink-0">
-        <div class="flex items-center space-x-2">
-          <span class="w-2 h-2 rounded-full bg-[#ff6200]"></span>
-          <span class="text-white font-bold tracking-wider">DSP MASTER SCOPE &amp; MONITOREO DE AUDIO (TIPO OBS)</span>
-          <button (click)="onPlayCalibrationTone()"
-                  title="Enviar tono de prueba de 440Hz para verificar osciloscopio y audífonos"
-                  class="px-2 py-0.5 bg-[#1a202c] hover:bg-[#252d3d] border border-[#2e3748] rounded text-[9px] font-mono text-[#ff7a1a] hover:text-white cursor-pointer">
-            TONO TEST 440Hz
-          </button>
+    <!-- -----------------------------------------------------------------------
+         LOWER ROW: 3-CAM ISO RACK (54%) + AUDIO DSP (23%) + ATEM SWITCHER (23%)
+         ----------------------------------------------------------------------- -->
+    <div class="flex-1 min-h-0 flex gap-1.5 overflow-hidden">
+
+      <!-- ===================================================================
+           COLUMN 1: 3-CAM ISO MULTICAMERA INPUTS RACK (Exactamente 3 Cámaras)
+           =================================================================== -->
+      <div class="w-[54%] flex flex-col bg-surface-container-lowest rounded border border-surface-container-highest p-1 min-h-0 overflow-hidden shadow">
+        <!-- Rack Header -->
+        <div class="h-5 px-1 flex items-center justify-between border-b border-surface-container-highest shrink-0">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[13px] text-primary">videocam</span>
+            <span class="font-mono text-[9px] font-bold text-on-surface uppercase tracking-wider">3x ISO MULTICAMERA INPUTS</span>
+          </div>
+          <span class="font-mono text-[8.5px] text-outline">({{ getConnectedCamerasCount() }}/3 CONECTADAS)</span>
         </div>
-        <div class="flex items-center space-x-4 font-mono text-[10px]">
-          <span>RMS: <strong class="text-[#ff7a1a]">{{ audio.audioMetrics().rmsDb > -58 ? audio.audioMetrics().rmsDb + ' dB' : '-60.0 dB' }}</strong></span>
-          <span>PEAK: <strong [ngClass]="audio.audioMetrics().isClipping ? 'text-[#ef4444] animate-pulse' : 'text-[#22c55e]'">{{ audio.audioMetrics().peakDb > -58 ? audio.audioMetrics().peakDb + ' dB' : '-60.0 dB' }}</strong></span>
-          <span>LUFS: <strong class="text-white">{{ audio.audioMetrics().lufs > -58 ? audio.audioMetrics().lufs + ' INT' : '-60.0 INT' }}</strong></span>
+
+        <!-- 3 Camera Cards Grid (Fixed 3 Slots) -->
+        <div class="grid grid-cols-3 gap-1 flex-1 min-h-0 pt-1">
+          <div *ngFor="let cam of webrtc.cameras().slice(0, 3)"
+               class="flex flex-col bg-surface-container-low rounded border transition-all duration-150 overflow-hidden"
+               [ngClass]="{
+                 'border-secondary-container shadow-[0_0_8px_rgba(204,0,60,0.4)]': switcher.activeCam() === cam.id,
+                 'border-emerald-500/70 shadow-[0_0_8px_rgba(0,255,136,0.3)]': switcher.previewCam() === cam.id && switcher.activeCam() !== cam.id,
+                 'border-surface-container-highest': switcher.activeCam() !== cam.id && switcher.previewCam() !== cam.id
+               }">
+            <!-- Card Header: Tally, Cam Title, Battery & Controls -->
+            <div class="h-5 px-1 flex items-center justify-between bg-surface-container shrink-0 text-[8.5px] font-mono">
+              <div class="flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full"
+                      [ngClass]="{
+                        'bg-secondary-container animate-ping': switcher.activeCam() === cam.id,
+                        'bg-emerald-400': switcher.previewCam() === cam.id && switcher.activeCam() !== cam.id,
+                        'bg-surface-variant': switcher.activeCam() !== cam.id && switcher.previewCam() !== cam.id
+                      }"></span>
+                <span class="font-bold text-white">CAM 0{{ cam.id }}</span>
+              </div>
+
+              <!-- Battery Indicator & Thermal Status -->
+              <span [id]="'bat-cam-' + cam.id" class="flex items-center gap-0.5 text-outline">
+                <span>{{ cam.isCharging ? '⚡' : '🔋' }}</span>
+                <span>{{ cam.batteryLevel !== undefined ? (cam.batteryLevel + '%') : (cam.isConnected ? 'LIVE' : 'OFF') }}</span>
+              </span>
+              <span class="text-[7.5px] px-0.5 rounded border border-surface-container-highest"
+                    [ngClass]="cam.thermalStatus === 'WARM' ? 'text-primary' : 'text-tertiary'">
+                {{ cam.thermalStatus || 'OK' }}
+              </span>
+
+              <!-- Action Controls: OLED Saver & Flash -->
+              <div class="flex items-center gap-0.5">
+                <button [id]="'btn-remote-oled-' + cam.id" (click)="toggleRemoteOled(cam.id)"
+                  [title]="'Ahorro OLED CAM 0' + cam.id"
+                  class="px-1 py-0.2 rounded font-mono text-[7.5px] cursor-pointer border"
+                  [ngClass]="cam.isOledActive ? 'bg-primary/20 text-primary border-primary' : 'bg-surface-container-high text-white/60 border-surface-container-highest'">
+                  OLED
+                </button>
+                <button [id]="'btn-remote-torch-' + cam.id" (click)="toggleRemoteTorch(cam.id)"
+                  [title]="'Linterna CAM 0' + cam.id"
+                  class="px-1 py-0.2 rounded font-mono text-[7.5px] cursor-pointer border flex items-center gap-0.5"
+                  [ngClass]="cam.isTorchOn ? 'bg-amber-400/20 text-amber-300 border-amber-400' : 'bg-surface-container-high text-white/60 border-surface-container-highest'">
+                  <span>⚡</span><span>FLASH</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Card Video Viewport (Hardware Decoded Video Feed) -->
+            <div class="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
+              <video [id]="'iso-video-' + cam.id"
+                     autoplay
+                     playsinline
+                     muted
+                     class="w-full h-full object-cover">
+              </video>
+
+              <!-- QR / Disconnected Fallback -->
+              <div *ngIf="!cam.isConnected"
+                   (click)="openQrModal()"
+                   class="absolute inset-0 flex flex-col items-center justify-center bg-black/85 cursor-pointer hover:bg-black/75 transition-colors text-outline">
+                <img [src]="getQrImageUrl(cam.id)" [alt]="'QR CAM 0' + cam.id" class="w-12 h-12 bg-white p-0.5 rounded object-contain mb-1 shadow"/>
+                <span class="font-mono text-[7.5px] uppercase font-bold text-white">VINCULAR CAM 0{{ cam.id }}</span>
+              </div>
+
+              <!-- Remote Lens Floating Pill (0.5x, 1.0x, 2.0x) -->
+              <div class="absolute bottom-1 right-1 z-10 flex items-center bg-black/70 backdrop-blur-sm rounded px-1 py-0.5 gap-0.5 font-mono text-[7.5px]">
+                <button [id]="'btn-remote-lens-05-' + cam.id" (click)="setRemoteLens(cam.id, 0.5)"
+                  class="px-1 py-0.2 rounded transition-colors"
+                  [ngClass]="cam.currentZoom === 0.5 ? 'bg-primary text-black font-bold' : 'text-white/80 hover:bg-white/20'">0.5x</button>
+                <button [id]="'btn-remote-lens-10-' + cam.id" (click)="setRemoteLens(cam.id, 1.0)"
+                  class="px-1 py-0.2 rounded transition-colors"
+                  [ngClass]="cam.currentZoom === 1.0 ? 'bg-primary text-black font-bold' : 'text-white/80 hover:bg-white/20'">1.0x</button>
+                <button [id]="'btn-remote-lens-20-' + cam.id" (click)="setRemoteLens(cam.id, 2.0)"
+                  class="px-1 py-0.2 rounded transition-colors"
+                  [ngClass]="cam.currentZoom === 2.0 ? 'bg-primary text-black font-bold' : 'text-white/80 hover:bg-white/20'">2.0x</button>
+              </div>
+            </div>
+
+            <!-- Card Bottom Bus Routing Strip -->
+            <div class="h-6 px-1 flex items-center gap-1 bg-surface-container-lowest border-t border-surface-container-highest shrink-0">
+              <button (click)="onSelectCamera(cam.id)"
+                title="Conmutar a PGM (Programa)"
+                class="flex-1 py-0.5 rounded font-mono text-[8px] font-bold uppercase transition-all cursor-pointer text-center"
+                [ngClass]="switcher.activeCam() === cam.id
+                  ? 'bg-secondary-container text-white shadow'
+                  : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-white'">
+                PGM [{{ cam.id }}]
+              </button>
+              <button (click)="onSelectPreviewCamera(cam.id, $event)"
+                title="Armar en PVW (Preview)"
+                class="flex-1 py-0.5 rounded font-mono text-[8px] font-bold uppercase transition-all cursor-pointer text-center"
+                [ngClass]="switcher.previewCam() === cam.id
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-white'">
+                PVW [{{ cam.id }}]
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Oscilloscope Matrix & Master Stereo Meter -->
-      <div class="flex-1 flex gap-2 min-h-0">
-        <!-- Phosphor Amber Oscilloscope Canvas -->
-        <div class="flex-1 bg-[#050608] border border-[#252c3b] rounded relative overflow-hidden flex items-center justify-center crt-grid">
-          <svg class="w-full h-full text-[#ff6200]" preserveAspectRatio="none" viewBox="0 0 500 40">
-            <path class="opacity-95" [attr.d]="audio.audioMetrics().waveformPath" fill="none" stroke="#ff6200" stroke-width="1.8"></path>
+      <!-- ===================================================================
+           COLUMN 2: STUDIO AUDIO CONSOLE & DSP RACK (23% width)
+           =================================================================== -->
+      <div class="w-[23%] flex flex-col bg-surface-container-lowest rounded border border-surface-container-highest p-1 min-h-0 overflow-hidden shadow">
+        <!-- Audio Header -->
+        <div class="h-5 px-1 flex items-center justify-between border-b border-surface-container-highest shrink-0">
+          <div class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-tertiary">graphic_eq</span>
+            <span class="font-mono text-[9px] font-bold text-on-surface uppercase tracking-wider">AUDIO DSP</span>
+          </div>
+          <span class="font-mono text-[8px] text-tertiary">48kHz PCM</span>
+        </div>
+
+        <!-- Input Device Selector & DSP Processing Toggles -->
+        <div class="flex flex-col gap-1 pt-1 shrink-0 font-mono text-[8.5px]">
+          <select [value]="audio.selectedDeviceId()"
+                  (change)="onAudioDeviceChange($event)"
+                  class="w-full bg-surface-container border border-surface-container-highest rounded px-1.5 py-0.5 text-on-surface outline-none truncate">
+            <option *ngIf="audio.audioDevices().length === 0" value="default">Micrófono Predeterminado</option>
+            <option *ngFor="let dev of audio.audioDevices()" [value]="dev.deviceId">
+              {{ dev.label || 'Entrada Micrófono USB' }}
+            </option>
+          </select>
+
+          <!-- DSP Filters Strip (LowCut, Comp, Tape) -->
+          <div class="grid grid-cols-3 gap-0.5">
+            <button (click)="onToggleLowCut()"
+              class="py-0.5 rounded border text-center font-bold transition-colors cursor-pointer text-[7.5px]"
+              [ngClass]="audio.isLowCut() ? 'bg-primary text-black border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
+              LOW-CUT
+            </button>
+            <button (click)="onToggleCompressor()"
+              class="py-0.5 rounded border text-center font-bold transition-colors cursor-pointer text-[7.5px]"
+              [ngClass]="audio.isCompressor() ? 'bg-primary text-black border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
+              COMP
+            </button>
+            <button (click)="onToggleTapeWarmth()"
+              class="py-0.5 rounded border text-center font-bold transition-colors cursor-pointer text-[7.5px]"
+              [ngClass]="audio.isTapeWarmth() ? 'bg-primary text-black border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
+              TAPE
+            </button>
+          </div>
+        </div>
+
+        <!-- Oscilloscope Waveform Display -->
+        <div class="h-9 my-0.5 bg-black rounded border border-surface-container-highest overflow-hidden relative shrink-0">
+          <svg class="w-full h-full text-primary" preserveAspectRatio="none" viewBox="0 0 500 40">
+            <path class="opacity-95" [attr.d]="audio.audioMetrics().waveformPath" fill="none" stroke="#ff7a1a" stroke-width="1.8"></path>
           </svg>
-          <div class="absolute left-2 top-1 text-[8.5px] font-mono text-[#ff6200]/60">0 dBFS</div>
-          <div class="absolute left-2 bottom-1 text-[8.5px] font-mono text-[#ff6200]/60">-60 dBFS</div>
-          <div class="absolute right-2 top-1 text-[8.5px] font-mono text-[#8b949e]">
-            TX-FILTER: {{ audio.isLowCut() ? '80HZ HIGHPASS' : 'NYQUIST ON' }}
-          </div>
+          <span class="absolute top-0.5 left-1 text-[7px] font-mono text-tertiary/70">WAVEFORM</span>
         </div>
 
-        <!-- Stereo VU Meters (Discrete 16 LED Segments) -->
-        <div class="w-48 bg-[#07090c] border border-[#252c3b] rounded p-2 flex flex-col justify-between shrink-0">
+        <!-- Stereo VU Meters (CH-L & CH-R) -->
+        <div class="flex flex-col gap-0.5 shrink-0 font-mono text-[8px]">
           <!-- Channel L -->
-          <div>
-            <div class="flex justify-between text-[8px] font-mono text-[#8b949e] mb-0.5">
-              <span>CH-L</span>
-              <span class="text-[#22c55e]">{{ audio.audioMetrics().rmsDb > -58 ? audio.audioMetrics().rmsDb + ' dB' : '-60 dB' }}</span>
+          <div class="flex items-center gap-1">
+            <span class="w-3 text-outline">L</span>
+            <div class="flex-1 h-2 bg-surface-container rounded-sm overflow-hidden flex border border-surface-container-highest">
+              <div class="h-full bg-gradient-to-r from-emerald-500 via-yellow-400 to-rose-500 transition-all duration-75"
+                   [style.width.%]="audio.audioMetrics().rmsDb > -58 ? ((audio.audioMetrics().rmsDb + 60) * 1.66) : 2"></div>
             </div>
-            <div class="h-2.5 bg-[#12161f] rounded-xs flex gap-0.5 p-0.5 led-bar">
-              <div *ngFor="let seg of ledSegments" class="flex-1 rounded-xs transition-colors duration-75" [ngClass]="getLedSegmentClass('L', seg)"></div>
-            </div>
+            <span class="text-[7.5px] text-outline w-6 text-right">{{ audio.audioMetrics().rmsDb > -58 ? audio.audioMetrics().rmsDb.toFixed(0) : '-60' }}</span>
           </div>
-
           <!-- Channel R -->
-          <div>
-            <div class="flex justify-between text-[8px] font-mono text-[#8b949e] mb-0.5">
-              <span>CH-R</span>
-              <span class="text-[#22c55e]">{{ audio.audioMetrics().rmsDb > -58 ? audio.audioMetrics().rmsDb + ' dB' : '-60 dB' }}</span>
+          <div class="flex items-center gap-1">
+            <span class="w-3 text-outline">R</span>
+            <div class="flex-1 h-2 bg-surface-container rounded-sm overflow-hidden flex border border-surface-container-highest">
+              <div class="h-full bg-gradient-to-r from-emerald-500 via-yellow-400 to-rose-500 transition-all duration-75"
+                   [style.width.%]="audio.audioMetrics().rmsDb > -58 ? ((audio.audioMetrics().rmsDb + 60) * 1.66) : 2"></div>
             </div>
-            <div class="h-2.5 bg-[#12161f] rounded-xs flex gap-0.5 p-0.5 led-bar">
-              <div *ngFor="let seg of ledSegments" class="flex-1 rounded-xs transition-colors duration-75" [ngClass]="getLedSegmentClass('R', seg)"></div>
-            </div>
-          </div>
-
-          <!-- Peak Clip warning -->
-          <div class="flex justify-between items-center text-[8.5px] font-mono border-t border-[#1b212c] pt-1">
-            <span class="text-[#64748b]">PEAK HOLD</span>
-            <span class="font-bold" [ngClass]="audio.audioMetrics().isClipping ? 'text-[#ef4444] animate-pulse' : 'text-[#22c55e]'">
-              {{ audio.audioMetrics().isClipping ? 'CLIPPING [OVER]' : 'NORMAL [NO CLIP]' }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Audio Processing & Device Parameters Strip -->
-      <div class="h-10 bg-[#121620] border border-[#252b38] rounded px-2 flex items-center justify-between gap-2 text-[10px] shrink-0 overflow-hidden">
-        <!-- Audio Input Select: Supports both Mobile Camera Microphones & PC/USB Microphones -->
-        <div class="flex items-center space-x-1.5 min-w-0 max-w-[310px]">
-          <span class="text-[#8b949e] font-tech text-[9px] whitespace-nowrap">ENTRADA:</span>
-          <div class="flex items-center bg-[#090b0e] border border-[#2d3546] rounded px-1.5 py-0.5 space-x-1 min-w-0">
-            <select id="mic-device-select" (change)="onAudioDeviceChange($event)" class="bg-transparent text-[#f0f6fc] font-mono text-[9.5px] border-none outline-none focus:ring-0 p-0 pr-3 cursor-pointer max-w-[210px] truncate">
-              <!-- Micrófonos de Cámaras Celulares (WebRTC) -->
-              <optgroup label="Cámaras Móviles (Audio Celular WebRTC)">
-                <option *ngFor="let cam of webrtc.cameras()"
-                        [value]="'cam:' + cam.id"
-                        [selected]="audio.selectedDeviceId() === 'cam:' + cam.id"
-                        class="bg-[#090b0e] text-[#ff7a1a]">
-                  📱 CAM 0{{ cam.id }} ({{ cam.label }})
-                </option>
-              </optgroup>
-              <!-- Micrófonos Locales de la PC / Interfaz USB -->
-              <optgroup label="Micrófonos de la PC / USB">
-                <option *ngIf="audio.audioDevices().length === 0" value="default" class="bg-[#090b0e] text-white">Predeterminado - Micrófono PC</option>
-                <option *ngFor="let dev of audio.audioDevices()"
-                        [value]="dev.deviceId"
-                        [selected]="dev.deviceId === audio.selectedDeviceId()"
-                        class="bg-[#090b0e] text-white">
-                  {{ dev.label }}
-                </option>
-              </optgroup>
-            </select>
-            <span class="text-[#ff7a1a] text-[8.5px] font-mono whitespace-nowrap">48kHz</span>
+            <span class="text-[7.5px] text-outline w-6 text-right">{{ audio.audioMetrics().rmsDb > -58 ? audio.audioMetrics().rmsDb.toFixed(0) : '-60' }}</span>
           </div>
         </div>
 
-        <!-- DSP Effect Switches -->
-        <div class="flex items-center space-x-1 shrink-0">
-          <button (click)="onToggleCompressor()" class="px-2 py-1 font-mono rounded text-[9px] shadow-sm cursor-pointer transition-colors whitespace-nowrap"
-            [ngClass]="audio.isCompressor() ? 'bg-[#ff6200] text-black font-bold' : 'bg-[#1c222e] hover:bg-[#252c3c] border border-[#2d3748] text-[#c9d1d9]'">
-            COMP {{ audio.isCompressor() ? 'ON' : 'OFF' }}
-          </button>
-          <button (click)="onToggleLowCut()" class="px-2 py-1 font-mono rounded text-[9px] cursor-pointer transition-colors whitespace-nowrap"
-            [ngClass]="audio.isLowCut() ? 'bg-[#ff6200] text-black font-bold' : 'bg-[#1c222e] hover:bg-[#252c3c] border border-[#2d3748] text-[#c9d1d9]'">
-            LOW-CUT 80
-          </button>
-          <button (click)="onToggleTapeWarmth()" class="px-2 py-1 font-mono rounded text-[9px] cursor-pointer transition-colors whitespace-nowrap"
-            [ngClass]="audio.isTapeWarmth() ? 'bg-[#ff6200] text-black font-bold' : 'bg-[#1c222e] hover:bg-[#252c3c] border border-[#2d3748] text-[#c9d1d9]'">
-            TAPE WARM
-          </button>
-        </div>
-
-        <!-- Lip Sync Delay Slider -->
-        <div class="flex items-center space-x-1.5 flex-1 min-w-[110px] max-w-[175px]">
-          <span class="text-[#8b949e] font-tech text-[9px] whitespace-nowrap">LIP SYNC:</span>
-          <div class="flex-1 flex flex-col min-w-0">
-            <div class="flex justify-between text-[7.5px] font-mono text-[#6e7681]">
-              <span>0ms</span>
-              <span class="text-[#ff7a1a] font-bold">+{{ audio.delayMs() }} ms</span>
-              <span>300ms</span>
-            </div>
-            <input class="h-1 bg-[#232936] accent-[#ff6200] rounded cursor-pointer w-full"
-                   max="300" min="0" step="5" type="range"
+        <!-- Lip-Sync Slider & CUE / Mute Controls -->
+        <div class="mt-auto pt-1 flex flex-col gap-1 border-t border-surface-container-highest shrink-0 font-mono text-[8.5px]">
+          <!-- Delay Slider -->
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-outline text-[7.5px]">DELAY:</span>
+            <input type="range" min="0" max="300" step="5"
                    [value]="audio.delayMs()"
                    (input)="onAudioDelayInput($event)"
-                   (change)="onAudioDelayChange($event)"/>
+                   (change)="onAudioDelayChange($event)"
+                   class="flex-1 h-1 bg-surface-container rounded cursor-pointer accent-primary">
+            <span class="text-primary font-bold text-[8px]">+{{ audio.delayMs() }}ms</span>
+            <button (click)="onCycleTapSync()"
+              [class.ring-2]="isKeyActive('t')"
+              class="px-1 py-0.2 rounded border border-surface-container-highest text-on-surface hover:text-primary cursor-pointer text-[7.5px]">
+              SYNC [T]
+            </button>
+          </div>
+
+          <!-- CUE Audífonos & Master Mute Buttons -->
+          <div class="grid grid-cols-2 gap-1">
+            <button (click)="onToggleCueMute()"
+              [class.ring-2]="isKeyActive('h')"
+              class="py-0.5 border rounded font-mono font-bold cursor-pointer text-center text-[8px]"
+              [ngClass]="!audio.isCueMuted() ? 'bg-tertiary-container text-black border-tertiary' : 'bg-surface-container text-outline border-surface-container-highest'">
+              CUE [H]
+            </button>
+            <button (click)="onToggleMasterMute()"
+              [class.ring-2]="isKeyActive('m')"
+              class="py-0.5 border rounded font-mono font-bold cursor-pointer text-center text-[8px]"
+              [ngClass]="audio.isMasterMuted() ? 'bg-secondary-container text-white border-white animate-pulse' : 'bg-surface-container text-secondary border-surface-container-highest'">
+              MUTE [M]
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           COLUMN 3: ATEM BROADCAST SWITCHER BUS & T-BAR (23% width)
+           =================================================================== -->
+      <div class="w-[23%] flex flex-col bg-surface-container-lowest rounded border border-surface-container-highest p-1 min-h-0 overflow-hidden shadow">
+        <!-- Switcher Header -->
+        <div class="h-5 px-1 flex items-center justify-between border-b border-surface-container-highest shrink-0">
+          <div class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-primary">tune</span>
+            <span class="font-mono text-[9px] font-bold text-on-surface uppercase tracking-wider">SWITCHER M/E 1</span>
+          </div>
+          <span class="font-mono text-[8px] text-outline">AUTO {{ switcher.transitionMode() }}</span>
+        </div>
+
+        <!-- Cross-Point Rows (PGM & PVW) -->
+        <div class="flex flex-col gap-1 pt-1 shrink-0 font-mono">
+          <!-- PGM Row -->
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[7.5px] text-secondary font-bold tracking-wider uppercase">PGM BUS (ON-AIR):</span>
+            <div class="grid grid-cols-4 gap-0.5">
+              <button (click)="onSelectCamera(1)"
+                [class.ring-2]="isKeyActive('1')"
+                class="h-7 rounded border font-bold text-[9px] cursor-pointer"
+                [ngClass]="switcher.activeCam() === 1 ? 'bg-secondary-container text-white border-secondary shadow-[0_0_8px_rgba(204,0,60,0.6)]' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
+                1
+              </button>
+              <button (click)="onSelectCamera(2)"
+                [class.ring-2]="isKeyActive('2')"
+                class="h-7 rounded border font-bold text-[9px] cursor-pointer"
+                [ngClass]="switcher.activeCam() === 2 ? 'bg-secondary-container text-white border-secondary shadow-[0_0_8px_rgba(204,0,60,0.6)]' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
+                2
+              </button>
+              <button (click)="onSelectCamera(3)"
+                [class.ring-2]="isKeyActive('3')"
+                class="h-7 rounded border font-bold text-[9px] cursor-pointer"
+                [ngClass]="switcher.activeCam() === 3 ? 'bg-secondary-container text-white border-secondary shadow-[0_0_8px_rgba(204,0,60,0.6)]' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
+                3
+              </button>
+              <button (click)="onToggleEmergencyBlack()"
+                [class.ring-2]="isKeyActive('b')"
+                class="h-7 rounded border font-bold text-[8px] cursor-pointer"
+                [ngClass]="switcher.isEmergencyBlack() ? 'bg-error-container text-white border-secondary' : 'bg-surface-container text-secondary border-surface-container-highest'">
+                FTB
+              </button>
+            </div>
+          </div>
+
+          <!-- PVW Row -->
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[7.5px] text-emerald-400 font-bold tracking-wider uppercase">PVW BUS (ARMED):</span>
+            <div class="grid grid-cols-4 gap-0.5">
+              <button (click)="onSelectPreviewCamera(1)"
+                class="h-7 rounded border font-bold text-[9px] cursor-pointer"
+                [ngClass]="switcher.previewCam() === 1 ? 'bg-emerald-600 text-white border-emerald-400 shadow-[0_0_8px_rgba(0,255,136,0.5)]' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
+                1
+              </button>
+              <button (click)="onSelectPreviewCamera(2)"
+                class="h-7 rounded border font-bold text-[9px] cursor-pointer"
+                [ngClass]="switcher.previewCam() === 2 ? 'bg-emerald-600 text-white border-emerald-400 shadow-[0_0_8px_rgba(0,255,136,0.5)]' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
+                2
+              </button>
+              <button (click)="onSelectPreviewCamera(3)"
+                class="h-7 rounded border font-bold text-[9px] cursor-pointer"
+                [ngClass]="switcher.previewCam() === 3 ? 'bg-emerald-600 text-white border-emerald-400 shadow-[0_0_8px_rgba(0,255,136,0.5)]' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
+                3
+              </button>
+              <button (click)="onToggleEmergencyBlack()"
+                class="h-7 rounded border font-bold text-[8px] cursor-pointer"
+                [ngClass]="switcher.isEmergencyBlack() ? 'bg-error-container text-white border-secondary' : 'bg-surface-container text-outline border-surface-container-highest'">
+                BLK
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- OBS-Style Headphone Audio Monitoring & Master Mute Actions -->
-        <div class="flex items-center space-x-1.5 shrink-0">
-          <!-- Monitor HP Volume -->
-          <div class="flex items-center space-x-1 bg-[#090b0e] border border-[#262c38] rounded px-1.5 py-0.5" title="Volumen de monitoreo en tus audífonos">
-            <svg class="w-3 h-3 text-[#ff7a1a]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 18v-6a9 9 0 0118 0v6"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/>
-            </svg>
-            <span class="text-[#f0f6fc] font-mono font-bold w-6 text-right text-[9px]">{{ audio.headphoneVolume() }}%</span>
-            <input class="w-12 h-1 bg-[#232936] accent-[#ff6200] rounded cursor-pointer"
-                   max="100" min="0" type="range"
-                   [value]="audio.headphoneVolume()"
-                   (input)="onHeadphoneVolumeInput($event)"/>
-          </div>
-          <!-- OBS Monitor Toggle & Master Mute Buttons -->
-          <div class="flex items-center space-x-1">
-            <button id="cue-mute-toggle" (click)="onToggleCueMute()"
-              title="Monitoreo CUE tipo OBS: Escuchar tu micrófono en tus audífonos [Atajo: H]. ¡CONECTA AUDÍFONOS! Si usas parlantes de PC se creará retorno/eco."
-              class="px-2 py-1 border rounded text-[9px] font-mono font-bold cursor-pointer transition-all whitespace-nowrap flex items-center gap-1"
-              [class.ring-2]="isKeyActive('h')" [class.ring-secondary]="isKeyActive('h')" [class.scale-95]="isKeyActive('h')"
-              [ngClass]="!audio.isCueMuted()
-                ? 'bg-[#22c55e] text-black border-[#22c55e] shadow-[0_0_10px_rgba(34,197,94,0.4)]'
-                : 'bg-[#1c222e] hover:bg-[#252c3c] border-[#2d3748] text-[#9ca3af]'">
-              <span>{{ !audio.isCueMuted() ? '🎧 AUDÍFONOS: ON [H]' : '🎧 AUDÍFONOS: OFF [H]' }}</span>
+        <!-- Transition Controls & Virtual T-Bar Block -->
+        <div class="mt-auto pt-1 flex flex-col gap-1 border-t border-surface-container-highest shrink-0 font-mono">
+          <!-- Transition Trigger Buttons: CUT & AUTO MIX -->
+          <div class="grid grid-cols-2 gap-1">
+            <button (click)="onSelectCamera(switcher.previewCam(), 'cut')"
+              class="h-7 bg-surface-container hover:bg-surface-container-high text-white rounded font-mono text-[9px] uppercase font-bold border border-surface-container-highest cursor-pointer active:scale-95">
+              CUT
             </button>
-            <span *ngIf="!audio.isCueMuted()" class="text-[8px] text-[#22c55e] font-mono font-bold animate-pulse whitespace-nowrap">
-              ¡USAR AUDÍFONOS!
+            <button (click)="onAutoMix()"
+              [class.ring-2]="isKeyActive(' ')"
+              class="h-7 bg-surface-container hover:bg-surface-container-high text-primary rounded font-mono text-[9px] uppercase font-bold border border-primary/40 cursor-pointer active:scale-95 shadow">
+              AUTO MIX
+            </button>
+          </div>
+
+          <!-- Transition Mode Selection: MIX vs DIP -->
+          <div class="grid grid-cols-2 gap-1 font-mono text-[8px]">
+            <button (click)="switcher.setTransitionMode('fade')"
+              class="py-0.5 rounded border text-center cursor-pointer"
+              [ngClass]="switcher.transitionMode() === 'fade' ? 'bg-primary text-black font-bold border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
+              MIX
+            </button>
+            <button (click)="onTriggerDipToBlack()"
+              [class.ring-2]="isKeyActive('d')"
+              class="py-0.5 rounded border text-center cursor-pointer"
+              [ngClass]="switcher.transitionMode() === 'dip_black' ? 'bg-primary text-black font-bold border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
+              DIP [D]
+            </button>
+          </div>
+
+          <!-- Virtual Hardware T-Bar Track & Handle -->
+          <div class="flex items-center gap-1.5 px-1 py-0.5 bg-surface-container rounded border border-surface-container-highest">
+            <span class="text-[7.5px] text-outline whitespace-nowrap">T-BAR</span>
+            <div id="tbar-track"
+                 (mousedown)="onTbarMouseDown($event)"
+                 (touchstart)="onTbarTouchStart($event)"
+                 class="relative flex-1 h-3.5 bg-surface-container-lowest rounded overflow-hidden cursor-ew-resize border border-surface-container-highest flex items-center">
+              <div id="tbar-fill"
+                   class="h-full bg-primary/40 transition-none"
+                   [style.width.%]="switcher.tbarProgress() * 100"></div>
+              <input id="tbar-slider" type="range" min="0" max="1" step="0.01"
+                     [value]="switcher.tbarProgress()"
+                     (input)="onTbarInput($event)"
+                     (change)="onTbarChange($event)"
+                     class="absolute inset-0 opacity-0 cursor-ew-resize">
+              <div id="tbar-handle"
+                   class="absolute top-0 bottom-0 w-2.5 bg-primary rounded border border-white/60 shadow pointer-events-none -translate-x-1/2"
+                   [style.left.%]="switcher.tbarProgress() * 100"></div>
+            </div>
+            <span class="text-[7.5px] text-primary font-bold w-6 text-right">{{ (switcher.tbarProgress() * 100).toFixed(0) }}%</span>
+          </div>
+
+          <!-- FTB Emergency Button -->
+          <button id="emergency-black-btn" (click)="onToggleEmergencyBlack()"
+            [class.ring-2]="isKeyActive('b')"
+            class="h-5 bg-error-container hover:bg-red-700 text-white rounded font-mono text-[7.5px] uppercase font-bold tracking-wider border border-secondary flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+            <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+            <span>FTB BLACK [B]</span>
+          </button>
+
+          <!-- Fast Shortcut Keys Indicator Bar -->
+          <div class="flex items-center justify-between pt-0.5 border-t border-surface-container-highest font-mono text-[7.5px] text-outline">
+            <span [class.text-primary]="isKeyActive('1') || isKeyActive('2') || isKeyActive('3')">[1-3]</span>
+            <span [class.text-primary]="isKeyActive(' ')">[Space]</span>
+            <span [class.text-primary]="isKeyActive('d')">[D]</span>
+            <span [class.text-primary]="isKeyActive('b')">[B]</span>
+            <span [class.text-primary]="isKeyActive('h')">[H]</span>
+            <button (click)="onAddMarkerFlag()" [class.ring-2]="isKeyActive('r')" class="text-outline hover:text-white cursor-pointer">[R] FLAG</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       3. FOOTER ENGINE STATUS STRIP (Compact 20px)
+       ========================================================================= -->
+  <footer class="h-5 w-full bg-surface-container-lowest border-t border-surface-container-highest px-2.5 flex items-center justify-between text-outline font-mono text-[8px] shrink-0">
+    <div class="flex items-center gap-3">
+      <span>GENLOCK: LOCKED 59.94Hz</span>
+      <span>AUDIO: 48kHz PCM ZERO-LATENCY</span>
+      <span>ACTIVE BUS: M/E 1 PROGRAM</span>
+    </div>
+    <div class="uppercase tracking-wider">
+      TX-Studio Broadcast Engine • Offline Studio Edition
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       4. MODAL QR PAIRING (For Connecting Mobile Phones As Wireless Cameras)
+       ========================================================================= -->
+  <div *ngIf="isQrModalOpen()" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-surface-container-low border border-surface-container-highest rounded-lg max-w-2xl w-full p-4 flex flex-col gap-3 shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-surface-container-highest pb-2">
+        <div class="flex items-center gap-2">
+          <img src="/tx_studio_Isotipo_naranja.svg" alt="TX-Studio" class="h-5 w-5 object-contain" />
+          <h3 class="font-mono text-white text-[12px] font-bold uppercase">Emparejamiento Rápido de Cámaras Móviles (WebRTC LAN)</h3>
+        </div>
+        <button (click)="closeQrModal()" class="text-outline hover:text-white cursor-pointer font-bold">✕</button>
+      </div>
+
+      <!-- QR Code 3-Camera Grid -->
+      <div class="grid grid-cols-3 gap-3">
+        <div *ngFor="let cam of webrtc.cameras().slice(0, 3)"
+             class="flex flex-col items-center p-2.5 bg-surface-container rounded border border-surface-container-highest gap-1.5">
+          <div class="flex items-center justify-between w-full font-mono text-[9px]">
+            <span class="font-bold text-white">CAM 0{{ cam.id }}</span>
+            <span class="px-1 py-0.2 rounded"
+              [ngClass]="cam.isConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-variant text-outline'">
+              {{ cam.isConnected ? 'CONECTADA' : 'ESPERANDO' }}
             </span>
-            <button id="mute-all-btn" (click)="onToggleMasterMute()"
-              title="Silenciar el micrófono en la grabación Master [Atajo: M]"
-              class="px-2 py-1 border rounded text-[9px] font-mono font-bold cursor-pointer transition-all whitespace-nowrap"
-              [class.ring-2]="isKeyActive('m')" [class.ring-error]="isKeyActive('m')" [class.scale-95]="isKeyActive('m')"
-              [ngClass]="audio.isMasterMuted() ? 'bg-[#ef4444] text-black border-white animate-pulse' : 'bg-[#b81d13]/20 hover:bg-[#b81d13]/40 border-[#ef4444]/60 text-[#ff4b4b]'">
-              {{ audio.isMasterMuted() ? 'MIC MUTEADO [M]' : 'MUTE MIC [M]' }}
-            </button>
           </div>
+          <div class="p-1 bg-white rounded shadow">
+            <img [src]="getQrImageUrl(cam.id)" class="w-32 h-32 object-contain" [alt]="'QR CAM 0' + cam.id">
+          </div>
+          <a [href]="getCameraUrl(cam.id)" target="_blank"
+             class="text-[8px] text-primary hover:underline font-mono truncate max-w-full">
+            {{ getCameraUrl(cam.id) }}
+          </a>
         </div>
       </div>
-    </div>
-  </section>
-  <!-- END: RightMasterSuite -->
-</main>
-<!-- END: MainWorkspace -->
 
-<!-- BEGIN: BottomSwitcherConsole -->
-<footer class="h-[64px] bg-[#0c0e14] border-t-2 border-[#ff6200]/80 px-2.5 flex items-center justify-between shrink-0 gap-2 shadow-2xl z-40 overflow-hidden transition-all"
-  [ngClass]="isTutorialZoneActive('switcher-bus') ? 'ring-2 ring-[#ff6200] shadow-[0_0_25px_rgba(255,98,0,0.6)] z-50 relative' : ''"
-  data-purpose="hardware-takeover-console">
-  <!-- Left: Switcher Bus Identification & Keyboard Shortcuts -->
-  <div class="flex flex-col min-w-0 shrink">
-    <div class="flex items-center space-x-1.5">
-      <span class="text-[#ff6200] font-black text-[11px] font-tech tracking-wider uppercase whitespace-nowrap">HARDWARE TAKEOVER // BUS 01</span>
-      <span class="px-1 py-0.2 bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 rounded text-[8.5px] font-mono whitespace-nowrap">DOCK SYNCED</span>
-    </div>
-    <div class="text-[8.5px] text-[#6b7280] font-mono mt-0.5 tracking-tight truncate">
-      ATAJOS: <span class="text-[#9ca3af]">[1][2][3] [SPACE] [B] [M] [H] [T]</span>
-    </div>
-  </div>
-
-  <!-- Center-Left: Physical Bus Keycaps (Program / Preview Routing) -->
-  <div class="flex items-center space-x-1.5 shrink-0">
-    <!-- Key 1: Host -->
-    <button id="key-btn-1" (click)="onSelectCamera(1)" (contextmenu)="onSelectPreviewCamera(1, $event)"
-      class="w-[116px] xl:w-32 h-11 rounded border flex items-center justify-between px-2 transition-all active:scale-95 cursor-pointer"
-      [class.ring-2]="isKeyActive('1')" [class.ring-primary]="isKeyActive('1')" [class.scale-95]="isKeyActive('1')"
-      [ngClass]="switcher.activeCam() === 1
-        ? 'bg-[#ff6200] text-black font-black border-[#ff7a1a] shadow-[0_0_12px_rgba(255,98,0,0.4)]'
-        : 'bg-[#171b25] hover:bg-[#202634] text-[#d1d5db] hover:text-white font-bold border-[#2e3748] shadow-sm'">
-      <div class="flex flex-col text-left min-w-0">
-        <span class="text-[8px] uppercase tracking-wider leading-none"
-          [ngClass]="switcher.activeCam() === 1 ? 'opacity-80' : (switcher.previewCam() === 1 ? 'text-[#22c55e]' : 'text-[#9ca3af]')">
-          {{ switcher.activeCam() === 1 ? 'TAKE PGM' : (switcher.previewCam() === 1 ? 'READY PVW' : 'STANDBY') }}
-        </span>
-        <span class="text-[11px] font-tech font-black tracking-tight leading-none mt-1 whitespace-nowrap">CAM 01 HOST</span>
+      <!-- Instructions -->
+      <div class="flex flex-col gap-1 text-[8.5px] font-mono text-outline">
+        <p class="text-on-surface">Escanea el código QR de cada cámara con el celular conectado a la misma red Wi-Fi o punto de acceso USB.</p>
       </div>
-      <span class="text-[11px] font-mono px-1 py-0.5 rounded leading-none font-black shrink-0"
-        [ngClass]="switcher.activeCam() === 1 ? 'bg-black/20 text-black' : 'text-[#6b7280] bg-[#0c0e14] border border-[#222834]'">[1]</span>
-    </button>
 
-    <!-- Key 2: Guest -->
-    <button id="key-btn-2" (click)="onSelectCamera(2)" (contextmenu)="onSelectPreviewCamera(2, $event)"
-      class="w-[116px] xl:w-32 h-11 rounded border flex items-center justify-between px-2 transition-all active:scale-95 cursor-pointer"
-      [class.ring-2]="isKeyActive('2')" [class.ring-primary]="isKeyActive('2')" [class.scale-95]="isKeyActive('2')"
-      [ngClass]="switcher.activeCam() === 2
-        ? 'bg-[#ff6200] text-black font-black border-[#ff7a1a] shadow-[0_0_12px_rgba(255,98,0,0.4)]'
-        : 'bg-[#171b25] hover:bg-[#202634] text-[#d1d5db] hover:text-white font-bold border-[#2e3748] shadow-sm'">
-      <div class="flex flex-col text-left min-w-0">
-        <span class="text-[8px] uppercase tracking-wider leading-none"
-          [ngClass]="switcher.activeCam() === 2 ? 'opacity-80' : (switcher.previewCam() === 2 ? 'text-[#22c55e]' : 'text-[#9ca3af]')">
-          {{ switcher.activeCam() === 2 ? 'TAKE PGM' : (switcher.previewCam() === 2 ? 'READY PVW' : 'STANDBY') }}
-        </span>
-        <span class="text-[11px] font-tech font-black tracking-tight leading-none mt-1 whitespace-nowrap">CAM 02 GUEST</span>
-      </div>
-      <span class="text-[11px] font-mono px-1 py-0.5 rounded leading-none font-black shrink-0"
-        [ngClass]="switcher.activeCam() === 2 ? 'bg-black/20 text-black' : 'text-[#6b7280] bg-[#0c0e14] border border-[#222834]'">[2]</span>
-    </button>
-
-    <!-- Key 3: Wide -->
-    <button id="key-btn-3" (click)="onSelectCamera(3)" (contextmenu)="onSelectPreviewCamera(3, $event)"
-      class="w-[116px] xl:w-32 h-11 rounded border flex items-center justify-between px-2 transition-all active:scale-95 cursor-pointer"
-      [class.ring-2]="isKeyActive('3')" [class.ring-primary]="isKeyActive('3')" [class.scale-95]="isKeyActive('3')"
-      [ngClass]="switcher.activeCam() === 3
-        ? 'bg-[#ff6200] text-black font-black border-[#ff7a1a] shadow-[0_0_12px_rgba(255,98,0,0.4)]'
-        : 'bg-[#171b25] hover:bg-[#202634] text-[#d1d5db] hover:text-white font-bold border-[#2e3748] shadow-sm'">
-      <div class="flex flex-col text-left min-w-0">
-        <span class="text-[8px] uppercase tracking-wider leading-none"
-          [ngClass]="switcher.activeCam() === 3 ? 'opacity-80' : (switcher.previewCam() === 3 ? 'text-[#22c55e]' : 'text-[#9ca3af]')">
-          {{ switcher.activeCam() === 3 ? 'TAKE PGM' : (switcher.previewCam() === 3 ? 'READY PVW' : 'STANDBY') }}
-        </span>
-        <span class="text-[11px] font-tech font-black tracking-tight leading-none mt-1 whitespace-nowrap">CAM 03 WIDE</span>
-      </div>
-      <span class="text-[11px] font-mono px-1 py-0.5 rounded leading-none font-black shrink-0"
-        [ngClass]="switcher.activeCam() === 3 ? 'bg-black/20 text-black' : 'text-[#6b7280] bg-[#0c0e14] border border-[#222834]'">[3]</span>
-    </button>
-  </div>
-
-  <!-- Center: Virtual Broadcast T-Bar & Transition Modes -->
-  <div class="flex items-center space-x-2 bg-[#08090d] border border-[#202634] rounded px-2 py-1.5 shrink-0">
-    <!-- T-Bar Position Display & Track -->
-    <div class="flex flex-col">
-      <div class="flex justify-between text-[8px] font-mono text-[#8b949e]">
-        <span>T-BAR VIRTUAL</span>
-        <span class="text-[#ff6200] font-bold">{{ (switcher.tbarProgress() * 100).toFixed(0) }}%</span>
-      </div>
-      <!-- T-Bar Slider Track -->
-      <div #tbarTrack
-           id="tbar-track"
-           (mousedown)="onTbarMouseDown($event)"
-           (touchstart)="onTbarTouchStart($event)"
-           (touchmove)="onTbarTouchMove($event)"
-           (touchend)="onTbarTouchEnd()"
-           class="w-32 xl:w-36 h-5 bg-[#12161f] border border-[#2a3242] rounded-xs flex items-center justify-between px-1 relative overflow-hidden cursor-ew-resize select-none">
-        <!-- Progressive Fill -->
-        <div id="tbar-fill"
-             class="absolute left-0 top-0 bottom-0 bg-[#ff6200]/30 pointer-events-none"
-             [style.width.%]="switcher.tbarProgress() * 100"></div>
-
-        <!-- Hidden Accessible Range Input -->
-        <input type="range"
-               id="tbar-slider"
-               min="0"
-               max="100"
-               [value]="switcher.tbarProgress() * 100"
-               (input)="onTbarInput($event)"
-               (change)="onTbarChange($event)"
-               class="w-full h-full opacity-0 absolute inset-0 cursor-ew-resize z-20"/>
-
-        <span class="text-[8px] font-mono text-[#ff6200] font-black z-10 pointer-events-none">PGM:0{{ switcher.activeCam() }}</span>
-        <!-- Fader Handle -->
-        <div id="tbar-handle"
-             class="w-3.5 h-full bg-[#ff6200] rounded-xs shadow-md border border-[#ff7a1a] flex items-center justify-center pointer-events-none absolute z-10"
-             [style.left.%]="15 + (switcher.tbarProgress() * 62)">
-          <div class="w-0.5 h-3 bg-black"></div>
-        </div>
-        <span class="text-[8px] font-mono text-[#22c55e] font-black z-10 pointer-events-none">PVW:0{{ switcher.previewCam() }}</span>
-      </div>
-    </div>
-
-    <!-- Transition FX Type Switches & Speed Selector -->
-    <div class="flex items-center space-x-1">
-      <button (click)="switcher.setTransitionMode('cut')"
-        title="Modo Corte Directo: [1] [2] [3] y clics conmutan de forma instantánea sin transición"
-        class="px-2 py-1.5 font-mono rounded text-[9.5px] cursor-pointer transition-colors whitespace-nowrap"
-        [ngClass]="switcher.transitionMode() === 'cut' ? 'bg-[#ff6200] text-black font-black shadow' : 'bg-[#1a1f2c] hover:bg-[#252c3c] border border-[#2b3444] text-[#c9d1d9]'">
-        CUT
-      </button>
-      <button (click)="switcher.setTransitionMode('fade')"
-        title="Modo Disolvencia (MIX): [1] [2] [3] y clics realizan un fundido suave y cinemático"
-        class="px-2 py-1.5 font-mono rounded text-[9.5px] cursor-pointer transition-colors whitespace-nowrap"
-        [ngClass]="switcher.transitionMode() === 'fade' ? 'bg-[#ff6200] text-black font-black shadow' : 'bg-[#1a1f2c] hover:bg-[#252c3c] border border-[#2b3444] text-[#c9d1d9]'">
-        MIX
-      </button>
-      <button id="dip-black-btn" (click)="switcher.setTransitionMode('dip_black')"
-        title="Modo Dip to Black: [1] [2] [3] y clics realizan un fundido a negro antes de entrar [Atajo: D]"
-        class="px-2 py-1.5 font-mono rounded text-[9.5px] cursor-pointer transition-all whitespace-nowrap"
-        [class.ring-2]="isKeyActive('d')" [class.ring-primary]="isKeyActive('d')" [class.scale-95]="isKeyActive('d')"
-        [ngClass]="switcher.transitionMode() === 'dip_black' ? 'bg-[#ff6200] text-black font-black shadow' : 'bg-[#1a1f2c] hover:bg-[#252c3c] border border-[#2b3444] text-[#c9d1d9]'">
-        DIP [D]
-      </button>
-      <!-- Selector de Duración de Transición (Broadcast Speed) -->
-      <select [value]="switcher.transitionDurationMs()"
-              (change)="onTransitionDurationChange($event)"
-              title="Velocidad del fundido suave entre tomas"
-              class="bg-[#10141d] text-[#ff7a1a] border border-[#2b3444] rounded px-1.5 py-1 text-[9px] font-mono outline-none cursor-pointer">
-        <option [value]="300">0.3s (Rápido)</option>
-        <option [value]="500">0.5s (Normal)</option>
-        <option [value]="800">0.8s (Suave)</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- Right: Automation Execution Keys & Emergency Blackout -->
-  <div class="flex items-center space-x-1.5 shrink-0">
-    <!-- AUTO MIX [SPACE] Button -->
-    <button id="auto-mix-btn" (click)="onAutoMix()"
-      class="px-2.5 py-2 bg-[#171b26] hover:bg-[#232a3a] border border-[#3b4557] rounded text-white font-tech font-bold text-[10.5px] uppercase tracking-wide flex items-center space-x-1 transition-all cursor-pointer active:scale-95 whitespace-nowrap"
-      [class.ring-2]="isKeyActive(' ')" [class.ring-primary]="isKeyActive(' ')" [class.scale-95]="isKeyActive(' ')">
-      <svg class="w-3 h-3 text-[#ff6200]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-      </svg>
-      <span>AUTO MIX</span>
-      <span class="text-[#6b7280] font-mono text-[8.5px]">[SPACE]</span>
-    </button>
-    <!-- REC FLAG [R] -->
-    <button id="rec-flag-btn" (click)="onAddMarkerFlag()"
-      class="px-2 py-2 bg-[#171b26] hover:bg-[#232a3a] border border-[#2e3748] rounded text-[#cbd5e1] font-mono text-[9.5px] flex items-center space-x-1 cursor-pointer transition-all active:scale-95 whitespace-nowrap"
-      [class.ring-2]="isKeyActive('r')" [class.ring-secondary]="isKeyActive('r')" [class.scale-95]="isKeyActive('r')">
-      <span>REC FLAG</span>
-      <span class="text-[#6b7280]">[R]</span>
-    </button>
-    <!-- TAP SYNC [T] -->
-    <button id="tap-sync-btn" (click)="onCycleTapSync()"
-      class="px-2 py-2 bg-[#171b26] hover:bg-[#232a3a] border border-[#2e3748] rounded text-[#cbd5e1] font-mono text-[9.5px] flex items-center space-x-1 cursor-pointer transition-all active:scale-95 whitespace-nowrap"
-      [class.ring-2]="isKeyActive('t')" [class.ring-primary]="isKeyActive('t')" [class.scale-95]="isKeyActive('t')">
-      <span>TAP SYNC</span>
-      <span class="text-[#6b7280]">[T]</span>
-    </button>
-    <!-- BLACK OUT [B] Emergency Cut Key -->
-    <button id="emergency-black-btn" (click)="onToggleEmergencyBlack()"
-      class="px-2.5 py-2 border-2 border-[#ef4444] font-tech font-black text-[10.5px] rounded tracking-wider shadow-[0_0_8px_rgba(239,68,68,0.25)] transition-all cursor-pointer active:scale-95 whitespace-nowrap"
-      [class.ring-2]="isKeyActive('b')" [class.ring-error]="isKeyActive('b')" [class.scale-95]="isKeyActive('b')"
-      [ngClass]="switcher.isEmergencyBlack() ? 'bg-[#ef4444] text-black' : 'bg-[#000000] hover:bg-[#1a0505] text-[#ef4444] hover:text-white'">
-      BLACK OUT [B]
-    </button>
-  </div>
-</footer>
-<!-- END: BottomSwitcherConsole -->
-
-<!-- QR MODAL DIALOG -->
-<div *ngIf="isQrModalOpen()" (click)="closeQrModal()" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-  <div (click)="$event.stopPropagation()" class="bg-[#11141a] border border-[#2f3747] rounded-lg max-w-2xl w-full p-5 flex flex-col gap-4 shadow-2xl">
-    <div class="flex items-center justify-between border-b border-[#252b37] pb-3">
-      <div class="flex items-center gap-2.5">
-        <img src="/tx_studio_Isotipo_naranja.svg" class="w-6 h-6 object-contain" alt="TX Icon">
-        <span class="font-tech font-bold text-white text-sm tracking-wider uppercase">EMPAREJAMIENTO RÁPIDO DE CÁMARAS MÓVILES (WEBRTC LAN)</span>
-      </div>
-      <button (click)="closeQrModal()" class="text-[#8b949e] hover:text-white cursor-pointer font-bold px-2.5 py-1 bg-[#1a1f29] rounded border border-[#2e3746]">✕ CERRAR</button>
-    </div>
-
-    <div class="bg-[#161b24] border border-[#ff6200]/40 rounded p-2.5 text-[11px] text-[#c9d1d9] flex items-center justify-between">
-      <span>1. Conecta tus celulares al mismo Wi-Fi que esta PC (<strong class="text-[#ff7a1a]">{{ webrtc.baseUrl() }}</strong>).<br>2. Escanea el código QR de la cámara deseada y acepta el certificado local ("Configuración avanzada -> Continuar") y el permiso de cámara.</span>
-    </div>
-
-    <div class="grid grid-cols-3 gap-3">
-      <div *ngFor="let cam of webrtc.cameras()" class="bg-[#090b0e] p-3 rounded border flex flex-col items-center gap-2 text-center"
-        [ngClass]="cam.isConnected ? 'border-[#22c55e]' : 'border-[#252b37]'">
-        <div class="flex items-center justify-between w-full px-1">
-          <span class="font-bold text-[#ff7a1a] font-mono text-xs">CAM 0{{ cam.id }}</span>
-          <span class="text-[9px] px-1.5 py-0.5 rounded font-mono"
-            [ngClass]="cam.isConnected ? 'bg-[#22c55e]/20 text-[#22c55e]' : 'bg-[#232936] text-[#8b949e]'">
-            {{ cam.isConnected ? 'CONECTADA' : 'ESPERANDO' }}
-          </span>
-        </div>
-        <img [src]="getQrImageUrl(cam.id)" class="w-36 h-36 bg-white p-1.5 rounded shadow" alt="QR Cámara {{ cam.id }}">
-        <span class="text-[10px] text-white font-semibold">{{ cam.label }}</span>
-        <a [href]="getCameraUrl(cam.id)" target="_blank" class="text-[9.5px] text-[#ff7a1a] hover:underline font-mono break-all">{{ getCameraUrl(cam.id) }}</a>
+      <!-- Modal Footer -->
+      <div class="flex justify-end pt-2 border-t border-surface-container-highest">
+        <button (click)="closeQrModal()"
+          class="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-white rounded font-mono text-[9px] uppercase font-bold cursor-pointer">
+          Cerrar
+        </button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- INTERACTIVE ONBOARDING TUTORIAL MODAL -->
-<div *ngIf="isTutorialOpen()" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 pointer-events-auto">
-  <div (click)="$event.stopPropagation()" class="bg-[#11141a] border-2 border-[#ff6200] rounded-lg max-w-xl w-full p-5 flex flex-col gap-4 shadow-[0_0_40px_rgba(255,98,0,0.35)]">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-[#252b37] pb-3">
-      <div class="flex items-center gap-2.5">
-        <img src="/tx_studio_Isotipo_naranja.svg" class="w-6 h-6 object-contain" alt="TX Icon">
-        <div class="flex flex-col">
-          <span class="text-[9.5px] font-mono text-[#ff7a1a] tracking-widest uppercase">{{ tutorialSteps[tutorialStep()].badge }}</span>
-          <span class="font-tech font-bold text-white text-sm tracking-wide uppercase">GUÍA RÁPIDA DE PRODUCCIÓN // TX-STUDIO</span>
-        </div>
-      </div>
-      <button (click)="completeTutorial()" class="text-[#8b949e] hover:text-white cursor-pointer font-mono text-[10px] px-2.5 py-1 bg-[#1a1f29] rounded border border-[#2e3746]">
-        OMITIR ✕
-      </button>
-    </div>
-
-    <!-- Step Progress Pills -->
-    <div class="flex items-center gap-1.5">
-      <button *ngFor="let step of tutorialSteps; let idx = index"
-        (click)="goToTutorialStep(idx)"
-        class="h-1.5 flex-1 rounded-full cursor-pointer transition-all"
-        [ngClass]="idx === tutorialStep() ? 'bg-[#ff6200]' : (idx < tutorialStep() ? 'bg-[#ff6200]/45' : 'bg-[#252b37]')">
-      </button>
-    </div>
-
-    <!-- Step Content -->
-    <div class="bg-[#0b0d12] border border-[#232936] rounded p-3.5 flex flex-col gap-2.5">
-      <h3 class="font-tech font-bold text-[#ff7a1a] text-base tracking-wide">
-        {{ tutorialSteps[tutorialStep()].title }}
-      </h3>
-      <p class="text-[#c9d1d9] text-[11.5px] leading-relaxed font-sans">
-        {{ tutorialSteps[tutorialStep()].description }}
-      </p>
-      <div class="mt-1 pt-2.5 border-t border-[#1c222e] flex flex-col gap-1.5">
-        <div *ngFor="let tip of tutorialSteps[tutorialStep()].tips" class="flex items-start gap-2 text-[10.5px] text-[#9ca3af] font-mono">
-          <span class="text-[#ff6200] font-bold">▸</span>
-          <span>{{ tip }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer Navigation -->
-    <div class="flex items-center justify-between pt-1">
-      <button (click)="prevTutorialStep()"
-        [disabled]="tutorialStep() === 0"
-        class="px-3 py-1.5 rounded border border-[#2e3748] bg-[#171b25] hover:bg-[#202634] text-[#cbd5e1] font-tech font-bold text-[11px] uppercase tracking-wider cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
-        ← ANTERIOR
-      </button>
-
-      <span class="text-[10px] font-mono text-[#8b949e]">
-        La zona explicada se resalta en <strong class="text-[#ff7a1a]">naranja</strong> en tu pantalla
-      </span>
-
-      <button (click)="nextTutorialStep()"
-        class="px-4 py-1.5 rounded bg-[#ff6200] hover:bg-[#ff7a1a] text-black font-tech font-black text-[11px] uppercase tracking-wider shadow-[0_0_12px_rgba(255,98,0,0.4)] cursor-pointer active:scale-95">
-        {{ tutorialStep() === tutorialSteps.length - 1 ? '✓ COMENZAR A PRODUCIR' : 'SIGUIENTE PASO →' }}
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- FLOATING TOAST NOTIFICATION -->
-<div *ngIf="toastMessage()" class="fixed bottom-20 right-5 z-50 bg-[#141821] border border-[#ff6200] text-white px-4 py-2 rounded shadow-2xl font-mono text-[11px] flex items-center gap-2">
-  <span class="w-2 h-2 rounded-full bg-[#ff6200] animate-ping"></span>
-  <span>{{ toastMessage() }}</span>
 </div>
