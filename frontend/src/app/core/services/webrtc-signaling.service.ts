@@ -298,6 +298,7 @@ export class WebRtcSignalingService {
     try {
       const pc = this.createPeerForCamera(camId);
       pc.addTransceiver('video', { direction: 'recvonly' });
+      pc.addTransceiver('audio', { direction: 'recvonly' });
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);

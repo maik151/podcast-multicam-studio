@@ -156,10 +156,16 @@ class SignalingHub:
 
                     # 6. Control de Calidad / Resolución (Director -> Cámaras)
                     elif msg_type == "set_quality":
-                        print(f"[CONFIG] Formato solicitado: {data.get('width')}x{data.get('height')} @ {data.get('fps')}fps")
-                        for c_id, c_ws in list(self.cameras.items()):
-                            if c_ws and not c_ws.closed:
-                                await c_ws.send_str(msg.data)
+                        print(f"[CONFIG] Formato solicitado: {data.get('width')}x{data.get('height')} @ {data.get('fps')}fps (CAM {cam_id_str or 'TODAS'})")
+                        if cam_id_str and cam_id_str in self.cameras:
+                            # Enviar SOLO a la cámara destino para no reiniciar el sensor de las demás
+                            cam_ws = self.cameras.get(cam_id_str)
+                            if cam_ws and not cam_ws.closed:
+                                await cam_ws.send_str(msg.data)
+                        else:
+                            for c_id, c_ws in list(self.cameras.items()):
+                                if c_ws and not c_ws.closed:
+                                    await c_ws.send_str(msg.data)
 
                     # 7. Formato Real Notificado (Cámara -> Director)
                     elif msg_type == "format_update":
@@ -192,10 +198,13 @@ class SignalingHub:
                     self.director_ws = None
                 print("[WS] 🖥️ Director desconectado")
             elif registered_role == "camera" and registered_cam_id:
-                if self.cameras.get(registered_cam_id) is ws:
+                # Solo notificar desconexión si este socket sigue siendo el activo de la cámara.
+                # Si el celular ya se reconectó con un socket nuevo, NO tumbar el video vigente.
+                was_active = self.cameras.get(registered_cam_id) is ws
+                if was_active:
                     del self.cameras[registered_cam_id]
-                print(f"[WS] 📱 Cámara 0{registered_cam_id} desconectada")
-                if self.director_ws and not self.director_ws.closed:
+                print(f"[WS] 📱 Cámara 0{registered_cam_id} desconectada (activa={was_active})")
+                if was_active and self.director_ws and not self.director_ws.closed:
                     await self.director_ws.send_str(json.dumps({
                         "type": "camera_disconnected",
                         "camId": int(registered_cam_id) if str(registered_cam_id).isdigit() else registered_cam_id

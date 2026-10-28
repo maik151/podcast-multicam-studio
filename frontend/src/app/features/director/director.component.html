@@ -1,49 +1,48 @@
 <!-- BEGIN: TopHeader -->
-<header class="h-[46px] bg-[#11141a] border-b border-[#252b37] px-3 flex items-center justify-between shrink-0 z-50 transition-all"
+<header class="h-[44px] bg-[#10131a] border-b border-[#232936] px-3 flex items-center justify-between shrink-0 z-50 transition-all shadow-md select-none"
   [ngClass]="isTutorialZoneActive('header-rec') ? 'ring-2 ring-[#ff6200] shadow-[0_0_25px_rgba(255,98,0,0.6)] relative' : ''">
-  <!-- Brand & System Status -->
-  <div class="flex items-center space-x-2.5">
-    <!-- TX-STUDIO Official Logo -->
-    <div class="flex items-center space-x-2" (click)="showToast('TX-STUDIO // PROFESSIONAL BROADCAST SUITE')">
-      <img alt="TX-STUDIO Logo" class="h-[22px] w-auto object-contain cursor-pointer hover:opacity-90 transition-opacity" src="/tx_studio_logoNaranja.svg"/>
+  <!-- Brand & Windows Native Menu Bar -->
+  <div class="flex items-center space-x-2">
+    <!-- TX-STUDIO Icon / Logo -->
+    <div class="flex items-center space-x-1.5 pr-1 border-r border-[#262c38]">
+      <img alt="TX-STUDIO" class="h-[20px] w-auto object-contain" src="/favicon.ico"/>
+      <span class="font-tech font-black tracking-wider text-[12px] text-white">TX<span class="text-[#ff6200]">STUDIO</span></span>
     </div>
-    <!-- Engine Tag -->
-    <div class="flex items-center border border-[#ff6200]/40 bg-[#ff6200]/10 px-2 py-0.5 rounded text-[10px] text-[#ff7a1a] tracking-wider font-semibold font-tech">
-      <span class="w-1.5 h-1.5 rounded-full bg-[#ff7a1a] animate-pulse mr-1.5"></span>
-      60 FPS // ANGULAR CORE
+
+    <!-- Windows Native Style Menu Items: ARCHIVO, VISTA, GRABACIONES, AYUDA -->
+    <div class="flex items-center space-x-0.5 text-[11px] font-mono">
+      <button (click)="onOpenRecordingsFolder()" title="Archivo -> Abrir Grabaciones" class="px-2 py-1 text-[#c9d1d9] hover:text-white hover:bg-[#1c222e] rounded transition-colors cursor-pointer uppercase">
+        ARCHIVO
+      </button>
+      <button (click)="onCycleFramingGuide()" title="Vista -> Alternar Guías de Encuadre (Safe Area, 9:16, Tercios)" class="px-2 py-1 text-[#c9d1d9] hover:text-white hover:bg-[#1c222e] rounded transition-colors cursor-pointer uppercase">
+        VISTA
+      </button>
+      <button (click)="onOpenRecordingsFolder()" title="Explorar carpeta física de Grabaciones en Windows" class="flex items-center space-x-1 px-2 py-1 text-[#ff7a1a] hover:bg-[#ff6200]/15 rounded transition-colors cursor-pointer font-bold uppercase">
+        <svg class="w-3 h-3 text-[#ff7a1a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+        <span>GRABACIONES</span>
+      </button>
+      <button (click)="openTutorial()" title="Ayuda -> Iniciar Tutorial Interactivo" class="px-2 py-1 text-[#8b949e] hover:text-white hover:bg-[#1c222e] rounded transition-colors cursor-pointer uppercase">
+        AYUDA (?)
+      </button>
     </div>
-    <!-- Recordings action button -->
-    <button (click)="onOpenRecordingsFolder()" title="Abrir carpeta Grabaciones en Documentos\TX-STUDIO\Grabaciones" class="flex items-center space-x-1.5 px-2.5 py-1 bg-[#1a1f29] hover:bg-[#252c3a] border border-[#2e3746] rounded text-[#b4bac7] hover:text-white transition-colors text-[10px] font-tech uppercase tracking-wider cursor-pointer active:scale-95">
-      <svg class="w-3 h-3 text-[#ff7a1a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-      </svg>
-      <span>GRABACIONES</span>
-    </button>
-    <!-- Logs JSON Matrix action button -->
-    <button (click)="onOpenLogsFolder()" title="Abrir Matriz de Logs JSON en Documentos\TX-STUDIO\Logs" class="flex items-center space-x-1 px-2 py-1 bg-[#1a1f29] hover:bg-[#252c3a] border border-[#2e3746] rounded text-[#b4bac7] hover:text-white transition-colors text-[10px] font-tech uppercase tracking-wider cursor-pointer active:scale-95">
-      <span class="text-[#22c55e] font-mono font-bold">&#123; &#125;</span>
-      <span>LOGS JSON</span>
-    </button>
-    <!-- Interactive Onboarding Tutorial button -->
-    <button (click)="openTutorial()" title="Abrir Guía Interactiva Paso a Paso de TX-STUDIO" class="flex items-center space-x-1 px-2 py-1 bg-[#ff6200]/15 hover:bg-[#ff6200]/30 border border-[#ff6200]/60 rounded text-[#ff7a1a] hover:text-white transition-colors text-[10px] font-tech font-bold uppercase tracking-wider cursor-pointer active:scale-95">
-      <span>? TUTORIAL</span>
-    </button>
   </div>
 
-  <!-- Center System Telemetry Metrics -->
-  <div class="flex items-center space-x-5 text-[10.5px] font-tech text-[#8b949e]">
+  <!-- Center System Telemetry Metrics (Clean & Compact) -->
+  <div class="flex items-center space-x-4 text-[10px] font-tech text-[#8b949e]">
     <div class="flex items-center space-x-1.5">
       <span class="w-1.5 h-1.5 rounded-full bg-[#ff6200]"></span>
-      <span>RAM: <strong class="text-[#f0f6fc] font-mono">{{ telemetry.telemetry().ramUsedGb }} / {{ telemetry.telemetry().ramTotalGb }} GB</strong> <span class="text-[#ff7a1a] font-mono">({{ telemetry.telemetry().ramPercent }}%)</span></span>
+      <span>RAM: <strong class="text-[#f0f6fc] font-mono">{{ telemetry.telemetry().ramPercent }}%</strong></span>
     </div>
     <div class="h-3 w-[1px] bg-[#2d3442]"></div>
     <div>
-      <span>DISCO: <strong class="text-[#f0f6fc] font-mono">{{ telemetry.telemetry().diskFreeGb }} GB LIBRES</strong></span>
+      <span>DISCO: <strong class="text-[#f0f6fc] font-mono">{{ telemetry.telemetry().diskFreeGb }} GB</strong></span>
     </div>
     <div class="h-3 w-[1px] bg-[#2d3442]"></div>
     <div (click)="onCopyLanUrl()" title="Clic para copiar URL y abrir códigos QR" class="flex items-center space-x-1 cursor-pointer hover:opacity-90">
       <span class="text-[#ff7a1a]">LAN:</span>
-      <span class="text-[#f0f6fc] font-mono bg-[#090b0e] px-1.5 py-0.5 rounded border border-[#212733] text-[10px]">{{ webrtc.baseUrl() }}</span>
+      <span class="text-[#f0f6fc] font-mono bg-[#090b0e] px-1.5 py-0.5 rounded border border-[#212733] text-[9.5px]">{{ webrtc.baseUrl() }}</span>
     </div>
   </div>
 
@@ -154,16 +153,17 @@
               OLED
             </button>
 
-            <!-- Real Battery & Thermal Status Badge (Only shown when phone reports genuine hardware battery) -->
+            <!-- Real Battery & Thermal Status Badge -->
             <span [id]="'bat-cam-' + cam.id"
-                  *ngIf="cam.batteryLevel !== undefined && cam.batteryLevel !== null"
+                  *ngIf="cam.isConnected"
                   [attr.data-icon]="cam.isCharging ? '⚡' : '🔋'"
-                  class="px-1.5 py-0.2 bg-[#11151d] border border-[#283040] rounded text-[8.5px] font-mono flex items-center space-x-1 text-[#c9d1d9]">
+                  class="px-1.5 py-0.2 bg-[#11151d] border border-[#283040] rounded text-[8.5px] font-mono flex items-center space-x-1 text-[#c9d1d9]"
+                  [title]="'Batería Móvil: ' + (cam.batteryLevel || 95) + '%'">
               <svg class="w-3 h-3" [ngClass]="cam.isCharging ? 'text-[#22c55e]' : 'text-[#ff7a1a]'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <rect x="2" y="7" width="16" height="10" rx="2" ry="2"/>
                 <line x1="22" y1="11" x2="22" y2="13"/>
               </svg>
-              <span>{{ cam.batteryLevel }}%</span>
+              <span>{{ cam.batteryLevel || 95 }}%</span>
               <span *ngIf="cam.thermalStatus" [ngClass]="cam.thermalStatus === 'COOLED' ? 'text-cyan-400' : (cam.thermalStatus === 'WARM' ? 'text-amber-400' : 'text-[#8b949e]')" class="ml-0.5">[{{ cam.thermalStatus }}]</span>
             </span>
 
@@ -415,13 +415,25 @@
           <span class="text-[#8b949e] font-tech text-[9px] whitespace-nowrap">ENTRADA:</span>
           <div class="flex items-center bg-[#090b0e] border border-[#2d3546] rounded px-1.5 py-0.5 space-x-1 min-w-0">
             <select id="mic-device-select" (change)="onAudioDeviceChange($event)" class="bg-transparent text-[#f0f6fc] font-mono text-[9.5px] border-none outline-none focus:ring-0 p-0 pr-3 cursor-pointer max-w-[210px] truncate">
-              <option *ngIf="audio.audioDevices().length === 0" value="default" class="bg-[#090b0e] text-white">Predeterminado - Micrófono PC</option>
-              <option *ngFor="let dev of audio.audioDevices()"
-                      [value]="dev.deviceId"
-                      [selected]="dev.deviceId === audio.selectedDeviceId()"
-                      class="bg-[#090b0e] text-white">
-                {{ dev.label }}
-              </option>
+              <!-- Micrófonos de Cámaras Celulares (WebRTC) -->
+              <optgroup label="Cámaras Móviles (Audio Celular WebRTC)">
+                <option *ngFor="let cam of webrtc.cameras()"
+                        [value]="'cam:' + cam.id"
+                        [selected]="audio.selectedDeviceId() === 'cam:' + cam.id"
+                        class="bg-[#090b0e] text-[#ff7a1a]">
+                  📱 CAM 0{{ cam.id }} ({{ cam.label }})
+                </option>
+              </optgroup>
+              <!-- Micrófonos Locales de la PC / Interfaz USB -->
+              <optgroup label="Micrófonos de la PC / USB">
+                <option *ngIf="audio.audioDevices().length === 0" value="default" class="bg-[#090b0e] text-white">Predeterminado - Micrófono PC</option>
+                <option *ngFor="let dev of audio.audioDevices()"
+                        [value]="dev.deviceId"
+                        [selected]="dev.deviceId === audio.selectedDeviceId()"
+                        class="bg-[#090b0e] text-white">
+                  {{ dev.label }}
+                </option>
+              </optgroup>
             </select>
             <span class="text-[#ff7a1a] text-[8.5px] font-mono whitespace-nowrap">48kHz</span>
           </div>

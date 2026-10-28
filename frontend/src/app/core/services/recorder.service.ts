@@ -251,7 +251,14 @@ export class RecorderService {
 
   public getOptimalMimeType(): { mime: string; ext: string; codecName: string; hardwareAccelerated: boolean } {
     const candidates = [
-      // 1. Prioridad #1: H.264 acelerado por GPU (Nvidia NVENC / Intel QuickSync / AMD AMF)
+      // 0. Prioridad #0: MP4 estándar (H.264 + AAC) reproducible en Windows Media Player, VLC, Premiere, DaVinci
+      { mime: 'video/mp4;codecs=avc1.640028,mp4a.40.2', ext: 'mp4', codecName: 'MP4 H.264 High + AAC', hardwareAccelerated: true },
+      { mime: 'video/mp4;codecs=avc1.4d0028,mp4a.40.2', ext: 'mp4', codecName: 'MP4 H.264 Main + AAC', hardwareAccelerated: true },
+      { mime: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', ext: 'mp4', codecName: 'MP4 H.264 Baseline + AAC', hardwareAccelerated: true },
+      { mime: 'video/mp4;codecs=avc1,mp4a.40.2', ext: 'mp4', codecName: 'MP4 H.264 + AAC', hardwareAccelerated: true },
+      { mime: 'video/mp4;codecs=avc1,opus', ext: 'mp4', codecName: 'MP4 H.264 + Opus', hardwareAccelerated: true },
+      { mime: 'video/mp4', ext: 'mp4', codecName: 'MP4 Auto', hardwareAccelerated: false },
+      // 1. Fallback WebM H.264 (navegadores antiguos sin muxer MP4)
       { mime: 'video/webm; codecs="h264,opus"', ext: 'webm', codecName: 'H.264 (NVENC/QuickSync)', hardwareAccelerated: true },
       { mime: 'video/webm;codecs=h264,opus', ext: 'webm', codecName: 'H.264 (NVENC/QuickSync)', hardwareAccelerated: true },
       // 2. Prioridad #2: VP9 (Compresión de alta densidad)
@@ -261,10 +268,7 @@ export class RecorderService {
       { mime: 'video/webm; codecs="vp8,opus"', ext: 'webm', codecName: 'VP8 (Legacy Broadcast)', hardwareAccelerated: false },
       { mime: 'video/webm;codecs=vp8,opus', ext: 'webm', codecName: 'VP8 (Legacy Broadcast)', hardwareAccelerated: false },
       // 4. Fallback WebM genérico
-      { mime: 'video/webm', ext: 'webm', codecName: 'WebM Auto', hardwareAccelerated: false },
-      // 5. Fallback MP4 nativo
-      { mime: 'video/mp4; codecs="avc1.4d002a, mp4a.40.2"', ext: 'mp4', codecName: 'AVC/H.264 MP4', hardwareAccelerated: true },
-      { mime: 'video/mp4', ext: 'mp4', codecName: 'MP4 Auto', hardwareAccelerated: false }
+      { mime: 'video/webm', ext: 'webm', codecName: 'WebM Auto', hardwareAccelerated: false }
     ];
 
     for (const c of candidates) {

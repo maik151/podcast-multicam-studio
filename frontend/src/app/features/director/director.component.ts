@@ -190,7 +190,18 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
   }
 
+  /**
+   * Notificaciones de acciones rutinarias: silenciosas por diseño (solo consola de depuración).
+   * Cada control ya refleja su estado visualmente; no se muestran ventanas emergentes.
+   */
   public showToast(msg: string): void {
+    console.debug('[TX-STUDIO]', msg);
+  }
+
+  /**
+   * Avisos críticos que requieren atención del operador (p. ej. acción imposible).
+   */
+  public showAlert(msg: string): void {
     this.toastMessage.set(msg);
     if (this.toastTimeout) clearTimeout(this.toastTimeout);
     this.toastTimeout = window.setTimeout(() => this.toastMessage.set(null), 3200);
@@ -352,7 +363,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showToast(`[FLAG] Marcador agregado en [${marker.timecode}]`);
     } else {
       this.telemetry.logEvent('RECORDER', 'CUE_MARKERS', 'MARKER_WITHOUT_REC', 'Intento de insertar marcador sin grabación activa', {}, 'WARN');
-      this.showToast('Inicia primero la grabación [INICIAR GRABACIÓN] para insertar marcadores');
+      this.showAlert('Inicia primero la grabación [INICIAR GRABACIÓN] para insertar marcadores');
     }
   }
 
@@ -576,12 +587,22 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     // Ejecución Fuera de Angular Zone (Zero Zone.js overhead a 60 FPS)
     this.ngZone.runOutsideAngular(() => {
       const videoElements: { [camId: number]: HTMLVideoElement } = {};
+      const lastGoodFrames: { [camId: number]: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; lastSeen: number } } = {};
+
       for (let i = 1; i <= 3; i++) {
         const v = document.createElement('video');
         v.autoplay = true;
         v.playsInline = true;
         v.muted = true;
         videoElements[i] = v;
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 1920;
+        offCanvas.height = 1080;
+        const offCtx = offCanvas.getContext('2d');
+        if (offCtx) {
+          lastGoodFrames[i] = { canvas: offCanvas, ctx: offCtx, lastSeen: 0 };
+        }
       }
 
       const drawLoop = () => {
@@ -619,18 +640,26 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
           const liveVid = (document.getElementById(`iso-video-${camId}`) as HTMLVideoElement | null) || vid;
           const hasStream = liveVid && liveVid.srcObject;
           const hasFrames = Boolean(hasStream && (liveVid.videoWidth > 0 || liveVid.readyState >= 2));
+          const now = performance.now();
+          const buffer = lastGoodFrames[camId];
 
           if (hasFrames) {
             if (liveVid.paused) {
               liveVid.play().catch(() => {});
             }
             ctx.drawImage(liveVid, 0, 0, width, height);
+            if (buffer) {
+              buffer.ctx.drawImage(liveVid, 0, 0, buffer.canvas.width, buffer.canvas.height);
+              buffer.lastSeen = now;
+            }
+          } else if (buffer && buffer.lastSeen > 0 && (now - buffer.lastSeen < 3000)) {
+            // Protección Broadcast Anti-Flicker: Sostener último frame válido ante caídas de paquetes o micro-jitter
+            ctx.drawImage(buffer.canvas, 0, 0, width, height);
           } else {
-            // Si tiene stream pero aún está cargando el primer frame, intentar reproducir
+            // Solo si nunca ha emitido o lleva más de 3 segundos sin señal, mostrar barras de prueba
             if (hasStream && liveVid.paused) {
               liveVid.play().catch(() => {});
             }
-            // Test Pattern Profesional Broadcast cuando no hay cámara conectada
             this.drawBroadcastTestPattern(ctx, width, height, camId);
           }
           ctx.restore();
