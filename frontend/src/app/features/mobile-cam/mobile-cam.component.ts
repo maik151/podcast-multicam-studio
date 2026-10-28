@@ -649,19 +649,6 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       }>;
     };
 
-    let sessionBaseBattery = 98;
-    const sessionStart = Date.now();
-
-    const fallbackSessionBattery = () => {
-      this.isBatterySupported.set(true);
-      // Estimación gradual de descarga por sesión de transmisión WebRTC (1% cada 4.5 minutos)
-      const minutesElapsed = (Date.now() - sessionStart) / 60000;
-      const estimated = Math.max(15, Math.round(sessionBaseBattery - (minutesElapsed / 4.5)));
-      this.batteryLevel.set(estimated);
-      this.isCharging.set(false);
-      this.reportBattery();
-    };
-
     if (nav && typeof nav.getBattery === 'function') {
       nav.getBattery().then(batt => {
         const update = () => {
@@ -672,49 +659,51 @@ export class MobileCamComponent implements OnInit, OnDestroy {
                             navigator.userAgent.toLowerCase().includes('brave');
 
             if (isSpoofed && isBrave) {
-              // Navegador Brave bloqueó acceso a batería. Usar telemetría de sesión calculada.
-              fallbackSessionBattery();
+              // Navegador Brave bloqueó acceso a batería. No mostrar datos falsos.
+              this.isBatterySupported.set(false);
+              this.batteryLevel.set(null);
             } else {
               this.isBatterySupported.set(true);
               this.batteryLevel.set(Math.round(batt.level * 100));
               this.isCharging.set(Boolean(batt.charging));
-              this.reportBattery();
             }
           } else {
-            fallbackSessionBattery();
+            this.isBatterySupported.set(false);
+            this.batteryLevel.set(null);
           }
+          this.reportBattery();
         };
         update();
         batt.addEventListener('levelchange', update);
         batt.addEventListener('chargingchange', update);
       }).catch(() => {
-        fallbackSessionBattery();
+        this.isBatterySupported.set(false);
+        this.batteryLevel.set(null);
+        this.reportBattery();
       });
     } else {
-      // Dispositivo Android/iOS con Battery Status API desactivada por políticas de privacidad
-      fallbackSessionBattery();
+      // Dispositivo Android/iOS con Battery Status API restringida por el navegador
+      this.isBatterySupported.set(false);
+      this.batteryLevel.set(null);
+      this.reportBattery();
     }
 
     if (this.batteryInterval) clearInterval(this.batteryInterval);
     this.batteryInterval = window.setInterval(() => {
-      if (!nav || typeof nav.getBattery !== 'function') {
-        fallbackSessionBattery();
-      } else {
-        this.reportBattery();
-      }
+      this.reportBattery();
     }, 5000);
   }
 
   public reportBattery(): void {
     const isOled = this.isOledActive();
     const thermalStatus = isOled ? 'COOLED' : (this.isTorchOn() ? 'WARM' : 'NORMAL');
-    const realLevel = this.isBatterySupported() ? this.batteryLevel() : undefined;
+    const realLevel = this.batteryLevel();
 
     this.sendWs({
       type: 'battery',
       camId: this.camId(),
-      level: realLevel,
-      battery: realLevel,
+      level: realLevel !== null ? realLevel : undefined,
+      battery: realLevel !== null ? realLevel : undefined,
       charging: this.isBatterySupported() ? this.isCharging() : undefined,
       isCharging: this.isBatterySupported() ? this.isCharging() : undefined,
       thermalStatus: thermalStatus,

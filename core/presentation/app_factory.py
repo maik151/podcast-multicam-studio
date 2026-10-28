@@ -111,7 +111,8 @@ def create_application(container: ApplicationContainer = None) -> web.Applicatio
     if container is None:
         container = ApplicationContainer()
 
-    app = web.Application(middlewares=[traceability_middleware])
+    # client_max_size=100MB para soportar streaming continuo de chunks binarios de video 1080p60 sin HTTP 413
+    app = web.Application(middlewares=[traceability_middleware], client_max_size=100 * 1024 * 1024)
     app["container"] = container
 
     # 1. Rutas de Entrega SPA Frontend

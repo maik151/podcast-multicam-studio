@@ -26,7 +26,7 @@ export class AudioDspService {
   public readonly isTapeWarmth = signal<boolean>(false);
   public readonly isMasterMuted = signal<boolean>(false);
   public readonly headphoneVolume = signal<number>(80);
-  public readonly isCueMuted = signal<boolean>(false);
+  public readonly isCueMuted = signal<boolean>(true);
 
   // Web Audio Nodes
   private audioCtx: AudioContext | null = null;

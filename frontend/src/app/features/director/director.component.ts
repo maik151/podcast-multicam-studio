@@ -614,6 +614,8 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
           const domVid = document.getElementById(`iso-video-${i}`) as HTMLVideoElement | null;
           if (domVid) {
             videoElements[i] = domVid;
+            domVid.muted = true;
+            domVid.volume = 0;
             if (stream && domVid.srcObject !== stream) {
               domVid.srcObject = stream;
             }
@@ -622,6 +624,8 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
             }
           } else {
             const v = videoElements[i];
+            v.muted = true;
+            v.volume = 0;
             if (stream && v.srcObject !== stream) {
               v.srcObject = stream;
             }
