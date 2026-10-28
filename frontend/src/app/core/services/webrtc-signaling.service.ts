@@ -109,14 +109,16 @@ export class WebRtcSignalingService {
       this.ngZone.run(() => {
         this.cleanupPeer(camId);
       });
-    } else if (msg.type === 'offer' && msg.sdp) {
+    } else if (msg.type === 'offer' && (msg.sdp || (msg as any).offer)) {
+      const rawSdp = msg.sdp || (msg as any).offer;
       // Soporte WHIP Invertido: cuando el móvil envía Offer con su hardware track
       console.log(`[WebRtcService] Recibida oferta SDP directa desde Cámara 0${camId}`);
-      await this.handleIncomingOffer(camId, msg.sdp);
-    } else if (msg.type === 'answer' && msg.sdp) {
+      await this.handleIncomingOffer(camId, rawSdp);
+    } else if (msg.type === 'answer' && (msg.sdp || (msg as any).answer)) {
+      const rawSdp = msg.sdp || (msg as any).answer;
       const pc = this.peerConnections[camId];
       if (pc && pc.signalingState !== 'stable') {
-        await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+        await pc.setRemoteDescription(new RTCSessionDescription(rawSdp));
         const pending = this.pendingCandidates[camId] || [];
         for (const cand of pending) {
           try {
@@ -196,6 +198,19 @@ export class WebRtcSignalingService {
 
     pc.ontrack = (e) => {
       console.log(`[WebRtcService] 🎥 Track ${e.track.kind} recibido de Cámara 0${camId}`);
+      if (e.receiver) {
+        try {
+          if ('playoutDelayHint' in e.receiver) {
+            (e.receiver as any).playoutDelayHint = 0;
+          }
+          if ('jitterBufferDelayHint' in e.receiver) {
+            (e.receiver as any).jitterBufferDelayHint = 0;
+          }
+          if ('jitterBufferTarget' in e.receiver) {
+            (e.receiver as any).jitterBufferTarget = 0;
+          }
+        } catch {}
+      }
       this.reportWebRtcLog('INFO', 'WEBRTC_TRACK_RECEIVED', `Flujo RTP ${e.track.kind} recibido desde CAM 0${camId}`, {
         camId,
         trackKind: e.track?.kind,
@@ -297,10 +312,13 @@ export class WebRtcSignalingService {
   public async initiateCall(camId: number): Promise<void> {
     try {
       const pc = this.createPeerForCamera(camId);
-      pc.addTransceiver('video', { direction: 'recvonly' });
+      const vTransceiver = pc.addTransceiver('video', { direction: 'recvonly' });
       pc.addTransceiver('audio', { direction: 'recvonly' });
 
-      const offer = await pc.createOffer();
+      this.prioritizeH264(vTransceiver);
+
+      let offer = await pc.createOffer();
+      offer = this.tuneSdp(offer);
       await pc.setLocalDescription(offer);
 
       this.sendWs({
@@ -319,7 +337,14 @@ export class WebRtcSignalingService {
       const pc = this.createPeerForCamera(camId);
       await pc.setRemoteDescription(new RTCSessionDescription(sdp));
 
-      const answer = await pc.createAnswer();
+      const transceivers = pc.getTransceivers();
+      const vTransceiver = transceivers.find(t => t.receiver && t.receiver.track && t.receiver.track.kind === 'video') || transceivers[0];
+      if (vTransceiver) {
+        this.prioritizeH264(vTransceiver);
+      }
+
+      let answer = await pc.createAnswer();
+      answer = this.tuneSdp(answer);
       await pc.setLocalDescription(answer);
 
       this.sendWs({
@@ -339,6 +364,36 @@ export class WebRtcSignalingService {
     } catch (e) {
       console.error(`[WebRtcService] Error respondiendo oferta de Cam 0${camId}:`, e);
     }
+  }
+
+  private prioritizeH264(transceiver?: RTCRtpTransceiver): void {
+    if (!transceiver || !transceiver.setCodecPreferences) return;
+    if (typeof RTCRtpReceiver.getCapabilities !== 'function') return;
+    try {
+      const caps = RTCRtpReceiver.getCapabilities('video');
+      if (caps && caps.codecs) {
+        const h264 = caps.codecs.filter(c => c.mimeType.toLowerCase() === 'video/h264');
+        const others = caps.codecs.filter(c => c.mimeType.toLowerCase() !== 'video/h264');
+        if (h264.length > 0) {
+          transceiver.setCodecPreferences([...h264, ...others]);
+        }
+      }
+    } catch (e) {
+      console.warn('[WebRtcService] Error priorizando H.264:', e);
+    }
+  }
+
+  private tuneSdp(desc: RTCSessionDescriptionInit): RTCSessionDescriptionInit {
+    if (!desc.sdp) return desc;
+    let sdp = desc.sdp;
+    sdp = sdp.replace(new RegExp('(m=video [^\\r\\n]+[\\r\\n]+)', 'g'), '$1b=AS:8000\r\nb=TIAS:8000000\r\n');
+    sdp = sdp.replace(new RegExp('(a=fmtp:\\d+ [^\\r\\n]+)', 'g'), (match: string) => {
+      if (!match.includes('x-google-min-bitrate')) {
+        return `${match};x-google-min-bitrate=3500;x-google-start-bitrate=6000;x-google-max-bitrate=8000`;
+      }
+      return match;
+    });
+    return { type: desc.type, sdp };
   }
 
   private cleanupPeer(camId: number): void {

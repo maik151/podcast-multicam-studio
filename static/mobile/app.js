@@ -14,11 +14,8 @@ let peerConnection = null;
 let ws = null;
 let pendingCandidates = [];
 const rtcConfig = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ],
-  iceCandidatePoolSize: 10
+  iceServers: [], // LAN Direct P2P: enlace local instantaneo (<10ms) sin pausas de STUN externo
+  iceCandidatePoolSize: 4
 };
 let wakeLock = null;
 let isAudioEnabled = true;
@@ -220,9 +217,10 @@ function initWebSocket() {
       await startWebRTCBroadcast();
     } else if (msg.type === 'answer') {
       console.log(`[WebRTC] Recibido ANSWER del Director`);
-      if (peerConnection) {
+      const rawAns = msg.answer || msg.sdp;
+      if (peerConnection && rawAns) {
         try {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.answer));
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(rawAns));
           if (pendingCandidates.length > 0) {
             for (const cand of pendingCandidates) {
               try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
@@ -232,6 +230,12 @@ function initWebSocket() {
         } catch (e) {
           console.error('[WebRTC] Error aplicando ANSWER:', e);
         }
+      }
+    } else if (msg.type === 'offer') {
+      const rawOff = msg.offer || msg.sdp;
+      if (rawOff) {
+        console.log(`[WebRTC] Recibido OFFER entrante del Director`);
+        await handleIncomingDirectorOffer(rawOff);
       }
     } else if (msg.type === 'candidate') {
       if (peerConnection && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
@@ -286,6 +290,111 @@ function updateTallyState(state) {
   }
 }
 
+function tuneSdp(sdpStr) {
+  if (!sdpStr) return sdpStr;
+  let sdp = sdpStr.replace(/(m=video [^\r\n]+[\r\n]+)/g, '$1b=AS:8000\r\nb=TIAS:8000000\r\n');
+  sdp = sdp.replace(/(a=fmtp:\d+ [^\r\n]+)/g, (match) => {
+    if (!match.includes('x-google-min-bitrate')) {
+      return `${match};x-google-min-bitrate=3500;x-google-start-bitrate=6000;x-google-max-bitrate=8000`;
+    }
+    return match;
+  });
+  return sdp;
+}
+
+function applySenderOptimizations(pc) {
+  if (!localStream) return;
+  localStream.getTracks().forEach(track => {
+    const sender = pc.addTrack(track, localStream);
+    if (track.kind === 'video' && sender && sender.getParameters) {
+      try {
+        const params = sender.getParameters();
+        if (!params.encodings || params.encodings.length === 0) {
+          params.encodings = [{}];
+        }
+        params.encodings[0].minBitrate = 3500000;
+        params.encodings[0].maxBitrate = 8000000;
+        params.encodings[0].scaleResolutionDownBy = 1.0;
+        params.encodings[0].priority = 'high';
+        params.encodings[0].networkPriority = 'high';
+        params.degradationPreference = 'maintain-resolution';
+        sender.setParameters(params).catch(() => {});
+      } catch (e) {}
+    }
+  });
+
+  if (typeof RTCRtpSender.getCapabilities === 'function') {
+    try {
+      const transceivers = pc.getTransceivers();
+      const vTransceiver = transceivers.find(t => t.sender && t.sender.track && t.sender.track.kind === 'video');
+      if (vTransceiver && vTransceiver.setCodecPreferences) {
+        const caps = RTCRtpSender.getCapabilities('video');
+        if (caps && caps.codecs) {
+          const h264 = caps.codecs.filter(c => c.mimeType.toLowerCase() === 'video/h264');
+          const others = caps.codecs.filter(c => c.mimeType.toLowerCase() !== 'video/h264');
+          if (h264.length > 0) {
+            vTransceiver.setCodecPreferences([...h264, ...others]);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+}
+
+// Manejo bidireccional si el Director inicia la oferta
+async function handleIncomingDirectorOffer(remoteSdp) {
+  if (!localStream) {
+    await startCamera();
+  }
+  if (peerConnection) {
+    try { peerConnection.close(); } catch(e) {}
+  }
+  peerConnection = new RTCPeerConnection(rtcConfig);
+  pendingCandidates = [];
+
+  applySenderOptimizations(peerConnection);
+
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'candidate',
+        camId: camId,
+        candidate: event.candidate
+      }));
+    }
+  };
+
+  peerConnection.onconnectionstatechange = () => {
+    if (peerConnection.connectionState === 'connected' && connStatus) {
+      connStatus.textContent = '5GHz LAN · EN VIVO';
+    }
+  };
+
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteSdp));
+  if (pendingCandidates.length > 0) {
+    for (const cand of pendingCandidates) {
+      try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+    }
+    pendingCandidates = [];
+  }
+
+  const answer = await peerConnection.createAnswer();
+  const tunedAnswer = new RTCSessionDescription({
+    type: answer.type,
+    sdp: tuneSdp(answer.sdp)
+  });
+  await peerConnection.setLocalDescription(tunedAnswer);
+
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'answer',
+      camId: camId,
+      answer: tunedAnswer,
+      sdp: tunedAnswer
+    }));
+  }
+}
+
 // 4. Emisión WebRTC Directa LAN (Móvil como Offerer para compatibilidad total Safari iOS)
 async function startWebRTCBroadcast() {
   if (!localStream) {
@@ -300,10 +409,8 @@ async function startWebRTCBroadcast() {
   peerConnection = new RTCPeerConnection(rtcConfig);
   pendingCandidates = [];
 
-  // Agregar todas las pistas locales (video y audio) antes de crear la oferta (imprescindible en iOS Safari)
-  localStream.getTracks().forEach(track => {
-    peerConnection.addTrack(track, localStream);
-  });
+  // Agregar tracks con optimización de bitrate y codec H264
+  applySenderOptimizations(peerConnection);
 
   peerConnection.onicecandidate = (event) => {
     if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
@@ -333,14 +440,19 @@ async function startWebRTCBroadcast() {
       offerToReceiveAudio: false,
       offerToReceiveVideo: false
     });
-    await peerConnection.setLocalDescription(offer);
+    const tunedOffer = new RTCSessionDescription({
+      type: offer.type,
+      sdp: tuneSdp(offer.sdp)
+    });
+    await peerConnection.setLocalDescription(tunedOffer);
 
     if (ws && ws.readyState === WebSocket.OPEN) {
       console.log(`[WebRTC] Enviando OFFER de Cámara 0${camId} a Director`);
       ws.send(JSON.stringify({
         type: 'offer',
         camId: camId,
-        offer: offer
+        offer: tunedOffer,
+        sdp: tunedOffer
       }));
     }
   } catch (err) {
