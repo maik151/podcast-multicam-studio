@@ -455,11 +455,11 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
       this.pc.oniceconnectionstatechange = () => {
         if (this.pc?.iceConnectionState === 'failed') {
-          console.warn('[MobileCam] ICE fallido. Solicitando recuperación...');
-          this.requestRenegotiation(800);
+          console.warn('[MobileCam] ICE fallido. Solicitando recuperación rápida...');
+          this.requestRenegotiation(500);
         } else if (this.pc?.iceConnectionState === 'disconnected') {
-          // Período de gracia ante fluctuaciones temporales de red Wi-Fi
-          this.requestRenegotiation(3500);
+          // Recuperación ágil ante fluctuaciones de red
+          this.requestRenegotiation(1500);
         }
       };
 
@@ -467,11 +467,10 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         if (this.pc?.connectionState === 'connected') {
           this.statusText.set(`EN VIVO // ${this.actualResolutionText()}`);
         } else if (this.pc?.connectionState === 'failed') {
-          console.warn('[MobileCam] WebRTC fallido. Solicitando recuperación...');
-          this.requestRenegotiation(800);
+          console.warn('[MobileCam] WebRTC fallido. Solicitando recuperación rápida...');
+          this.requestRenegotiation(500);
         } else if (this.pc?.connectionState === 'disconnected') {
-          // Período de gracia ante fluctuaciones temporales de red Wi-Fi
-          this.requestRenegotiation(3500);
+          this.requestRenegotiation(1500);
         }
       };
 
@@ -479,7 +478,20 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
       if (this.localStream) {
         this.localStream.getTracks().forEach(track => {
-          this.pc!.addTrack(track, this.localStream!);
+          const sender = this.pc!.addTrack(track, this.localStream!);
+          if (track.kind === 'video' && sender && sender.getParameters) {
+            try {
+              const params = sender.getParameters();
+              if (!params.encodings || params.encodings.length === 0) {
+                params.encodings = [{}];
+              }
+              // Limitar a 6 Mbps max para evitar Bufferbloat en routers Wi-Fi compartidos
+              params.encodings[0].maxBitrate = 6000000;
+              params.encodings[0].priority = 'high';
+              params.encodings[0].networkPriority = 'high';
+              sender.setParameters(params).catch(() => {});
+            } catch {}
+          }
         });
       }
 

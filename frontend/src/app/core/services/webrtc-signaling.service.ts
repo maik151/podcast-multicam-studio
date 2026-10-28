@@ -220,9 +220,9 @@ export class WebRtcSignalingService {
     pc.oniceconnectionstatechange = () => {
       console.log(`[WebRtcService] ICE Cam 0${camId}:`, pc.iceConnectionState);
       if (pc.iceConnectionState === 'failed') {
-        this.scheduleReconnect(camId, 800);
+        this.scheduleReconnect(camId, 500);
       } else if (pc.iceConnectionState === 'disconnected') {
-        this.scheduleReconnect(camId, 3500);
+        this.scheduleReconnect(camId, 1500);
       }
     };
 
@@ -246,10 +246,10 @@ export class WebRtcSignalingService {
           where_function: 'onconnectionstatechange',
           exception_reason: `RTCPeerConnection state=${pc.connectionState}, ice=${pc.iceConnectionState}`
         });
-        this.scheduleReconnect(camId, 800);
+        this.scheduleReconnect(camId, 500);
       } else if (pc.connectionState === 'disconnected') {
-        // Red local Wi-Fi con jitter temporal; esperar 3.5s antes de forzar renegociación
-        this.scheduleReconnect(camId, 3500);
+        // Red local Wi-Fi con jitter temporal; recuperación ágil a los 1.5s
+        this.scheduleReconnect(camId, 1500);
       }
     };
 
