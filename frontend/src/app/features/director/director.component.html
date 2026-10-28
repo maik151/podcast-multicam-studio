@@ -256,12 +256,18 @@
                      class="w-full h-full object-cover">
               </video>
 
-              <!-- QR / Disconnected Fallback -->
+              <!-- QR / Disconnected Fallback (Ampliado para escaneo instantáneo con móvil) -->
               <div *ngIf="!cam.isConnected"
                    (click)="openQrModal()"
-                   class="absolute inset-0 flex flex-col items-center justify-center bg-black/85 cursor-pointer hover:bg-black/75 transition-colors text-outline">
-                <img [src]="getQrImageUrl(cam.id)" [alt]="'QR CAM 0' + cam.id" class="w-12 h-12 bg-white p-0.5 rounded object-contain mb-1 shadow"/>
-                <span class="font-mono text-[7.5px] uppercase font-bold text-white">VINCULAR CAM 0{{ cam.id }}</span>
+                   title="Clic para ampliar código QR de CAM 0{{ cam.id }}"
+                   class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#07090d]/95 hover:bg-[#07090d]/85 transition-colors cursor-pointer p-1.5">
+                <div class="p-2 bg-white rounded-lg shadow-2xl flex items-center justify-center border border-white/20 hover:scale-105 transition-transform">
+                  <img [src]="getQrImageUrl(cam.id)" [alt]="'QR CAM 0' + cam.id" class="w-32 h-32 xl:w-36 xl:h-36 object-contain block"/>
+                </div>
+                <div class="mt-1 flex items-center gap-1 text-[8.5px] font-mono font-bold text-white bg-surface-container px-2 py-0.5 rounded border border-surface-container-highest">
+                  <span class="material-symbols-outlined text-[12px] text-primary">qr_code_scanner</span>
+                  <span>ESCANEAR CAM 0{{ cam.id }}</span>
+                </div>
               </div>
 
               <!-- Remote Lens Floating Pill (0.5x, 1.0x, 2.0x) -->
@@ -577,33 +583,33 @@
   <!-- =========================================================================
        4. MODAL QR PAIRING (For Connecting Mobile Phones As Wireless Cameras)
        ========================================================================= -->
-  <div *ngIf="isQrModalOpen()" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-surface-container-low border border-surface-container-highest rounded-lg max-w-2xl w-full p-4 flex flex-col gap-3 shadow-2xl">
+  <div *ngIf="isQrModalOpen()" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-surface-container-low border border-surface-container-highest rounded-lg max-w-3xl w-full p-4 flex flex-col gap-3 shadow-2xl">
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-surface-container-highest pb-2">
         <div class="flex items-center gap-2">
-          <img src="/tx_studio_Isotipo_naranja.svg" alt="TX-Studio" class="h-5 w-5 object-contain" />
-          <h3 class="font-mono text-white text-[12px] font-bold uppercase">Emparejamiento Rápido de Cámaras Móviles (WebRTC LAN)</h3>
+          <img src="/tx_studio_Isotipo_naranja.svg" alt="TX-Studio" class="h-6 w-6 object-contain" />
+          <h3 class="font-mono text-white text-[13px] font-bold uppercase tracking-wider">Emparejamiento Rápido de Cámaras Móviles (WebRTC LAN)</h3>
         </div>
-        <button (click)="closeQrModal()" class="text-outline hover:text-white cursor-pointer font-bold">✕</button>
+        <button (click)="closeQrModal()" class="text-outline hover:text-white cursor-pointer font-bold text-[14px]">✕</button>
       </div>
 
       <!-- QR Code 3-Camera Grid -->
       <div class="grid grid-cols-3 gap-3">
         <div *ngFor="let cam of webrtc.cameras().slice(0, 3)"
-             class="flex flex-col items-center p-2.5 bg-surface-container rounded border border-surface-container-highest gap-1.5">
-          <div class="flex items-center justify-between w-full font-mono text-[9px]">
+             class="flex flex-col items-center p-3 bg-surface-container rounded-lg border border-surface-container-highest gap-2">
+          <div class="flex items-center justify-between w-full font-mono text-[9.5px]">
             <span class="font-bold text-white">CAM 0{{ cam.id }}</span>
-            <span class="px-1 py-0.2 rounded"
+            <span class="px-1.5 py-0.2 rounded font-bold"
               [ngClass]="cam.isConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-surface-variant text-outline'">
               {{ cam.isConnected ? 'CONECTADA' : 'ESPERANDO' }}
             </span>
           </div>
-          <div class="p-1 bg-white rounded shadow">
-            <img [src]="getQrImageUrl(cam.id)" class="w-32 h-32 object-contain" [alt]="'QR CAM 0' + cam.id">
+          <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
+            <img [src]="getQrImageUrl(cam.id)" class="w-44 h-44 object-contain" [alt]="'QR CAM 0' + cam.id">
           </div>
           <a [href]="getCameraUrl(cam.id)" target="_blank"
-             class="text-[8px] text-primary hover:underline font-mono truncate max-w-full">
+             class="text-[8.5px] text-primary hover:underline font-mono truncate max-w-full">
             {{ getCameraUrl(cam.id) }}
           </a>
         </div>
