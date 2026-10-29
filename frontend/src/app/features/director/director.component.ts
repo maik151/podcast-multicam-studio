@@ -330,16 +330,30 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showToast(`PVW armado -> CAM 0${camId}`);
   }
 
-  public onAutoMix(): void {
-    const current = this.switcher.activeCam();
-    const nextCam = current === 3 ? 1 : 3;
-    this.switcher.switchToCamera(nextCam, 'fade');
+  private lastAutoMixTime = 0;
+  public onAutoMix(event?: Event): void {
+    if (event) {
+      (event.target as HTMLElement)?.blur();
+    }
+    const now = performance.now();
+    if (now - this.lastAutoMixTime < 350) return; // Debounce contra doble disparo Space + Click
+    this.lastAutoMixTime = now;
+
+    // Conmuta la cámara entre Programa (activa) y Preview (armada)
+    const currentActive = this.switcher.activeCam();
+    const currentPreview = this.switcher.previewCam();
+    const targetCam = currentPreview !== currentActive ? currentPreview : (currentActive === 1 ? 2 : 1);
+
+    const mode = this.switcher.transitionMode();
+    this.switcher.switchToCamera(targetCam, mode);
+    this.switcher.setPreviewCamera(currentActive);
     this.webrtc.sendTallyUpdate(this.switcher.activeCam(), this.switcher.previewCam());
-    this.telemetry.logEvent('SWITCHER', 'AUTO_MIX', 'EXECUTE_AUTO_MIX', `Auto-Mix ejecutado de CAM 0${current} a CAM 0${nextCam}`, {
-      fromCam: current,
-      toCam: nextCam
+    this.telemetry.logEvent('SWITCHER', 'AUTO_TRANSITION', 'EXECUTE', `Auto-Transición (${mode}) a CAM 0${targetCam}`, {
+      fromCam: currentActive,
+      toCam: targetCam,
+      mode
     });
-    this.showToast(`Auto-Mix -> CAM 0${nextCam}`);
+    this.showToast(`Auto-Transición -> CAM 0${targetCam} (${mode.toUpperCase()})`);
   }
 
   public onTriggerDipToBlack(): void {
@@ -830,32 +844,172 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private drawBroadcastTestPattern(ctx: CanvasRenderingContext2D, w: number, h: number, camId: number): void {
-    const bars = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0'];
-    const barW = w / bars.length;
-    for (let i = 0; i < bars.length; i++) {
-      ctx.fillStyle = bars[i];
-      ctx.fillRect(i * barW, 0, barW, h);
+    if (camId === 1) {
+      // -------------------------------------------------------------
+      // CAM 01: HOST (PRESENTADOR) - SMPTE Color Bars Broadcast Oficial
+      // -------------------------------------------------------------
+      const bars = ['#ffffff', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0'];
+      const barW = w / bars.length;
+      for (let i = 0; i < bars.length; i++) {
+        ctx.fillStyle = bars[i];
+        ctx.fillRect(i * barW, 0, barW, h * 0.72);
+      }
+      // Franja inferior oscura de consola de estudio
+      ctx.fillStyle = '#0a0d14';
+      ctx.fillRect(0, h * 0.72, w, h * 0.28);
+
+      // Franja superior de identificación
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(0, 0, w, 65);
+      ctx.fillStyle = '#ff7a1a';
+      ctx.font = 'bold 26px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('🔴 PROGRAMA (ON-AIR): CAM 01 • HOST (PRESENTADOR)', 30, 44);
+
+      // Badge central gigante
+      const boxW = 920;
+      const boxH = 190;
+      const boxX = (w - boxW) / 2;
+      const boxY = (h - boxH) / 2 - 25;
+      ctx.fillStyle = 'rgba(10, 12, 18, 0.94)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#ff7a1a';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 48px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CAM 01 // HOST (PRESENTADOR)', w / 2, boxY + 68);
+
+      ctx.fillStyle = '#ff7a1a';
+      ctx.font = 'bold 22px "JetBrains Mono", monospace';
+      ctx.fillText('PLANO PRINCIPAL • ESPERANDO ENLACE DE CELULAR / CÁMARA 1', w / 2, boxY + 114);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px "JetBrains Mono", monospace';
+      ctx.fillText('Escanea el código QR de CAM 01 con el celular para transmitir en vivo', w / 2, boxY + 154);
+
+    } else if (camId === 2) {
+      // -------------------------------------------------------------
+      // CAM 02: INVITADO - Estudio Cobalt Blue & Cyan Tech Grid
+      // -------------------------------------------------------------
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#040b17');
+      grad.addColorStop(0.5, '#0a1d37');
+      grad.addColorStop(1, '#082f49');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Rejilla de producción Cyan
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.16)';
+      ctx.lineWidth = 1;
+      const gridSize = 60;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Franja superior de identificación
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(0, 0, w, 65);
+      ctx.fillStyle = '#06b6d4';
+      ctx.font = 'bold 26px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('🔵 PROGRAMA (ON-AIR): CAM 02 • INVITADO (CO-HOST)', 30, 44);
+
+      // Badge central gigante Cyan
+      const boxW = 920;
+      const boxH = 190;
+      const boxX = (w - boxW) / 2;
+      const boxY = (h - boxH) / 2 - 25;
+      ctx.fillStyle = 'rgba(3, 14, 28, 0.94)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 48px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CAM 02 // INVITADO (CO-HOST)', w / 2, boxY + 68);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 22px "JetBrains Mono", monospace';
+      ctx.fillText('PLANO INVITADO • ESPERANDO ENLACE DE CELULAR / CÁMARA 2', w / 2, boxY + 114);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px "JetBrains Mono", monospace';
+      ctx.fillText('Escanea el código QR de CAM 02 con el celular para transmitir en vivo', w / 2, boxY + 154);
+
+    } else {
+      // -------------------------------------------------------------
+      // CAM 03: SET GENERAL (WIDE) - Warm Charcoal & Amber Gold Grid
+      // -------------------------------------------------------------
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#121214');
+      grad.addColorStop(0.5, '#1e1c18');
+      grad.addColorStop(1, '#2c2214');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Rejilla de producción Ámbar / Dorada
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.16)';
+      ctx.lineWidth = 1;
+      const gridSize = 60;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Franja superior de identificación
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(0, 0, w, 65);
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 26px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('🟡 PROGRAMA (ON-AIR): CAM 03 • SET GENERAL (WIDE)', 30, 44);
+
+      // Badge central gigante Ámbar
+      const boxW = 920;
+      const boxH = 190;
+      const boxX = (w - boxW) / 2;
+      const boxY = (h - boxH) / 2 - 25;
+      ctx.fillStyle = 'rgba(20, 16, 10, 0.94)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 48px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CAM 03 // SET GENERAL (PLANO WIDE)', w / 2, boxY + 68);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 22px "JetBrains Mono", monospace';
+      ctx.fillText('PLANO GENERAL • ESPERANDO ENLACE DE CELULAR / CÁMARA 3', w / 2, boxY + 114);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px "JetBrains Mono", monospace';
+      ctx.fillText('Escanea el código QR de CAM 03 con el celular para transmitir en vivo', w / 2, boxY + 154);
     }
-
-    // Center dark glass badge on canvas (so recordings also show clean status if recorded on standby)
-    const boxW = 680;
-    const boxH = 110;
-    const boxX = (w - boxW) / 2;
-    const boxY = (h - boxH) / 2;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.fillRect(boxX, boxY, boxW, boxH);
-    ctx.strokeStyle = '#ff6200';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(boxX, boxY, boxW, boxH);
-
-    ctx.fillStyle = '#ff6200';
-    ctx.font = 'bold 28px "Chakra Petch", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`CAM 0${camId} // NO INPUT SIGNAL (STANDBY)`, w / 2, boxY + 48);
-
-    ctx.fillStyle = '#8892b0';
-    ctx.font = '16px "JetBrains Mono", monospace';
-    ctx.fillText('ENLACE WEBRTC INICIADO // ESPERANDO FLUJO RTP DE LA CÁMARA', w / 2, boxY + 82);
   }
 
   private drawFramingGuides(ctx: CanvasRenderingContext2D, w: number, h: number, mode: number): void {

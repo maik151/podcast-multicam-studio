@@ -99,9 +99,11 @@ export class AudioDspService {
       this.audioOutputDevices.set(mappedOutputs);
 
       const current = this.selectedDeviceId();
-      const targetId = (current !== 'default' && mappedInputs.some(d => d.deviceId === current))
-        ? current
-        : (mappedInputs[0]?.deviceId || 'default');
+      // Si la fuente actual es un celular offline, revertir automáticamente a micrófono USB/PC
+      let targetId = mappedInputs[0]?.deviceId || 'default';
+      if (current !== 'default' && !current.startsWith('cam:') && mappedInputs.some(d => d.deviceId === current)) {
+        targetId = current;
+      }
 
       this.selectedDeviceId.set(targetId);
       await this.initAudioPipeline(targetId);
@@ -240,7 +242,10 @@ export class AudioDspService {
         this.micSourceNode.connect(this.lowCutNode);
         console.log(`[AudioDspService] Entrada de audio ruteada a CAM 0${camId} (Móvil)`);
       } else {
-        console.warn(`[AudioDspService] CAM 0${camId} no tiene pista de audio activa`);
+        console.warn(`[AudioDspService] CAM 0${camId} no tiene pista de audio activa. Reanudando micrófono local.`);
+        const fallback = this.audioDevices()[0]?.deviceId || 'default';
+        this.selectedDeviceId.set(fallback);
+        await this.initAudioPipeline(fallback);
       }
     } else {
       await this.initAudioPipeline(deviceId);
@@ -342,15 +347,16 @@ export class AudioDspService {
             this.currentLvlR = this.currentLvlR * 0.88 + targetPctR * 0.12;
           }
 
-          // Generación de Osciloscopio Vectorial SVG (64 puntos con ganancia visual sensible a la voz)
+          // Generación de Osciloscopio Vectorial SVG con alta reactividad visual
           const points = 64;
           const step = Math.max(1, Math.floor(len / points));
           let pathStr = 'M0,20';
+          const visualGain = 260; // Alta ganancia para hacer el oscilograma claramente visible
           for (let i = 0; i <= points; i++) {
             const sIdx = Math.min(len - 1, i * step);
             const sVal = this.timeData[sIdx] || 0;
             const x = Math.round((i / points) * 500);
-            const y = Math.max(2, Math.min(38, Math.round(20 - (sVal * 115))));
+            const y = Math.max(2, Math.min(38, Math.round(20 - (sVal * visualGain))));
             pathStr += ` L${x},${y}`;
           }
 
