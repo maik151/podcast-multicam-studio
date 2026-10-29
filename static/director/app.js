@@ -199,6 +199,7 @@ function initWebSocket() {
         batElem.textContent = `${chargingIcon} ${batVal}%${thermal}`;
       }
     }
+  };
   ws.onclose = () => {
     setTimeout(initWebSocket, 2000);
   };
@@ -217,24 +218,24 @@ function sendCameraCommand(camNumber, command) {
       'toggle_torch': 'Linterna / Flash',
       'lock_exposure': 'Bloqueo Enfoque/Luz AF'
     };
-    showToast(`Cámara 0${camNumber}: ${actions[command] || command}`);
+    showToast(`Camara 0${camNumber}: ${actions[command] || command}`);
   } else {
-    showToast('Servidor no conectado');
+    showToast("Servidor no conectado");
   }
+}
 
 function sendCameraZoom(camNumber, zoom) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
-      type: 'camera_command',
+      type: "camera_command",
       camId: camNumber,
-      command: 'set_zoom',
+      command: "set_zoom",
       zoom: zoom
     }));
-    showToast(Cámara 0: Lente x);
+    showToast(`Camara 0${camNumber}: Lente ${zoom}x`);
   } else {
-    showToast('Servidor no conectado');
+    showToast("Servidor no conectado");
   }
-}
 }
 
 // --- 4. WEBRTC PEER CONNECTION (DIRECTOR COMO ANSWERER COMPATIBLE CON IPHONE SAFARI) ---

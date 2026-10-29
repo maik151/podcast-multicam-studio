@@ -71,6 +71,8 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly toastMessage = signal<string | null>(null);
   public readonly isQrModalOpen = signal<boolean>(false);
   public readonly activeConnectionTab = signal<'usb' | 'tethering' | 'hotspot' | 'hybrid'>('usb');
+  public readonly usbQrMode = signal<'auto' | 'localhost' | 'ip'>('auto');
+  private connectionPollInterval: any = null;
   public readonly isTutorialOpen = signal<boolean>(false);
 
   public readonly tutorialStep = signal<number>(0);
@@ -347,6 +349,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isRendering = false;
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
     if (this.connectionInterval) clearInterval(this.connectionInterval);
+    if (this.connectionPollInterval) clearInterval(this.connectionPollInterval);
   }
 
   /**
@@ -383,14 +386,51 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.activeConnectionTab.set(tab);
     this.isQrModalOpen.set(true);
     this.webrtc.fetchConnectionMatrix();
+    if (this.connectionPollInterval) clearInterval(this.connectionPollInterval);
+    this.connectionPollInterval = setInterval(() => {
+      if (this.isQrModalOpen()) {
+        this.webrtc.fetchConnectionMatrix();
+      } else {
+        clearInterval(this.connectionPollInterval);
+      }
+    }, 2500);
   }
 
   public closeQrModal(): void {
     this.isQrModalOpen.set(false);
+    if (this.connectionPollInterval) {
+      clearInterval(this.connectionPollInterval);
+      this.connectionPollInterval = null;
+    }
   }
 
   public setConnectionTab(tab: 'usb' | 'tethering' | 'hotspot' | 'hybrid'): void {
     this.activeConnectionTab.set(tab);
+  }
+
+  public toggleUsbQrMode(): void {
+    this.usbQrMode.update(m => {
+      if (m === 'auto') return 'localhost';
+      if (m === 'localhost') return 'ip';
+      return 'auto';
+    });
+  }
+
+  public getUsbQrTargetUrl(camId: number): string {
+    const matrix = this.webrtc.connectionMatrix();
+    const port = matrix?.port || 8443;
+    const mode = this.usbQrMode();
+    if (mode === 'localhost') {
+      return `https://localhost:${port}/cam/${camId}`;
+    }
+    if (mode === 'ip') {
+      return `${this.webrtc.baseUrl()}/cam/${camId}`;
+    }
+    // Auto: si el túnel ADB está activo, usar localhost; de lo contrario, usar IP de red para evitar ERR_CONNECTION_REFUSED
+    if (matrix?.usb_adb?.has_active_tunnel) {
+      return `https://localhost:${port}/cam/${camId}`;
+    }
+    return `${this.webrtc.baseUrl()}/cam/${camId}`;
   }
 
   public async onRefreshConnections(): Promise<void> {

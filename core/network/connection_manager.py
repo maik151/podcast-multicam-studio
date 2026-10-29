@@ -15,6 +15,241 @@ import subprocess
 from typing import Any, Dict, List, Optional
 
 
+KNOWN_PHONE_VIDS = {
+    "339B": "Honor",
+    "12D1": "Huawei",
+    "04E8": "Samsung Galaxy",
+    "2717": "Xiaomi / Redmi / POCO",
+    "18D1": "Google Pixel",
+    "05AC": "Apple iPhone / iPad",
+    "22B8": "Motorola",
+    "2E04": "Transsion (Tecno / Infinix)",
+    "22D9": "OPPO / OnePlus / Realme",
+    "0BB4": "HTC",
+    "0FCE": "Sony Xperia",
+    "1949": "Amazon Fire",
+    "17EF": "Lenovo"
+}
+
+
+def get_connected_usb_hardware(adb_devices: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    """
+    Detecta todos los dispositivos de hardware USB físicos conectados a la PC:
+    - Smartphones y Tablets (Android, iPhone) por cable.
+    - Hubs USB y Concentradores multipuerto.
+    - Adaptadores de red USB (Remote NDIS, Apple USB Ethernet).
+    - Cámaras web y capturadoras USB.
+    Cruza la información con ADB para indicar si está autorizado o requiere tocar la pantalla.
+    """
+    hardware_list: List[Dict[str, Any]] = []
+    adb_devs = adb_devices or []
+    adb_serials = {d.get("serial", "").upper(): d for d in adb_devs if d.get("serial")}
+
+    raw_items: List[Dict[str, Any]] = []
+    try:
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        ps_cmd = (
+            "Get-PnpDevice -PresentOnly | Where-Object { "
+            "$_.InstanceId -like '*USB*' -or "
+            "$_.Class -in 'USB','WPD','AndroidUsbDeviceClass','Camera','Image' -or "
+            "($_.Class -eq 'Net' -and ($_.InstanceId -like '*USB*' -or $_.FriendlyName -like '*NDIS*' -or $_.FriendlyName -like '*Apple*')) "
+            "} | Select-Object FriendlyName, InstanceId, Class, Status | ConvertTo-Json -Compress"
+        )
+        out = subprocess.check_output(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
+            text=True,
+            errors="ignore",
+            timeout=4,
+            creationflags=flags
+        )
+        if out and out.strip():
+            parsed = json.loads(out)
+            if isinstance(parsed, list):
+                raw_items = parsed
+            elif isinstance(parsed, dict):
+                raw_items = [parsed]
+    except Exception:
+        pass
+
+    seen_ids = set()
+
+    for item in raw_items:
+        name = item.get("FriendlyName") or "Dispositivo USB"
+        inst = item.get("InstanceId") or ""
+        cls = item.get("Class") or ""
+        status = item.get("Status") or "OK"
+
+        # Filtrar hubs raíz internos de la placa madre y controladores PCIe host
+        if "ROOT_HUB" in inst.upper() or "PCI\\VEN" in inst.upper():
+            continue
+        # Filtrar teclados, ratones y periféricos HID genéricos
+        if cls == "HIDClass" or any(k in name.lower() for k in ["keyboard", "teclado", "mouse", "raton", "ratón", "dispositivo de entrada"]):
+            continue
+
+        inst_upper = inst.upper()
+        name_lower = name.lower()
+
+        # Extraer VID y PID si existen
+        vid_match = re.search(r"VID_([0-9A-F]{4})", inst_upper)
+        pid_match = re.search(r"PID_([0-9A-F]{4})", inst_upper)
+        vid = vid_match.group(1) if vid_match else ""
+        pid = pid_match.group(1) if pid_match else ""
+
+        # Extraer número de serie si viene en InstanceId
+        serial = ""
+        parts = inst.split("\\")
+        if len(parts) >= 3 and not "&" in parts[-1]:
+            serial = parts[-1]
+
+        category = "other"
+        category_label = "Dispositivo USB"
+        icon = "usb"
+        details = "Dispositivo físico conectado por cable USB."
+        action_hint = "Listo."
+        adb_state = None
+        adb_state_label = None
+
+        brand = KNOWN_PHONE_VIDS.get(vid, "")
+        if vid == "05AC" and not any(k in name_lower for k in ["apple mobile", "iphone", "ipad", "ipod"]):
+            brand = ""
+
+        # 1. ¿Es un smartphone o dispositivo móvil?
+        is_phone = (
+            cls in ("WPD", "AndroidUsbDeviceClass") or
+            brand != "" or
+            "android" in name_lower or
+            "adb" in name_lower or
+            "phone" in name_lower or
+            "ndis based internet" in name_lower or
+            "apple mobile" in name_lower or
+            (serial and serial.upper() in adb_serials)
+        )
+
+        # 2. ¿Es un Hub USB?
+        is_hub = (
+            "concentrador" in name_lower or
+            "hub" in name_lower or
+            vid in ("214B", "05E3", "1A40", "0424", "0BDA")
+        ) and not is_phone
+
+        # 3. ¿Es una cámara o capturadora?
+        is_cam = (
+            cls in ("Camera", "Image") or
+            any(k in name_lower for k in ["cam", "webcam", "video capture", "camlink", "uvc"])
+        ) and not is_phone
+
+        # 4. ¿Es adaptador de red USB / Tethering?
+        is_net = (cls == "Net" or "ndis" in name_lower or "ethernet" in name_lower)
+
+        if is_phone:
+            category = "smartphone"
+            category_label = f"Smartphone {brand}" if brand else "Smartphone / Móvil"
+            icon = "smartphone"
+
+            # Verificar si coincide con ADB
+            matched_adb = None
+            if serial and serial.upper() in adb_serials:
+                matched_adb = adb_serials[serial.upper()]
+            elif adb_devs:
+                matched_adb = adb_devs[0]
+
+            if matched_adb:
+                state = matched_adb.get("state", "").lower()
+                adb_state = state
+                if state == "device":
+                    adb_state_label = "🟢 ADB AUTORIZADO (Túnel 0ms Listo)"
+                    details = f"{category_label}: Conexión por cable activa y autorizada con depuración USB."
+                    action_hint = "Usa el enlace https://localhost:8443/cam/X para máxima velocidad sin latencia."
+                elif state == "unauthorized":
+                    adb_state_label = "⚠️ PENDIENTE AUTORIZACIÓN RSA"
+                    details = f"{category_label}: Conectado por cable con depuración USB, pero en espera de permiso en pantalla."
+                    action_hint = "IMPORTANTE: Mira la pantalla de tu celular y toca 'Permitir depuración por USB' (marca 'Permitir siempre')."
+                else:
+                    adb_state_label = f"⚡ ADB {state.upper()}"
+                    details = f"{category_label}: Detectado por cable en estado {state}."
+                    action_hint = "Verifica la pantalla del celular."
+            elif "ndis" in name_lower or "tethering" in name_lower:
+                adb_state_label = "🌐 USB TETHERING ACTIVO"
+                details = f"{category_label}: Conectado mediante Compartir Conexión por Cable USB (RNDIS)."
+                action_hint = "Puedes conectarte usando la dirección IP de Tethering directamente."
+            else:
+                adb_state_label = "🔌 CABLE FÍSICO DETECTADO"
+                details = f"{category_label}: Conectado por cable. Para latencia cero, activa 'Depuración USB' en Ajustes de Desarrollador."
+                action_hint = "Si no usas depuración USB, activa 'Compartir Internet por USB' (Tethering) o conéctate al Wi-Fi de la PC."
+
+        elif is_hub:
+            category = "hub"
+            category_label = "Hub USB Multipuerto"
+            icon = "hub"
+            details = f"{name}: Concentrador multipuerto físico conectado y listo para recibir celulares o periféricos."
+            action_hint = "Conecta los cables de tus celulares en este concentrador."
+
+        elif is_cam:
+            category = "camera"
+            category_label = "Cámara / Capturadora USB"
+            icon = "videocam"
+            details = f"{name}: Dispositivo de video USB detectado y funcional."
+            action_hint = "Disponible para uso directo."
+
+        elif is_net:
+            category = "network"
+            category_label = "Adaptador de Red USB"
+            icon = "lan"
+            details = f"{name}: Interfaz de red cableada por USB."
+            action_hint = "Permite transmisión directa por cable IP."
+
+        else:
+            continue
+
+        dedup_key = f"{category}_{vid}_{pid}_{serial or name}"
+        if dedup_key in seen_ids:
+            continue
+        seen_ids.add(dedup_key)
+
+        hardware_list.append({
+            "id": inst,
+            "name": name,
+            "brand": brand,
+            "category": category,
+            "category_label": category_label,
+            "icon": icon,
+            "serial": serial,
+            "vid": vid,
+            "pid": pid,
+            "status": status,
+            "status_badge": "CONECTADO",
+            "adb_state": adb_state,
+            "adb_state_label": adb_state_label,
+            "details": details,
+            "action_hint": action_hint
+        })
+
+    # Si ADB detectó algún dispositivo que no apareció en el filtro PnP, agregarlo explícitamente
+    for adb_dev in adb_devs:
+        s = adb_dev.get("serial", "")
+        if s and not any(h.get("serial") == s for h in hardware_list):
+            st = adb_dev.get("state", "").lower()
+            hardware_list.append({
+                "id": f"ADB_{s}",
+                "name": adb_dev.get("model") or f"Android Device ({s})",
+                "brand": "Android",
+                "category": "smartphone",
+                "category_label": "Smartphone Android (ADB)",
+                "icon": "smartphone",
+                "serial": s,
+                "vid": "",
+                "pid": "",
+                "status": "OK",
+                "status_badge": "CONECTADO",
+                "adb_state": st,
+                "adb_state_label": "🟢 ADB AUTORIZADO" if st == "device" else "⚠️ PENDIENTE AUTORIZACIÓN RSA",
+                "details": f"Dispositivo detectado por ADB en modo {st}.",
+                "action_hint": "Toca 'Permitir depuración por USB' en el celular si aparece la ventana emergente."
+            })
+
+    return hardware_list
+
+
 def find_adb_executable() -> Optional[str]:
     """Busca el ejecutable de ADB en las herramientas locales de TX-Studio, en PATH o en ubicaciones de Android SDK."""
     try:
@@ -408,14 +643,19 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
             "description": "Conexión a través del router Wi-Fi del set de grabación."
         })
 
+    # Detección exhaustiva de hardware físico USB (Celulares, Hubs, Redes USB, Cámaras)
+    usb_hardware = get_connected_usb_hardware(adb_data.get("devices", []))
+
     # Determinar ruta recomendada por defecto
     recommended_route = "wifi_lan"
     if hotspot_info["active"]:
         recommended_route = "windows_hotspot_5g"
-    if adb_data.get("available") and len(adb_data.get("devices", [])) > 0:
+    if adb_data.get("available") and any(d.get("state") == "device" for d in adb_data.get("devices", [])):
         recommended_route = "usb_hub_adb"
     elif apple_usb_info["active"]:
         recommended_route = "apple_usb_tethering"
+    elif android_rndis_info["active"]:
+        recommended_route = "android_rndis_tethering"
 
     return {
         "hotspot_5ghz": hotspot_info,
@@ -423,6 +663,8 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
         "android_rndis": android_rndis_info,
         "wifi_lan": wifi_lan_info,
         "usb_adb": adb_data,
+        "usb_hardware": usb_hardware,
+        "usb_hardware_count": len(usb_hardware),
         "port": port,
         "recommended_route": recommended_route,
         "available_routes": available_routes,

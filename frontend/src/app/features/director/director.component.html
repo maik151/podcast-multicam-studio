@@ -1882,7 +1882,7 @@
                   Conexión por Cable USB Físico con Hub Multipuerto
                 </div>
                 <div class="text-[11px] text-gray-300 font-sans mt-0.5 leading-relaxed">
-                  Ideal para conectar 3 celulares a un Hub USB. El tráfico WebRTC se transmite directamente por el bus de datos USB hacia <code class="text-primary font-mono">localhost:8443</code> con latencia menor a 5ms, libre de saturación Wi-Fi.
+                  Conecta tus celulares a un Hub USB. El tráfico WebRTC se transmite directamente por el bus de datos USB hacia <code class="text-primary font-mono">localhost:8443</code> con latencia menor a 5ms, libre de saturación Wi-Fi.
                 </div>
               </div>
             </div>
@@ -1896,20 +1896,107 @@
             </button>
           </div>
 
-          <!-- MTP Device Detected Alert (e.g. Phone connected but ADB not active yet) -->
+          <!-- PANEL PRINCIPAL: DISPOSITIVOS USB FÍSICAMENTE DETECTADOS EN LA COMPUTADORA -->
+          <div class="p-3.5 rounded-lg bg-[#161922] border border-[#2b3142] space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">cable</span>
+                <div>
+                  <div class="font-mono font-bold text-white text-[12px] uppercase tracking-wider flex items-center gap-2">
+                    <span>Dispositivos USB Conectados a la Computadora</span>
+                    <span class="px-2 py-0.2 rounded font-mono text-[9px] font-bold"
+                          [ngClass]="(webrtc.connectionMatrix()?.usb_hardware?.length || 0) > 0 ? 'bg-primary/20 text-primary border border-primary/40' : 'bg-gray-800 text-gray-500'">
+                      {{ webrtc.connectionMatrix()?.usb_hardware?.length || 0 }} DETECTADOS
+                    </span>
+                  </div>
+                  <div class="text-[10px] text-gray-400 font-sans">
+                    Supervisión en vivo de puertos físicos: reconoce celulares Android/iOS, hubs multipuerto y adaptadores.
+                  </div>
+                </div>
+              </div>
+              <button (click)="onRefreshConnections()" [disabled]="webrtc.isRefreshingConnections()"
+                      class="px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-mono text-[10px] flex items-center gap-1 border border-white/10 cursor-pointer transition-colors">
+                <span class="material-symbols-outlined text-[13px]" [ngClass]="webrtc.isRefreshingConnections() ? 'animate-spin' : ''">sync</span>
+                <span>{{ webrtc.isRefreshingConnections() ? 'Escaneando...' : 'Re-escanear USB' }}</span>
+              </button>
+            </div>
+
+            <!-- Empty State if no devices -->
+            <div *ngIf="!webrtc.connectionMatrix()?.usb_hardware?.length"
+                 class="p-4 rounded-lg bg-black/40 border border-dashed border-gray-700 text-center space-y-1">
+              <span class="material-symbols-outlined text-[28px] text-gray-500 block">usb_off</span>
+              <div class="text-white font-mono font-bold text-[11px]">No se detectaron dispositivos USB conectados</div>
+              <div class="text-gray-400 font-sans text-[10.5px]">
+                Conecta tu celular o Hub USB al puerto de la PC mediante cable de datos. La lista se actualizará automáticamente.
+              </div>
+            </div>
+
+            <!-- Grid of Detected USB Hardware -->
+            <div *ngIf="webrtc.connectionMatrix()?.usb_hardware?.length" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div *ngFor="let dev of webrtc.connectionMatrix()?.usb_hardware"
+                   class="p-2.5 rounded-lg border transition-all flex flex-col justify-between gap-2"
+                   [ngClass]="dev.adb_state === 'device' ? 'bg-[#12231b] border-emerald-500/50' : (dev.adb_state === 'unauthorized' ? 'bg-[#241c14] border-amber-500/60' : 'bg-[#181c26] border-[#2c3346]')">
+                
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
+                         [ngClass]="dev.category === 'smartphone' ? 'bg-primary/20 border-primary/40 text-primary' : (dev.category === 'hub' ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-300' : 'bg-white/5 border-white/10 text-gray-300')">
+                      <span class="material-symbols-outlined text-[18px]">{{ dev.icon }}</span>
+                    </div>
+                    <div>
+                      <div class="font-bold text-white text-[11px] leading-snug font-mono">{{ dev.name }}</div>
+                      <div class="text-[9.5px] text-gray-400 font-mono flex items-center gap-1.5 flex-wrap">
+                        <span class="text-gray-300">{{ dev.category_label }}</span>
+                        <span *ngIf="dev.serial" class="text-primary font-bold">• Serial: {{ dev.serial }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Status Pill -->
+                  <div class="shrink-0">
+                    <span *ngIf="dev.adb_state === 'device'" class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      ADB AUTORIZADO (0ms)
+                    </span>
+                    <span *ngIf="dev.adb_state === 'unauthorized'" class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                      TOCA "PERMITIR" EN PANTALLA
+                    </span>
+                    <span *ngIf="!dev.adb_state && dev.category === 'hub'" class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                      HUB ACTIVO
+                    </span>
+                    <span *ngIf="!dev.adb_state && dev.category !== 'hub'" class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-white/10 text-gray-300 border border-white/20">
+                      CABLE CONECTADO OK
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Explanation & Hint -->
+                <div class="text-[10px] font-sans text-gray-300 bg-black/25 p-2 rounded border border-white/5 space-y-1">
+                  <div>{{ dev.details }}</div>
+                  <div *ngIf="dev.action_hint" class="text-amber-300 font-mono text-[9.5px] font-medium flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[13px] text-amber-300 shrink-0">lightbulb</span>
+                    <span>{{ dev.action_hint }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MTP Device Detected Alert (Phone connected without ADB active) -->
           <div *ngIf="webrtc.connectionMatrix()?.usb_adb?.pending_mtp && !webrtc.connectionMatrix()?.usb_adb?.devices?.length"
                class="p-3 rounded-lg bg-amber-950/30 border border-amber-500/50 space-y-2">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 font-mono font-bold text-amber-300 text-[12px]">
                 <span class="material-symbols-outlined text-[20px]">smartphone</span>
-                <span>Celular Detectado por Cable USB: {{ webrtc.connectionMatrix()?.usb_adb?.pending_mtp?.name || 'Dispositivo Android' }}</span>
+                <span>Celular Reconocido por Cable: {{ webrtc.connectionMatrix()?.usb_adb?.pending_mtp?.name || 'Dispositivo Android' }}</span>
               </div>
               <span class="px-2 py-0.5 rounded font-mono text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                MODO MTP (TRANSFERENCIA)
+                MODO MTP (TRANSFERENCIA ARCHIVOS)
               </span>
             </div>
             <div class="text-[11px] text-gray-200 font-sans leading-relaxed">
-              Tu teléfono está conectado al cable USB, pero aún está en modo de almacenamiento. Para que el túnel de video por cable funcione:
+              El cable está conectado, pero Windows lo tiene en modo de archivos. Para activar el túnel directo de video a 0ms de latencia:
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[10px]">
               <div class="p-2 rounded bg-black/40 border border-white/10">
@@ -1927,42 +2014,23 @@
             </div>
           </div>
 
-          <!-- Detected ADB Devices List -->
-          <div *ngIf="webrtc.connectionMatrix()?.usb_adb?.devices?.length" class="space-y-1.5">
-            <div class="text-[10px] font-mono text-gray-400 uppercase tracking-wider font-bold">
-              Dispositivos USB Enlazados ({{ webrtc.connectionMatrix()?.usb_adb?.devices?.length }}):
+          <!-- QR Mode Selector Bar: Solves "No se puede acceder a este sitio" -->
+          <div class="p-2.5 rounded-lg bg-[#181b24] border border-[#2b3040] flex items-center justify-between text-[11px] font-mono gap-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[17px]">qr_code_2</span>
+              <span class="text-gray-300">Modo de Enlace en Códigos QR:</span>
+              <span class="px-2 py-0.5 rounded text-[9.5px] font-bold uppercase"
+                    [ngClass]="usbQrMode() === 'localhost' ? 'bg-primary/20 text-primary border border-primary/40' : (usbQrMode() === 'ip' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40')">
+                {{ usbQrMode() === 'auto' ? 'AUTOMÁTICO INTELIGENTE' : (usbQrMode() === 'localhost' ? 'SOLO CABLE (LOCALHOST)' : 'IP DE RED / WI-FI') }}
+              </span>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[11px]">
-              <div *ngFor="let dev of webrtc.connectionMatrix()?.usb_adb?.devices"
-                   class="p-2.5 rounded bg-[#181b24] border border-[#2b3040] flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined text-emerald-400 text-[18px]">smartphone</span>
-                  <div>
-                    <div class="font-bold text-white leading-tight">{{ dev.model }}</div>
-                    <div class="text-[9.5px] text-gray-400 font-mono">{{ dev.serial }}</div>
-                  </div>
-                </div>
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold"
-                      [ngClass]="dev.reversed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'">
-                  {{ dev.reversed ? 'TÚNEL OK' : 'PENDIENTE INVERTIR' }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Warning if tunnel is not active yet -->
-          <div *ngIf="!webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel"
-               class="p-2.5 rounded bg-[#181b24] border border-amber-500/40 flex items-center justify-between text-[11px] font-mono gap-2">
-            <div class="flex items-center gap-2 text-amber-300">
-              <span class="material-symbols-outlined text-[18px]">info</span>
-              <span>⚠️ El túnel USB localhost aún no está activo. Si escaneas ahora saldrá "No se puede acceder". Activa Depuración USB o usa el enlace Wi-Fi.</span>
-            </div>
-            <button (click)="setConnectionTab('tethering')" class="text-primary hover:underline text-[10.5px] cursor-pointer shrink-0 font-bold">
-              Ver USB Tethering (Sin ADB) →
+            <button (click)="toggleUsbQrMode()"
+                    class="px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-primary hover:text-white cursor-pointer transition-colors text-[10px] font-bold">
+              Cambiar Modo: {{ usbQrMode() === 'auto' ? 'Forzar Localhost' : (usbQrMode() === 'localhost' ? 'Forzar IP de Red' : 'Volver a Automático') }}
             </button>
           </div>
 
-          <!-- 3-Camera QR Grid -->
+          <!-- 3-Camera QR Grid with dynamic fallbacks -->
           <div class="grid grid-cols-3 gap-3 pt-1">
             <div *ngFor="let cam of webrtc.cameras().slice(0, 3)"
                  class="flex flex-col items-center p-3 bg-[#181b24] rounded-lg border border-[#2b3040] gap-2">
@@ -1974,14 +2042,14 @@
                 </span>
               </div>
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
-                <img [src]="getCustomQrUrl(webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel ? ('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id) : (webrtc.baseUrl() + '/cam/' + cam.id))"
+                <img [src]="getCustomQrUrl(getUsbQrTargetUrl(cam.id))"
                      class="w-36 h-36 object-contain" [alt]="'QR USB CAM 0' + cam.id">
               </div>
               <div class="w-full flex items-center justify-between gap-1 pt-1 font-mono text-[9.5px]">
-                <span class="text-primary truncate">
-                  {{ webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel ? ('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id) : (webrtc.baseUrl() + '/cam/' + cam.id) }}
+                <span class="text-primary truncate" [title]="getUsbQrTargetUrl(cam.id)">
+                  {{ getUsbQrTargetUrl(cam.id) }}
                 </span>
-                <button (click)="onCopyUrl(webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel ? ('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id) : (webrtc.baseUrl() + '/cam/' + cam.id))"
+                <button (click)="onCopyUrl(getUsbQrTargetUrl(cam.id))"
                         title="Copiar enlace" class="text-gray-400 hover:text-white cursor-pointer px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
                   Copiar
                 </button>
@@ -1994,6 +2062,19 @@
              PESTAÑA 2: USB TETHERING (IPHONE & ANDROID RNDIS)
              =================================================================== -->
         <div *ngIf="activeConnectionTab() === 'tethering'" class="space-y-3">
+          <!-- Mini resumen de hardware USB detectado -->
+          <div *ngIf="webrtc.connectionMatrix()?.usb_hardware?.length"
+               class="p-2.5 rounded-lg bg-[#161922] border border-[#2b3142] flex items-center justify-between text-[11px] font-mono">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[16px]">cable</span>
+              <span class="text-gray-300">Hardware USB en tu PC:</span>
+              <span class="text-white font-bold">{{ webrtc.connectionMatrix()?.usb_hardware?.length }} dispositivo(s) conectado(s)</span>
+            </div>
+            <button (click)="setConnectionTab('usb')" class="text-primary hover:underline text-[10px] cursor-pointer font-bold">
+              Ver lista detallada en Pestaña Hub USB →
+            </button>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <!-- Apple iOS Card -->
             <div class="p-3 rounded-lg bg-[#181b24] border border-[#2b3040] space-y-2">

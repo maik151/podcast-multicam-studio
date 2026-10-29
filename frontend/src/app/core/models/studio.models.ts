@@ -128,6 +128,24 @@ export interface AdbDevice {
   direct_url: string;
 }
 
+export interface UsbHardwareDevice {
+  id: string;
+  name: string;
+  brand?: string;
+  category: 'smartphone' | 'hub' | 'camera' | 'network' | 'other';
+  category_label: string;
+  icon: string;
+  serial?: string;
+  vid?: string;
+  pid?: string;
+  status: string;
+  status_badge: string;
+  adb_state?: 'device' | 'unauthorized' | 'offline' | null;
+  adb_state_label?: string | null;
+  details: string;
+  action_hint: string;
+}
+
 export interface ConnectionMatrix {
   hotspot_5ghz: {
     active: boolean;
@@ -163,6 +181,8 @@ export interface ConnectionMatrix {
     pending_mtp?: { id: string; service: string; name: string } | null;
     message?: string;
   };
+  usb_hardware?: UsbHardwareDevice[];
+  usb_hardware_count?: number;
   port: number;
   recommended_route: string;
   available_routes: ConnectionRoute[];
