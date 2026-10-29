@@ -43,6 +43,8 @@ a = Analysis(
         'core.signaling.hub',
         'core.signaling.webrtc_router',
         'core.telemetry.system_telemetry',
+        'core.network.connection_manager',
+        'core.network.detector',
         'core.infrastructure.network',
         'core.infrastructure.desktop_launcher',
         'core.infrastructure.json_logger',

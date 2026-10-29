@@ -106,3 +106,64 @@ export const VIDEO_PROFILES: Record<VideoProfile, VideoProfileSettings> = {
     label: '4K UHD @ 60 FPS (35 Mbps)'
   }
 };
+
+export interface ConnectionRoute {
+  id: string;
+  title: string;
+  badge: string;
+  ip: string;
+  base_url: string;
+  is_active: boolean;
+  latency_label: string;
+  icon: string;
+  description: string;
+}
+
+export interface AdbDevice {
+  serial: string;
+  state: string;
+  model: string;
+  product: string;
+  reversed: boolean;
+  direct_url: string;
+}
+
+export interface ConnectionMatrix {
+  hotspot_5ghz: {
+    active: boolean;
+    ip: string | null;
+    name: string;
+    adapter_desc: string | null;
+    suggested_band: string;
+  };
+  apple_usb: {
+    active: boolean;
+    ip: string | null;
+    name: string;
+    adapter_desc: string | null;
+  };
+  android_rndis: {
+    active: boolean;
+    ip: string | null;
+    name: string;
+    adapter_desc: string | null;
+  };
+  wifi_lan: {
+    active: boolean;
+    ip: string | null;
+    name: string;
+    adapter_desc: string | null;
+  };
+  usb_adb: {
+    available: boolean;
+    adb_path: string | null;
+    devices: AdbDevice[];
+    count?: number;
+    message?: string;
+  };
+  port: number;
+  recommended_route: string;
+  available_routes: ConnectionRoute[];
+  active_ips: string[];
+}
+

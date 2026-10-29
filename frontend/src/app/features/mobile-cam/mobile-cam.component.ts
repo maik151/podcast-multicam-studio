@@ -338,6 +338,9 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
       const videoTrack = this.localStream.getVideoTracks()[0];
       if (videoTrack) {
+        if ('contentHint' in videoTrack) {
+          (videoTrack as any).contentHint = 'motion';
+        }
         this.verifyAndReportActualFormat(videoTrack, target, usedFallback);
 
         // Si ya existe una conexión WebRTC activa con el Director, reemplazar el track en caliente
@@ -394,9 +397,13 @@ export class MobileCamComponent implements OnInit, OnDestroy {
 
   private tuneSdp(desc: RTCSessionDescriptionInit): RTCSessionDescriptionInit {
     if (!desc.sdp) return desc;
+    let sdp = desc.sdp.replace(new RegExp('(m=video [^\r\n]+)', 'g'), '$1\r\nb=AS:12000\r\nb=TIAS:12000000');
+    if (sdp.includes('a=rtpmap:') && !sdp.includes('x-google-min-bitrate')) {
+      sdp = sdp.replace(/(a=fmtp:\d+ [^\r\n]+)/g, '$1;x-google-min-bitrate=4000;x-google-start-bitrate=8000;x-google-max-bitrate=15000');
+    }
     return {
       type: desc.type,
-      sdp: desc.sdp.replace(new RegExp('(m=video [^\r\n]+)', 'g'), '$1\r\nb=AS:5000\r\nb=TIAS:5000000')
+      sdp
     };
   }
 
@@ -496,9 +503,10 @@ export class MobileCamComponent implements OnInit, OnDestroy {
               if (!params.encodings || params.encodings.length === 0) {
                 params.encodings = [{}];
               }
-              // Bitrate óptimo LAN: 8 Mbps techo, 3.5 Mbps piso para máxima nitidez sin pixelado
-              (params.encodings[0] as any).minBitrate = 1000000;
-              params.encodings[0].maxBitrate = 5000000;
+              // Bitrate óptimo LAN/USB: 12 Mbps techo, 4 Mbps piso para máxima nitidez a 60 fps sin pixelado
+              (params.encodings[0] as any).minBitrate = 4000000;
+              params.encodings[0].maxBitrate = 12000000;
+              params.encodings[0].maxFramerate = 60;
               params.encodings[0].scaleResolutionDownBy = 1.0;
               params.encodings[0].priority = 'high';
               params.encodings[0].networkPriority = 'high';

@@ -77,6 +77,21 @@ def run_clean_architecture_tests():
     except Exception as e:
         results.append(("Infra: DiskStorageSink", False, f"Excepción: {e}"))
 
+    # 2.5 Capa de Infraestructura: Matriz de Conexiones Multiruta y Hub USB
+    try:
+        from core.infrastructure.network import get_full_connection_matrix, get_adb_devices
+        matrix = get_full_connection_matrix(8443)
+        has_matrix = (
+            "hotspot_5ghz" in matrix and
+            "usb_adb" in matrix and
+            "apple_usb" in matrix and
+            "android_rndis" in matrix and
+            "available_routes" in matrix
+        )
+        results.append(("Infra: Multi-Route Connection Hub", has_matrix, f"{len(matrix.get('available_routes', []))} rutas de conexión compiladas"))
+    except Exception as e:
+        results.append(("Infra: Multi-Route Connection Hub", False, f"Excepción: {e}"))
+
     # 3. Capa de Presentación & Composición (IoC Container)
     try:
         container = ApplicationContainer()
@@ -88,7 +103,11 @@ def run_clean_architecture_tests():
 
     # 4. Verificación de Rutas Registradas
     routes = [r.resource.canonical for r in app.router.routes() if hasattr(r, 'resource') and r.resource]
-    expected_routes = ["/", "/cam/{id}", "/api/network", "/api/qr", "/api/ping", "/api/telemetry", "/api/record/start", "/api/record/chunk", "/api/record/stop", "/api/record/marker", "/ws"]
+    expected_routes = [
+        "/", "/cam/{id}", "/api/network", "/api/connections", "/api/connections/adb-reverse",
+        "/api/connections/open-hotspot", "/api/qr", "/api/ping", "/api/telemetry",
+        "/api/record/start", "/api/record/chunk", "/api/record/stop", "/api/record/marker", "/ws"
+    ]
 
     for er in expected_routes:
         matched = any(er == r for r in routes)

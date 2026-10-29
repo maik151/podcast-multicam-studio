@@ -1,5 +1,5 @@
 import { Injectable, signal, NgZone } from '@angular/core';
-import { CameraFeed } from '../models/studio.models';
+import { CameraFeed, ConnectionMatrix, ConnectionRoute } from '../models/studio.models';
 
 @Injectable({
   providedIn: 'root'
@@ -7,6 +7,16 @@ import { CameraFeed } from '../models/studio.models';
 export class WebRtcSignalingService {
   public readonly isConnectedToHub = signal<boolean>(false);
   public readonly baseUrl = signal<string>(window.location.origin);
+  public readonly connectionMatrix = signal<ConnectionMatrix | null>(null);
+  public readonly isRefreshingConnections = signal<boolean>(false);
+  public readonly isAdbReversing = signal<boolean>(false);
+
+  // Asignación de rutas independientes por cámara para Modo Mixto / Híbrido
+  public readonly cameraRoutes = signal<{ [camId: number]: string }>({
+    1: 'auto',
+    2: 'auto',
+    3: 'auto'
+  });
 
   public readonly cameras = signal<CameraFeed[]>([
     { id: 1, label: 'Host (Plano Medio)', stream: null, isConnected: false, isProgram: true, isPreview: false, fps: 60, resolution: '1080p', bitrateKbps: 8000, currentZoom: 1.0, isTorchOn: false, isOledActive: false },
@@ -39,6 +49,98 @@ export class WebRtcSignalingService {
     }
     return this.baseUrl();
   }
+
+  public async fetchConnectionMatrix(): Promise<ConnectionMatrix | null> {
+    this.isRefreshingConnections.set(true);
+    try {
+      const res = await fetch('/api/connections');
+      if (res.ok) {
+        const matrix: ConnectionMatrix = await res.json();
+        this.ngZone.run(() => {
+          this.connectionMatrix.set(matrix);
+        });
+        return matrix;
+      }
+    } catch (e) {
+      console.warn('[WebRtcService] Error consultando /api/connections:', e);
+    } finally {
+      this.isRefreshingConnections.set(false);
+    }
+    return null;
+  }
+
+  public async reverseAdbPorts(): Promise<{ success: boolean; message: string }> {
+    this.isAdbReversing.set(true);
+    try {
+      const res = await fetch('/api/connections/adb-reverse', { method: 'POST' });
+      const data = await res.json();
+      await this.fetchConnectionMatrix();
+      return { success: Boolean(data.success), message: data.message || 'Comando ADB procesado' };
+    } catch (e: any) {
+      return { success: false, message: `Error conectando con ADB: ${e?.message || e}` };
+    } finally {
+      this.isAdbReversing.set(false);
+    }
+  }
+
+  public async openWindowsHotspotSettings(): Promise<boolean> {
+    try {
+      const res = await fetch('/api/connections/open-hotspot', { method: 'POST' });
+      const data = await res.json();
+      return Boolean(data.success);
+    } catch {
+      return false;
+    }
+  }
+
+  public setCameraRoute(camId: number, routeId: string): void {
+    this.cameraRoutes.update(routes => ({
+      ...routes,
+      [camId]: routeId
+    }));
+  }
+
+  public getCameraTargetUrl(camId: number): string {
+    const route = this.cameraRoutes()[camId] || 'auto';
+    const matrix = this.connectionMatrix();
+    const port = matrix?.port || 8443;
+
+    if (route === 'usb_hub_adb') {
+      return `https://localhost:${port}/cam/${camId}`;
+    }
+
+    if (route === 'windows_hotspot_5g') {
+      const ip = matrix?.hotspot_5ghz?.ip || '192.168.137.1';
+      return `https://${ip}:${port}/cam/${camId}`;
+    }
+
+    if (route === 'apple_usb_tethering') {
+      const ip = matrix?.apple_usb?.ip || '172.20.10.1';
+      return `https://${ip}:${port}/cam/${camId}`;
+    }
+
+    if (route === 'android_rndis_tethering') {
+      const ip = matrix?.android_rndis?.ip || '192.168.42.129';
+      return `https://${ip}:${port}/cam/${camId}`;
+    }
+
+    if (route === 'wifi_lan' && matrix?.wifi_lan?.ip) {
+      return `https://${matrix.wifi_lan.ip}:${port}/cam/${camId}`;
+    }
+
+    // Por defecto / auto: si el hotspot está activo, usarlo; sino la base URL
+    if (matrix?.hotspot_5ghz?.active && matrix.hotspot_5ghz.ip) {
+      return `https://${matrix.hotspot_5ghz.ip}:${port}/cam/${camId}`;
+    }
+
+    return `${this.baseUrl()}/cam/${camId}`;
+  }
+
+  public getQrImageUrlForCamera(camId: number): string {
+    const targetUrl = this.getCameraTargetUrl(camId);
+    return `/api/qr?url=${encodeURIComponent(targetUrl)}&t=${Date.now()}`;
+  }
+
 
   public connectSignalingHub(): void {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
@@ -216,6 +318,11 @@ export class WebRtcSignalingService {
         trackKind: e.track?.kind,
         trackState: e.track?.readyState
       });
+      if (e.track && e.track.kind === 'video') {
+        if ('contentHint' in e.track) {
+          (e.track as any).contentHint = 'motion';
+        }
+      }
       let stream = this.remoteStreams[camId];
       if (!stream) {
         stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream();
@@ -385,9 +492,13 @@ export class WebRtcSignalingService {
 
   private tuneSdp(desc: RTCSessionDescriptionInit): RTCSessionDescriptionInit {
     if (!desc.sdp) return desc;
+    let sdp = desc.sdp.replace(new RegExp('(m=video [^\r\n]+)', 'g'), '$1\r\nb=AS:12000\r\nb=TIAS:12000000');
+    if (sdp.includes('a=rtpmap:') && !sdp.includes('x-google-min-bitrate')) {
+      sdp = sdp.replace(/(a=fmtp:\d+ [^\r\n]+)/g, '$1;x-google-min-bitrate=4000;x-google-start-bitrate=8000;x-google-max-bitrate=15000');
+    }
     return {
       type: desc.type,
-      sdp: desc.sdp.replace(new RegExp('(m=video [^\r\n]+)', 'g'), '$1\r\nb=AS:5000\r\nb=TIAS:5000000')
+      sdp
     };
   }
 

@@ -6,7 +6,13 @@ import io
 from aiohttp import web
 import qrcode
 import qrcode.image.svg
-from core.infrastructure.network import get_network_diagnostics, detect_primary_ip
+from core.infrastructure.network import (
+    get_network_diagnostics,
+    detect_primary_ip,
+    get_full_connection_matrix,
+    reverse_all_adb_devices,
+    open_windows_hotspot_settings
+)
 
 class NetworkController:
     def __init__(self, port: int):
@@ -15,6 +21,21 @@ class NetworkController:
     async def handle_diagnostics(self, request: web.Request) -> web.Response:
         diag = get_network_diagnostics(self.port)
         return web.json_response(diag)
+
+    async def handle_connections(self, request: web.Request) -> web.Response:
+        """Devuelve la matriz de conexiones completas (USB Hub ADB, Hotspot 5GHz, Tethering y LAN)."""
+        matrix = get_full_connection_matrix(self.port)
+        return web.json_response(matrix)
+
+    async def handle_adb_reverse(self, request: web.Request) -> web.Response:
+        """Invierte los puertos ADB (reverse tcp:8443) para todos los teléfonos Android conectados vía USB."""
+        result = reverse_all_adb_devices(self.port)
+        return web.json_response(result)
+
+    async def handle_open_hotspot(self, request: web.Request) -> web.Response:
+        """Abre la configuración del Hotspot Móvil de Windows."""
+        success = open_windows_hotspot_settings()
+        return web.json_response({"success": success})
 
     async def handle_qr(self, request: web.Request) -> web.Response:
         try:

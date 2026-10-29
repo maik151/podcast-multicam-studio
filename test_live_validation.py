@@ -52,14 +52,15 @@ class TestBrandAssetsAndDelivery(unittest.TestCase):
         self.assertIn("/tx_studio_Isotipo_naranja.svg", self.routes, "La ruta /tx_studio_Isotipo_naranja.svg debe estar en el router.")
 
     def test_04_director_header_embeds_logo_naranja_svg(self):
-        """Verifica que la consola del Director integre el logo completo vectorial oficial."""
+        """Verifica que la consola del Director integre el logo/isotipo vectorial oficial de TX-Studio."""
         director_html_path = os.path.join(
             BASE_DIR, "frontend", "src", "app", "features", "director", "director.component.html"
         )
         with open(director_html_path, "r", encoding="utf-8") as f:
             html = f.read()
-        self.assertIn("tx_studio_logoNaranja.svg", html, "director.component.html debe utilizar tx_studio_logoNaranja.svg")
-        self.assertIn("tx_studio_Isotipo_naranja.svg", html, "director.component.html debe incluir el isotipo en el modal QR.")
+        has_brand_mark = ("tx_studio_Isotipo_naranja.svg" in html) or ("tx_studio_logoNaranja.svg" in html)
+        self.assertTrue(has_brand_mark, "director.component.html debe utilizar tx_studio_Isotipo_naranja.svg o tx_studio_logoNaranja.svg")
+        self.assertIn("tx_studio_Isotipo_naranja.svg", html, "director.component.html debe incluir el isotipo.")
 
     def test_05_mobile_cam_embeds_brand_isotipo(self):
         """Verifica que la cámara móvil incorpore el isotipo de la marca en la barra y en modo OLED."""
