@@ -20,6 +20,18 @@ class TelemetryController:
 
     async def handle_telemetry(self, request: web.Request) -> web.Response:
         metrics = get_system_telemetry(self.recordings_dir)
+        # Compatibilidad completa con estructuras anidadas y planas
+        metrics["cpu"] = {"percent": metrics.get("cpu_percent", 0.0)}
+        metrics["ram"] = {
+            "used_gb": metrics.get("ram_used_gb", 0.0),
+            "total_gb": metrics.get("ram_total_gb", 0.0),
+            "percent": metrics.get("ram_percent", 0)
+        }
+        metrics["disk"] = {
+            "free_gb": metrics.get("disk_free_gb", 0.0),
+            "total_gb": metrics.get("disk_total_gb", 0.0),
+            "percent": metrics.get("disk_percent", 0)
+        }
         return web.json_response(metrics)
 
     async def handle_ingest_log(self, request: web.Request) -> web.Response:

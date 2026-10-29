@@ -27,6 +27,17 @@ class FILETIME(ctypes.Structure):
 _last_cpu_time = 0
 _last_idle_time = 0
 
+# Inicialización temprana del contador de CPU
+try:
+    _init_idle = FILETIME()
+    _init_kernel = FILETIME()
+    _init_user = FILETIME()
+    ctypes.windll.kernel32.GetSystemTimes(ctypes.byref(_init_idle), ctypes.byref(_init_kernel), ctypes.byref(_init_user))
+    _last_idle_time = (_init_idle.dwHighDateTime << 32) + _init_idle.dwLowDateTime
+    _last_cpu_time = ((_init_kernel.dwHighDateTime << 32) + _init_kernel.dwLowDateTime) + ((_init_user.dwHighDateTime << 32) + _init_user.dwLowDateTime)
+except Exception:
+    pass
+
 def get_system_telemetry(recordings_dir: str) -> dict:
     """Obtiene uso real de RAM, CPU y espacio libre en disco en Windows."""
     # 1. RAM (GlobalMemoryStatusEx)
@@ -55,9 +66,13 @@ def get_system_telemetry(recordings_dir: str) -> dict:
     _last_cpu_time = cur_total
     _last_idle_time = cur_idle
 
-    # 3. Disco
-    disk_target = recordings_dir if os.path.exists(recordings_dir) else os.path.dirname(recordings_dir)
-    total_disk, used_disk, free_disk = shutil.disk_usage(disk_target)
+    # 3. Disco (Búsqueda segura de punto de montaje)
+    disk_target = recordings_dir if (recordings_dir and os.path.exists(recordings_dir)) else os.getcwd()
+    try:
+        total_disk, used_disk, free_disk = shutil.disk_usage(disk_target)
+    except Exception:
+        total_disk, used_disk, free_disk = shutil.disk_usage(os.getcwd())
+
     free_disk_gb = round(free_disk / (1024**3), 1)
     total_disk_gb = round(total_disk / (1024**3), 1)
     disk_percent = round((used_disk / total_disk) * 100, 1)

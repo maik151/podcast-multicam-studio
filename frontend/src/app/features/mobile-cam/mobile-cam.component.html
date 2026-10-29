@@ -93,7 +93,10 @@
           <line x1="22" y1="11" x2="22" y2="13"/>
         </svg>
         <span *ngIf="batteryLevel() !== null">{{ batteryLevel() }}%</span>
-        <span *ngIf="batteryLevel() === null" class="text-[#22c55e] text-[10.5px] font-mono tracking-wider">⚡ EN LÍNEA</span>
+        <span *ngIf="batteryLevel() === null" class="text-[#22c55e] text-[10.5px] font-mono tracking-wider flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-ping"></span>
+          <span>EN LÍNEA</span>
+        </span>
       </span>
 
       <!-- STOP / DISCONNECT TRANSMISSION BUTTON -->

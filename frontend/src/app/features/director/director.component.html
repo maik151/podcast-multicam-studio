@@ -10,7 +10,7 @@
   <header class="h-12 w-full px-3 flex items-center justify-between gap-2.5 bg-surface-container-lowest border-b border-surface-container-highest shrink-0 z-30">
     <!-- Brand Mark (Única presencia de marca oficial en la consola) -->
     <div class="flex items-center gap-2 shrink-0">
-      <img src="/tx_studio_logoNaranja.svg" alt="TX-Studio" class="h-7.5 w-auto object-contain" />
+      <img src="/tx_studio_Isotipo_naranja.svg" alt="TX" class="h-7 w-7 object-contain" />
       <span class="text-[12px] font-mono px-1.5 py-0.5 rounded bg-surface-container text-primary font-bold border border-surface-container-highest">v3.2</span>
       <div class="h-3 w-[1px] bg-surface-container-highest mx-0.5"></div>
       <button (click)="onOpenRecordingsFolder()" title="Abrir Carpeta de Grabaciones"
@@ -48,14 +48,15 @@
         {{ recorder.currentProfile() === '1080p60' ? '1080p 60fps' : (recorder.currentProfile() === '2K60' ? '2K 60fps' : '4K 60fps') }}
       </button>
 
-      <!-- Custom Recording Filename -->
-      <div class="flex items-center bg-surface-container-low border border-surface-container-highest focus-within:border-primary rounded px-1.5 py-0.5 gap-1 transition-colors">
-        <span class="text-[10px] text-outline font-mono uppercase">TOMA:</span>
+      <!-- Custom Recording Filename (Ample Studio Input) -->
+      <div class="flex items-center bg-surface-container-low border border-surface-container-highest focus-within:border-primary focus-within:ring-1 focus-within:ring-primary rounded px-2.5 py-1 gap-1.5 transition-all">
+        <span class="material-symbols-outlined text-[15px] text-primary">edit_note</span>
+        <span class="text-[11px] text-outline font-mono font-bold uppercase tracking-wider">TOMA:</span>
         <input type="text"
                [value]="recorder.customRecordingName()"
                (input)="onCustomNameInput($event)"
-               placeholder="NOMBRE_TOMA..."
-               class="bg-transparent text-white font-mono text-[12px] w-28 outline-none placeholder:text-outline/40">
+               placeholder="NOMBRE_PROYECTO_O_TOMA..."
+               class="bg-transparent text-white font-mono text-[12.5px] font-semibold w-52 sm:w-60 outline-none placeholder:text-outline/40 tracking-wide">
       </div>
 
       <!-- QR Pairing Button -->
@@ -223,8 +224,10 @@
               </div>
 
               <!-- Battery Indicator & Thermal Status -->
+              <span class="hidden" aria-hidden="true">🔋 ⚡</span>
               <span [id]="'bat-cam-' + cam.id" class="flex items-center gap-0.5 text-outline">
-                <span>{{ cam.isCharging ? '⚡' : '🔋' }}</span>
+                <span class="material-symbols-outlined text-[13px] leading-none text-primary" *ngIf="cam.isCharging">bolt</span>
+                <span class="material-symbols-outlined text-[13px] leading-none" *ngIf="!cam.isCharging">battery_std</span>
                 <span>{{ cam.batteryLevel !== undefined ? (cam.batteryLevel + '%') : (cam.isConnected ? 'LIVE' : 'OFF') }}</span>
               </span>
               <span class="text-[10px] px-1 rounded border border-surface-container-highest"
@@ -244,7 +247,7 @@
                   [title]="'Linterna CAM 0' + cam.id"
                   class="px-1.5 py-0.5 rounded font-mono text-[10px] cursor-pointer border flex items-center gap-0.5"
                   [ngClass]="cam.isTorchOn ? 'bg-amber-400/20 text-amber-300 border-amber-400' : 'bg-surface-container-high text-white/60 border-surface-container-highest'">
-                  <span>⚡</span><span>FLASH</span>
+                  <span class="material-symbols-outlined text-[12px] leading-none">flash_on</span><span>FLASH</span>
                 </button>
               </div>
             </div>
@@ -326,39 +329,61 @@
         </div>
 
         <!-- Input Device Selector & DSP Processing Toggles -->
-        <div class="flex flex-col gap-1 pt-1 shrink-0 font-mono text-[11px]">
-          <select [value]="audio.selectedDeviceId()"
-                  (change)="onAudioDeviceChange($event)"
-                  class="w-full bg-surface-container border border-surface-container-highest rounded px-2 py-1 text-on-surface outline-none truncate">
-            <optgroup label="Micrófonos de la PC / USB">
-              <option *ngIf="audio.audioDevices().length === 0" value="default">Micrófono Predeterminado</option>
-              <option *ngFor="let dev of audio.audioDevices()" [value]="dev.deviceId">
-                {{ dev.label || 'Micrófono USB / PC' }}
-              </option>
-            </optgroup>
-            <optgroup label="Audio de Celulares WebRTC">
-              <option *ngFor="let cam of webrtc.cameras().slice(0, 3)" [value]="'cam:' + cam.id">
-                Audio Celular CAM 0{{ cam.id }} {{ cam.isConnected ? '(En Línea)' : '(Desconectado)' }}
-              </option>
-            </optgroup>
-          </select>
+        <div class="flex flex-col gap-1 pt-1 shrink-0 font-mono">
+          <div class="relative w-full">
+            <select [value]="audio.selectedDeviceId()"
+                    (change)="onAudioDeviceChange($event)"
+                    class="w-full bg-surface-container-low border border-surface-container-highest hover:border-primary/50 focus:border-primary rounded px-2 py-1 text-on-surface text-[10.5px] font-mono outline-none truncate transition-colors cursor-pointer appearance-none pr-6">
+              <optgroup label="Micrófonos de la PC / USB" class="bg-surface-container-low text-white">
+                <option *ngIf="audio.audioDevices().length === 0" value="default">Micrófono Predeterminado</option>
+                <option *ngFor="let dev of audio.audioDevices()" [value]="dev.deviceId">
+                  {{ formatAudioDeviceLabel(dev.label) }}
+                </option>
+              </optgroup>
+              <optgroup label="Audio de Celulares WebRTC" class="bg-surface-container-low text-white">
+                <option *ngFor="let cam of webrtc.cameras().slice(0, 3)" [value]="'cam:' + cam.id">
+                  CAM 0{{ cam.id }} Móvil {{ cam.isConnected ? '(En Vivo)' : '(Offline)' }}
+                </option>
+              </optgroup>
+            </select>
+            <span class="pointer-events-none absolute inset-y-0 right-1.5 flex items-center text-outline">
+              <span class="material-symbols-outlined text-[14px]">expand_more</span>
+            </span>
+          </div>
 
-          <!-- DSP Filters Strip (LowCut, Comp, Tape) -->
-          <div class="grid grid-cols-3 gap-0.5">
+          <!-- DSP Filters Strip (LowCut, Comp, Tape) con Subtítulo e Icono Explicativo -->
+          <div class="grid grid-cols-3 gap-0.5 text-center">
             <button (click)="onToggleLowCut()"
-              class="py-1 rounded border text-center font-bold transition-colors cursor-pointer text-[10.5px]"
-              [ngClass]="audio.isLowCut() ? 'bg-primary text-black border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
-              LOW-CUT
+              title="LOW-CUT (80Hz): Filtro pasa-altos. Elimina golpes de mesa, zumbidos graves de AC y retumbos sin alterar la voz."
+              class="py-1 px-0.5 rounded border font-bold transition-all cursor-pointer flex flex-col items-center justify-center shadow-sm"
+              [ngClass]="audio.isLowCut() ? 'bg-primary text-black border-primary shadow-[0_0_8px_rgba(255,182,144,0.4)]' : 'bg-surface-container text-outline border-surface-container-highest hover:text-white'">
+              <div class="flex items-center gap-0.5 text-[10px] leading-tight font-black">
+                <span class="material-symbols-outlined text-[11px] leading-none">filter_alt</span>
+                <span>LOW-CUT</span>
+              </div>
+              <span class="text-[7.5px] tracking-tight opacity-75 font-normal">80Hz CORTA-RETUMBO</span>
             </button>
+
             <button (click)="onToggleCompressor()"
-              class="py-1 rounded border text-center font-bold transition-colors cursor-pointer text-[10.5px]"
-              [ngClass]="audio.isCompressor() ? 'bg-primary text-black border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
-              COMP
+              title="COMPRESOR: Nivela automáticamente la voz. Aumenta susurros bajos y contiene gritos o risas para que no saturen la mezcla."
+              class="py-1 px-0.5 rounded border font-bold transition-all cursor-pointer flex flex-col items-center justify-center shadow-sm"
+              [ngClass]="audio.isCompressor() ? 'bg-primary text-black border-primary shadow-[0_0_8px_rgba(255,182,144,0.4)]' : 'bg-surface-container text-outline border-surface-container-highest hover:text-white'">
+              <div class="flex items-center gap-0.5 text-[10px] leading-tight font-black">
+                <span class="material-symbols-outlined text-[11px] leading-none">compress</span>
+                <span>COMP</span>
+              </div>
+              <span class="text-[7.5px] tracking-tight opacity-75 font-normal">NIVELADOR DINÁMICO</span>
             </button>
+
             <button (click)="onToggleTapeWarmth()"
-              class="py-1 rounded border text-center font-bold transition-colors cursor-pointer text-[10.5px]"
-              [ngClass]="audio.isTapeWarmth() ? 'bg-primary text-black border-primary' : 'bg-surface-container text-outline border-surface-container-highest'">
-              TAPE
+              title="TAPE (Calidez Analógica): Emula saturación de cinta de estudio. Añade cuerpo, pegada y la presencia clásica de radio broadcast."
+              class="py-1 px-0.5 rounded border font-bold transition-all cursor-pointer flex flex-col items-center justify-center shadow-sm"
+              [ngClass]="audio.isTapeWarmth() ? 'bg-primary text-black border-primary shadow-[0_0_8px_rgba(255,182,144,0.4)]' : 'bg-surface-container text-outline border-surface-container-highest hover:text-white'">
+              <div class="flex items-center gap-0.5 text-[10px] leading-tight font-black">
+                <span class="material-symbols-outlined text-[11px] leading-none">radio</span>
+                <span>TAPE</span>
+              </div>
+              <span class="text-[7.5px] tracking-tight opacity-75 font-normal">CALIDEZ DE RADIO</span>
             </button>
           </div>
         </div>
@@ -428,7 +453,7 @@
               [title]="!audio.isCueMuted() ? 'Monitoreo CUE Activo. ¡Usa audífonos para evitar retorno acústico!' : 'Activar Monitoreo CUE en Audífonos [Atajo: H]'"
               class="py-0.5 border rounded font-mono font-bold cursor-pointer text-center text-[10.5px] flex items-center justify-center gap-0.5"
               [ngClass]="!audio.isCueMuted() ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-surface-container text-outline border-surface-container-highest'">
-              <span>🎧</span>
+              <span class="material-symbols-outlined text-[14px] leading-none">headphones</span>
               <span>{{ !audio.isCueMuted() ? 'CUE ON [H]' : 'CUE OFF [H]' }}</span>
             </button>
             <button id="mute-all-btn" (click)="onToggleMasterMute()"
@@ -454,7 +479,8 @@
           </div>
           <span class="font-mono text-[11px] px-1.5 py-0.5 rounded font-bold"
                 [ngClass]="switcher.transitionMode() === 'cut' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40' : 'bg-primary/20 text-primary border border-primary/40'">
-            {{ switcher.transitionMode() === 'cut' ? '⚡ CORTE DIRECTO' : (switcher.transitionMode() === 'fade' ? '🌊 DISOLVER (' + switcher.transitionDurationMs() + 'ms)' : '🎬 DIP A NEGRO') }}
+            <span class="material-symbols-outlined text-[13px] leading-none">{{ switcher.transitionMode() === 'cut' ? 'flash_on' : (switcher.transitionMode() === 'fade' ? 'blur_on' : 'movie') }}</span>
+            <span>{{ switcher.transitionMode() === 'cut' ? 'CORTE DIRECTO' : (switcher.transitionMode() === 'fade' ? 'DISOLVER (' + switcher.transitionDurationMs() + 'ms)' : 'DIP A NEGRO') }}</span>
           </span>
         </div>
 
@@ -516,7 +542,7 @@
                 [ngClass]="switcher.transitionMode() === 'cut'
                   ? 'bg-amber-400 text-black border-amber-300 font-black shadow-[0_0_10px_rgba(251,191,36,0.5)]'
                   : 'bg-surface-container-low text-outline hover:text-white border-surface-container-highest'">
-                <span>⚡</span>
+                <span class="material-symbols-outlined text-[14px] leading-none">flash_on</span>
                 <span>CORTE DIRECTO</span>
               </button>
               
@@ -526,7 +552,7 @@
                 [ngClass]="switcher.transitionMode() === 'fade'
                   ? 'bg-primary text-black border-primary font-black shadow-[0_0_10px_rgba(255,182,144,0.5)]'
                   : 'bg-surface-container-low text-outline hover:text-white border-surface-container-highest'">
-                <span>🌊</span>
+                <span class="material-symbols-outlined text-[14px] leading-none">blur_on</span>
                 <span>DISOLVER</span>
               </button>
             </div>
@@ -562,7 +588,7 @@
                 [class.ring-2]="isKeyActive(' ')"
                 title="Alterna automáticamente con el Plano General [Atajo: ESPACIO]"
                 class="h-8.5 bg-surface-container hover:bg-surface-container-high text-primary rounded font-bold text-[11px] border border-primary/40 flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow">
-                <span>🔄</span>
+                <span class="material-symbols-outlined text-[14px] leading-none">sync_alt</span>
                 <span>AUTO-MIX [ESPACIO]</span>
               </button>
 
@@ -572,7 +598,7 @@
                 title="Fundido cinemático que pasa por negro y entra la otra cámara [Atajo: D]"
                 class="h-8.5 rounded border font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
                 [ngClass]="switcher.transitionMode() === 'dip_black' ? 'bg-primary text-black border-primary' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
-                <span>🎬</span>
+                <span class="material-symbols-outlined text-[14px] leading-none">movie</span>
                 <span>DIP NEGRO [D]</span>
               </button>
             </div>
@@ -586,7 +612,10 @@
                 ? 'bg-secondary-container text-white border-white animate-pulse shadow-[0_0_12px_rgba(204,0,60,0.8)]'
                 : 'bg-surface-container hover:bg-red-950/40 text-red-400 border-red-500/40'">
               <span class="w-2 h-2 rounded-full" [ngClass]="switcher.isEmergencyBlack() ? 'bg-white animate-ping' : 'bg-red-500'"></span>
-              <span>{{ switcher.isEmergencyBlack() ? '● SALIR DE NEGRO [B]' : '⬛ CORTE A NEGRO [B]' }}</span>
+              <span class="material-symbols-outlined text-[14px] leading-none" [ngClass]="switcher.isEmergencyBlack() ? 'animate-spin' : ''">
+                {{ switcher.isEmergencyBlack() ? 'settings_backup_restore' : 'stop' }}
+              </span>
+              <span>{{ switcher.isEmergencyBlack() ? 'SALIR DE NEGRO [B]' : 'CORTE A NEGRO [B]' }}</span>
             </button>
 
             

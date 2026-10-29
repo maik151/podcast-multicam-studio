@@ -420,6 +420,23 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  public formatAudioDeviceLabel(label: string): string {
+    if (!label) return 'Micrófono USB / PC';
+    let clean = label
+      .replace(/^Predeterminado\s*-\s*/i, '')
+      .replace(/^Comunicaciones\s*-\s*/i, '')
+      .replace(/^Default\s*-\s*/i, '')
+      .replace(/Varios micrófonos \((.+?)\)/i, '$1')
+      .replace(/Intel® Smart Sound Technology for Digital Microphones/i, 'Intel Smart Mic')
+      .replace(/\(Intel® Smart Sound Technology for Digital Microphones\)/i, 'Intel Smart Mic')
+      .replace(/\(DroidCam Audio\)/i, 'DroidCam Mic')
+      .trim();
+    if (clean.length > 26) {
+      clean = clean.substring(0, 24) + '..';
+    }
+    return clean;
+  }
+
   public onAudioDeviceChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
     const devId = select.value;

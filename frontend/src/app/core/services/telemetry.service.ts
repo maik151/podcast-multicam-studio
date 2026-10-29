@@ -24,20 +24,28 @@ export class TelemetryService {
   public startPolling(): void {
     if (this.intervalId) return;
     this.fetchTelemetry();
-    this.intervalId = window.setInterval(() => this.fetchTelemetry(), 3000);
+    // Sondeo de hardware de Windows cada 1 segundo en tiempo real
+    this.intervalId = window.setInterval(() => this.fetchTelemetry(), 1000);
   }
 
   public async fetchTelemetry(): Promise<void> {
     try {
       const res = await fetch('/api/telemetry');
+      if (!res.ok) return;
       const data = await res.json();
-      if (data && data.ram) {
+      if (data) {
+        const ramUsed = data.ram_used_gb ?? data.ram?.used_gb ?? 0;
+        const ramTotal = data.ram_total_gb ?? data.ram?.total_gb ?? 0;
+        const ramPct = data.ram_percent ?? data.ram?.percent ?? 0;
+        const diskFree = data.disk_free_gb ?? data.disk?.free_gb ?? 0;
+        const cpuPct = data.cpu_percent ?? data.cpu?.percent ?? 0;
+
         this.telemetry.set({
-          ramUsedGb: data.ram.used_gb,
-          ramTotalGb: data.ram.total_gb,
-          ramPercent: data.ram.percent,
-          diskFreeGb: data.disk ? data.disk.free_gb : 0,
-          cpuPercent: data.cpu ? data.cpu.percent : 0
+          ramUsedGb: Number(ramUsed),
+          ramTotalGb: Number(ramTotal),
+          ramPercent: Math.round(Number(ramPct)),
+          diskFreeGb: Math.round(Number(diskFree)),
+          cpuPercent: Math.round(Number(cpuPct))
         });
       }
     } catch {
