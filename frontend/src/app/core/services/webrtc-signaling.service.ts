@@ -385,15 +385,10 @@ export class WebRtcSignalingService {
 
   private tuneSdp(desc: RTCSessionDescriptionInit): RTCSessionDescriptionInit {
     if (!desc.sdp) return desc;
-    let sdp = desc.sdp;
-    sdp = sdp.replace(new RegExp('(m=video [^\\r\\n]+[\\r\\n]+)', 'g'), '$1b=AS:8000\r\nb=TIAS:8000000\r\n');
-    sdp = sdp.replace(new RegExp('(a=fmtp:\\d+ [^\\r\\n]+)', 'g'), (match: string) => {
-      if (!match.includes('x-google-min-bitrate')) {
-        return `${match};x-google-min-bitrate=3500;x-google-start-bitrate=6000;x-google-max-bitrate=8000`;
-      }
-      return match;
-    });
-    return { type: desc.type, sdp };
+    return {
+      type: desc.type,
+      sdp: desc.sdp.replace(new RegExp('(m=video [^\r\n]+)', 'g'), '$1\r\nb=AS:5000\r\nb=TIAS:5000000')
+    };
   }
 
   private cleanupPeer(camId: number): void {

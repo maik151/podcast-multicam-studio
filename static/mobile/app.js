@@ -60,7 +60,7 @@ async function enableWakeLock() {
 }
 
 // 2. Inicializar Cámara Trasera a 60 FPS (FHD 1080p con fallback adaptativo)
-async function startCamera(targetWidth = 1920, targetHeight = 1080, targetFps = 60) {
+async function startCamera(targetWidth = 1920, targetHeight = 1080, targetFps = 30) {
   let stream = null;
   const tapOverlay = document.getElementById('cam-tap-overlay');
 
@@ -292,14 +292,11 @@ function updateTallyState(state) {
 
 function tuneSdp(sdpStr) {
   if (!sdpStr) return sdpStr;
-  let sdp = sdpStr.replace(/(m=video [^\r\n]+[\r\n]+)/g, '$1b=AS:8000\r\nb=TIAS:8000000\r\n');
-  sdp = sdp.replace(/(a=fmtp:\d+ [^\r\n]+)/g, (match) => {
-    if (!match.includes('x-google-min-bitrate')) {
-      return `${match};x-google-min-bitrate=3500;x-google-start-bitrate=6000;x-google-max-bitrate=8000`;
-    }
-    return match;
-  });
-  return sdp;
+  return sdpStr.replace(/(m=video [^
+]+[
+]+)/g, '$1b=AS:5000
+b=TIAS:5000000
+');
 }
 
 function applySenderOptimizations(pc) {
@@ -312,12 +309,12 @@ function applySenderOptimizations(pc) {
         if (!params.encodings || params.encodings.length === 0) {
           params.encodings = [{}];
         }
-        params.encodings[0].minBitrate = 3500000;
-        params.encodings[0].maxBitrate = 8000000;
+        params.encodings[0].minBitrate = 1000000;
+        params.encodings[0].maxBitrate = 5000000;
         params.encodings[0].scaleResolutionDownBy = 1.0;
         params.encodings[0].priority = 'high';
         params.encodings[0].networkPriority = 'high';
-        params.degradationPreference = 'maintain-resolution';
+        params.degradationPreference = 'maintain-framerate';
         sender.setParameters(params).catch(() => {});
       } catch (e) {}
     }

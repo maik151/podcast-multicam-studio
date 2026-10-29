@@ -248,6 +248,25 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showToast('Tono de prueba 440Hz enviado a osciloscopio y audífonos');
   }
 
+  private isoVideoStreams: { [camId: number]: MediaStream } = {};
+
+  public getIsoStream(camId: number): MediaStream | null {
+    const stream = this.webrtc.getCameraStream(camId);
+    if (!stream) {
+      delete this.isoVideoStreams[camId];
+      return null;
+    }
+    const vTracks = stream.getVideoTracks();
+    if (vTracks.length === 0) return null;
+    const existing = this.isoVideoStreams[camId];
+    if (existing && existing.active && existing.getVideoTracks()[0]?.id === vTracks[0].id) {
+      return existing;
+    }
+    const newStream = new MediaStream(vTracks);
+    this.isoVideoStreams[camId] = newStream;
+    return newStream;
+  }
+
   private previewVideoStream: MediaStream | null = null;
   private lastPreviewCamId: number | null = null;
 
