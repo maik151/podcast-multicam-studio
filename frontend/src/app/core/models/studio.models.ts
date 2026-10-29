@@ -150,27 +150,35 @@ export interface ConnectionMatrix {
   hotspot_5ghz: {
     active: boolean;
     ip: string | null;
+    gateway?: string | null;
     name: string;
     adapter_desc: string | null;
+    adapter_name?: string | null;
     suggested_band: string;
   };
   apple_usb: {
     active: boolean;
     ip: string | null;
+    gateway?: string | null;
     name: string;
     adapter_desc: string | null;
+    adapter_name?: string | null;
   };
   android_rndis: {
     active: boolean;
     ip: string | null;
+    gateway?: string | null;
     name: string;
     adapter_desc: string | null;
+    adapter_name?: string | null;
   };
   wifi_lan: {
     active: boolean;
     ip: string | null;
+    gateway?: string | null;
     name: string;
     adapter_desc: string | null;
+    adapter_name?: string | null;
   };
   usb_adb: {
     available: boolean;

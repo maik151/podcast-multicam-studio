@@ -2062,6 +2062,15 @@
              PESTAÑA 2: USB TETHERING (IPHONE & ANDROID RNDIS)
              =================================================================== -->
         <div *ngIf="activeConnectionTab() === 'tethering'" class="space-y-3">
+          <!-- Advertencia técnica sobre conectar múltiples celulares en Tethering -->
+          <div class="p-3 rounded-lg bg-[#191e2b] border border-[#2e374d] flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-primary text-[20px] mt-0.5">info</span>
+            <div class="text-[11px] text-gray-300 font-sans leading-relaxed">
+              <span class="font-mono font-bold text-white uppercase text-[11.5px]">Comportamiento de Red en USB Tethering:</span>
+              Al activar Tethering, cada teléfono asigna su propia subred y actúa como Puerta de Enlace (Default Gateway) de Windows. Conectar 3 teléfonos por Tethering a la vez provocaría conflicto de Gateways en el sistema operativo. Para conectar 3 celulares al mismo tiempo por cable, la ruta recomendada es la pestaña <b>HUB USB (ANDROID ADB)</b> (transmisión por sockets sin conflicto de IP) o el <b>MODO MIXTO</b> (1 ADB + 1 Tethering + 1 Hotspot 5GHz).
+            </div>
+          </div>
+
           <!-- Mini resumen de hardware USB detectado -->
           <div *ngIf="webrtc.connectionMatrix()?.usb_hardware?.length"
                class="p-2.5 rounded-lg bg-[#161922] border border-[#2b3142] flex items-center justify-between text-[11px] font-mono">
@@ -2092,9 +2101,9 @@
                 <p>1. Conecta el iPhone con su cable Lightning o Type-C a la computadora.</p>
                 <p>2. En el iPhone: entra a <b>Ajustes > Compartir Internet</b> y activa <b>Permitir a otros conectarse</b>.</p>
                 <p>3. Si el iPhone pregunta, selecciona <b>"Solo USB"</b>.</p>
-                <p class="text-emerald-400 text-[10.5px] font-mono mt-1">
-                  ✓ Utiliza el driver oficial de Apple sin necesidad de software adicional.
-                </p>
+                <div *ngIf="webrtc.connectionMatrix()?.apple_usb?.active" class="pt-1 font-mono text-[10px] text-emerald-300">
+                  ✓ IP PC: {{ webrtc.connectionMatrix()?.apple_usb?.ip }} <span *ngIf="webrtc.connectionMatrix()?.apple_usb?.gateway">• Gateway: {{ webrtc.connectionMatrix()?.apple_usb?.gateway }}</span>
+                </div>
               </div>
             </div>
 
@@ -2114,9 +2123,9 @@
                 <p>1. Conecta el teléfono Android por cable USB al PC.</p>
                 <p>2. En Android: ve a <b>Ajustes > Redes e Internet > Compartir conexión</b>.</p>
                 <p>3. Activa la casilla <b>"Compartir conexión por USB (Tethering)"</b>.</p>
-                <p class="text-emerald-400 text-[10.5px] font-mono mt-1">
-                  ✓ Enlace de red local cableada de 1000 Mbps sin requerir depuración ADB.
-                </p>
+                <div *ngIf="webrtc.connectionMatrix()?.android_rndis?.active" class="pt-1 font-mono text-[10px] text-emerald-300">
+                  ✓ IP PC: {{ webrtc.connectionMatrix()?.android_rndis?.ip }} <span *ngIf="webrtc.connectionMatrix()?.android_rndis?.gateway">• Gateway: {{ webrtc.connectionMatrix()?.android_rndis?.gateway }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -2133,14 +2142,14 @@
                 </span>
               </div>
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
-                <img [src]="getCustomQrUrl('https://' + (webrtc.connectionMatrix()?.apple_usb?.ip || webrtc.connectionMatrix()?.android_rndis?.ip || '172.20.10.1') + ':' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
+                <img [src]="getCustomQrUrl('https://' + (webrtc.connectionMatrix()?.android_rndis?.ip || webrtc.connectionMatrix()?.apple_usb?.ip || webrtc.connectionMatrix()?.wifi_lan?.ip || 'localhost') + ':' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
                      class="w-36 h-36 object-contain" [alt]="'QR TETHERING CAM 0' + cam.id">
               </div>
               <div class="w-full flex items-center justify-between gap-1 pt-1 font-mono text-[9.5px]">
                 <span class="text-primary truncate">
-                  https://{{ webrtc.connectionMatrix()?.apple_usb?.ip || webrtc.connectionMatrix()?.android_rndis?.ip || '172.20.10.1' }}:{{ webrtc.connectionMatrix()?.port || 8443 }}/cam/{{ cam.id }}
+                  https://{{ webrtc.connectionMatrix()?.android_rndis?.ip || webrtc.connectionMatrix()?.apple_usb?.ip || webrtc.connectionMatrix()?.wifi_lan?.ip || 'localhost' }}:{{ webrtc.connectionMatrix()?.port || 8443 }}/cam/{{ cam.id }}
                 </span>
-                <button (click)="onCopyUrl('https://' + (webrtc.connectionMatrix()?.apple_usb?.ip || webrtc.connectionMatrix()?.android_rndis?.ip || '172.20.10.1') + ':' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
+                <button (click)="onCopyUrl('https://' + (webrtc.connectionMatrix()?.android_rndis?.ip || webrtc.connectionMatrix()?.apple_usb?.ip || webrtc.connectionMatrix()?.wifi_lan?.ip || 'localhost') + ':' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
                         title="Copiar enlace" class="text-gray-400 hover:text-white cursor-pointer px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
                   Copiar
                 </button>

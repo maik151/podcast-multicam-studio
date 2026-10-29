@@ -115,12 +115,12 @@ export class WebRtcSignalingService {
     }
 
     if (route === 'apple_usb_tethering') {
-      const ip = matrix?.apple_usb?.ip || '172.20.10.1';
+      const ip = matrix?.apple_usb?.ip || matrix?.wifi_lan?.ip || window.location.hostname;
       return `https://${ip}:${port}/cam/${camId}`;
     }
 
     if (route === 'android_rndis_tethering') {
-      const ip = matrix?.android_rndis?.ip || '192.168.42.129';
+      const ip = matrix?.android_rndis?.ip || matrix?.wifi_lan?.ip || window.location.hostname;
       return `https://${ip}:${port}/cam/${camId}`;
     }
 

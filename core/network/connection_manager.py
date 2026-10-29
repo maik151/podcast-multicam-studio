@@ -439,12 +439,58 @@ def reverse_all_adb_devices(port: int = 8443) -> Dict[str, Any]:
 
 def parse_network_adapters() -> List[Dict[str, Any]]:
     """
-    Parsea las interfaces de red de Windows mediante 'ipconfig /all'.
-    Retorna nombre, descripción, estado de desconexión y dirección IPv4.
+    Parsea las interfaces de red activas en Windows mediante Get-NetIPConfiguration (PowerShell)
+    con fallback robusto a 'ipconfig /all'.
+    Retorna nombre, descripción, estado de desconexión, dirección IPv4 y Gateway.
     """
     adapters: List[Dict[str, Any]] = []
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+    # 1. Método primario de alta precisión: PowerShell Get-NetIPConfiguration
     try:
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        ps_cmd = (
+            "Get-NetIPConfiguration | Where-Object { $_.IPv4Address -ne $null } | ForEach-Object { "
+            "$ip = ($_.IPv4Address | Where-Object { $_.IPAddress -notlike '169.254*' }).IPAddress; "
+            "$gw = $_.IPv4DefaultGateway.NextHop; "
+            "if ($ip) { "
+            "[PSCustomObject]@{ Alias = $_.InterfaceAlias; Desc = $_.InterfaceDescription; IP = $ip; Gateway = $gw } "
+            "} "
+            "} | ConvertTo-Json -Compress"
+        )
+        out = subprocess.check_output(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
+            text=True,
+            errors="ignore",
+            timeout=4,
+            creationflags=flags
+        )
+        if out and out.strip():
+            data = json.loads(out)
+            if isinstance(data, dict):
+                data = [data]
+            for item in data:
+                ip_val = item.get("IP")
+                if isinstance(ip_val, list):
+                    ip_val = ip_val[0] if ip_val else None
+                gw_val = item.get("Gateway")
+                if isinstance(gw_val, list):
+                    gw_val = gw_val[0] if gw_val else None
+
+                if ip_val and not str(ip_val).startswith("169.254."):
+                    adapters.append({
+                        "name": item.get("Alias") or "",
+                        "desc": item.get("Desc") or "",
+                        "ip": str(ip_val),
+                        "gateway": str(gw_val) if gw_val else None,
+                        "disconnected": False
+                    })
+            if adapters:
+                return adapters
+    except Exception:
+        pass
+
+    # 2. Fallback clásico: ipconfig /all
+    try:
         output = subprocess.check_output(
             "ipconfig /all",
             shell=True,
@@ -459,7 +505,7 @@ def parse_network_adapters() -> List[Dict[str, Any]]:
             if line and not line.startswith(" ") and line.endswith(":"):
                 header = line.rstrip(":").strip()
                 if "adaptador" in header.lower() or "adapter" in header.lower():
-                    current = {"name": header, "desc": "", "ip": None, "disconnected": False}
+                    current = {"name": header, "desc": "", "ip": None, "gateway": None, "disconnected": False}
                     adapters.append(current)
                 else:
                     current = None
@@ -475,6 +521,10 @@ def parse_network_adapters() -> List[Dict[str, Any]]:
                     match = re.search(r"(\d+\.\d+\.\d+\.\d+)", sline)
                     if match:
                         current["ip"] = match.group(1)
+                elif "puerta de enlace" in sline.lower() or "default gateway" in sline.lower():
+                    match = re.search(r"(\d+\.\d+\.\d+\.\d+)", sline)
+                    if match:
+                        current["gateway"] = match.group(1)
     except Exception:
         pass
 
@@ -504,30 +554,38 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
     hotspot_info = {
         "active": False,
         "ip": None,
+        "gateway": None,
         "name": "Zona con Cobertura Móvil (Windows Hotspot 5 GHz)",
         "adapter_desc": None,
+        "adapter_name": None,
         "suggested_band": "5 GHz"
     }
 
     apple_usb_info = {
         "active": False,
         "ip": None,
+        "gateway": None,
         "name": "Apple Mobile Device Ethernet (iOS USB Tethering)",
-        "adapter_desc": None
+        "adapter_desc": None,
+        "adapter_name": None
     }
 
     android_rndis_info = {
         "active": False,
         "ip": None,
+        "gateway": None,
         "name": "Android USB Tethering (RNDIS)",
-        "adapter_desc": None
+        "adapter_desc": None,
+        "adapter_name": None
     }
 
     wifi_lan_info = {
         "active": False,
         "ip": None,
+        "gateway": None,
         "name": "Red Local Wi-Fi / LAN",
-        "adapter_desc": None
+        "adapter_desc": None,
+        "adapter_name": None
     }
 
     all_active_ips: List[str] = []
@@ -539,9 +597,10 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
 
         desc = a.get("desc", "").lower()
         name = a.get("name", "").lower()
+        gw = a.get("gateway")
 
         # Filtrar hipervisores y redes virtuales no accesibles por móviles
-        if any(v in desc or v in name for v in ["vmware", "virtualbox", "vethernet", "hyper-v", "wsl", "bluetooth"]):
+        if any(v in desc or v in name for v in ["vmware", "virtualbox", "vethernet", "hyper-v", "wsl", "bluetooth", "kaspersky"]):
             continue
 
         all_active_ips.append(ip)
@@ -550,26 +609,37 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
         if ip == "192.168.137.1" or "wi-fi direct" in desc:
             hotspot_info["active"] = True
             hotspot_info["ip"] = ip
+            hotspot_info["gateway"] = gw
             hotspot_info["adapter_desc"] = a.get("desc")
+            hotspot_info["adapter_name"] = a.get("name")
 
-        # 2. iPhone USB Tethering
+        # 2. iPhone USB Tethering (Apple Mobile Device)
         elif "apple" in desc or "apple" in name or ip.startswith("172.20.10."):
             apple_usb_info["active"] = True
             apple_usb_info["ip"] = ip
+            apple_usb_info["gateway"] = gw
             apple_usb_info["adapter_desc"] = a.get("desc")
+            apple_usb_info["adapter_name"] = a.get("name")
 
-        # 3. Android USB Tethering (RNDIS)
-        elif ("ndis" in desc or "remote ndis" in desc) or ip.startswith("192.168.42."):
+        # 3. Android USB Tethering (Remote NDIS / Compartir Internet por USB)
+        elif (any(k in desc for k in ["ndis", "remote ndis", "rndis", "compartir", "sharing"]) or 
+              any(k in name for k in ["ndis", "rndis", "ethernet 3", "ethernet 4"]) or 
+              ip.startswith("192.168.42.") or 
+              (gw and ip.startswith("10.") and not ip.startswith("10.0.0."))):
             android_rndis_info["active"] = True
             android_rndis_info["ip"] = ip
+            android_rndis_info["gateway"] = gw
             android_rndis_info["adapter_desc"] = a.get("desc")
+            android_rndis_info["adapter_name"] = a.get("name")
 
         # 4. Wi-Fi / Ethernet Físico
         elif any(w in desc or w in name for w in ["wi-fi", "wireless", "802.11", "ethernet", "realtek", "intel"]):
             if not wifi_lan_info["active"]:
                 wifi_lan_info["active"] = True
                 wifi_lan_info["ip"] = ip
+                wifi_lan_info["gateway"] = gw
                 wifi_lan_info["adapter_desc"] = a.get("desc")
+                wifi_lan_info["adapter_name"] = a.get("name")
 
     # ADB Devices
     adb_data = get_adb_devices(port)
@@ -591,12 +661,14 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
     })
 
     # Opción 2: iPhone USB Tethering
+    apple_target_ip = apple_usb_info["ip"] or wifi_lan_info["ip"] or "localhost"
     available_routes.append({
         "id": "apple_usb_tethering",
         "title": "iPhone USB Tethering (Apple Mobile Device)",
         "badge": "CABLE LIGHTNING / TYPE-C",
-        "ip": apple_usb_info["ip"] or "172.20.10.1",
-        "base_url": f"https://{apple_usb_info['ip'] or '172.20.10.1'}:{port}",
+        "ip": apple_usb_info["ip"] or "Desconectado",
+        "gateway": apple_usb_info.get("gateway"),
+        "base_url": f"https://{apple_target_ip}:{port}",
         "is_active": apple_usb_info["active"],
         "latency_label": "< 8ms (Cable USB directo)",
         "icon": "phone_iphone",
@@ -604,12 +676,14 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
     })
 
     # Opción 3: Android USB Tethering
+    android_target_ip = android_rndis_info["ip"] or wifi_lan_info["ip"] or "localhost"
     available_routes.append({
         "id": "android_rndis_tethering",
         "title": "Android USB Tethering (RNDIS)",
         "badge": "CABLE TYPE-C",
-        "ip": android_rndis_info["ip"] or "192.168.42.129",
-        "base_url": f"https://{android_rndis_info['ip'] or '192.168.42.129'}:{port}",
+        "ip": android_rndis_info["ip"] or "Desconectado",
+        "gateway": android_rndis_info.get("gateway"),
+        "base_url": f"https://{android_target_ip}:{port}",
         "is_active": android_rndis_info["active"],
         "latency_label": "< 8ms (Cable USB)",
         "icon": "phone_android",
