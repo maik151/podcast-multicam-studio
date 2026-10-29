@@ -27,11 +27,14 @@ export class AudioDspService {
   public readonly isMasterMuted = signal<boolean>(false);
   public readonly headphoneVolume = signal<number>(80);
   public readonly isCueMuted = signal<boolean>(true);
+  public readonly preampGainDb = signal<number>(28);
+  public readonly masterFaderDb = signal<number>(0.0);
 
   // Web Audio Nodes
   private audioCtx: AudioContext | null = null;
   private micStream: MediaStream | null = null;
   private micSourceNode: MediaStreamAudioSourceNode | null = null;
+  private preampGainNode: GainNode | null = null;
   private lowCutNode: BiquadFilterNode | null = null;
   private compressorNode: DynamicsCompressorNode | null = null;
   private tapeNode: WaveShaperNode | null = null;
@@ -118,6 +121,10 @@ export class AudioDspService {
         const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         this.audioCtx = new AudioContextClass({ sampleRate: 48000 });
 
+        // 0. Preamp Gain (Control de Perilla GAIN 0dB a +60dB, ref +28dB = 1.0)
+        this.preampGainNode = this.audioCtx.createGain();
+        this.preampGainNode.gain.value = Math.pow(10, (this.preampGainDb() - 28) / 20);
+
         // 1. Filtro Low-Cut / High-Pass a 80 Hz (Anti-rumble)
         this.lowCutNode = this.audioCtx.createBiquadFilter();
         this.lowCutNode.type = 'highpass';
@@ -142,7 +149,8 @@ export class AudioDspService {
 
         // 5. Ganancia Master (Grabación y Programa)
         this.masterGainNode = this.audioCtx.createGain();
-        this.masterGainNode.gain.value = this.isMasterMuted() ? 0.0 : 1.0;
+        const faderLinear = this.masterFaderDb() <= -30 ? 0.0 : Math.pow(10, this.masterFaderDb() / 20);
+        this.masterGainNode.gain.value = this.isMasterMuted() ? 0.0 : faderLinear;
 
         // 6. Ganancia CUE / Monitoreo OBS (Escucha en Audífonos en Vivo)
         this.cueGainNode = this.audioCtx.createGain();
@@ -157,7 +165,8 @@ export class AudioDspService {
         this.audioDestination = this.audioCtx.createMediaStreamDestination();
 
         // Conectar Grafo DSP Fijo:
-        // lowCut -> compressor -> tapeNode -> delayNode -> masterGain
+        // preampGain -> lowCut -> compressor -> tapeNode -> delayNode -> masterGain
+        this.preampGainNode.connect(this.lowCutNode);
         this.lowCutNode.connect(this.compressorNode);
         this.compressorNode.connect(this.tapeNode);
         this.tapeNode.connect(this.delayNode);
@@ -208,7 +217,7 @@ export class AudioDspService {
 
       if (this.micStream) {
         this.micSourceNode = this.audioCtx.createMediaStreamSource(this.micStream);
-        this.micSourceNode.connect(this.lowCutNode!);
+        this.micSourceNode.connect(this.preampGainNode || this.lowCutNode!);
       }
 
       this.startVuMeterLoop();
@@ -239,7 +248,7 @@ export class AudioDspService {
       const camStream = cameraStreamGetter ? cameraStreamGetter(camId) : null;
       if (camStream && camStream.getAudioTracks().length > 0 && this.audioCtx && this.lowCutNode) {
         this.micSourceNode = this.audioCtx.createMediaStreamSource(camStream);
-        this.micSourceNode.connect(this.lowCutNode);
+        this.micSourceNode.connect(this.preampGainNode || this.lowCutNode);
         console.log(`[AudioDspService] Entrada de audio ruteada a CAM 0${camId} (Móvil)`);
       } else {
         console.warn(`[AudioDspService] CAM 0${camId} no tiene pista de audio activa. Reanudando micrófono local.`);
@@ -293,7 +302,7 @@ export class AudioDspService {
       toneGain.gain.exponentialRampToValueAtTime(0.001, now + 0.40);
 
       osc.connect(toneGain);
-      toneGain.connect(this.lowCutNode);
+      toneGain.connect(this.preampGainNode || this.lowCutNode);
       osc.start(now);
       osc.stop(now + 0.42);
     } catch (e) {
@@ -438,11 +447,37 @@ export class AudioDspService {
     return next;
   }
 
+  public setPreampGainDb(db: number): void {
+    const clamped = Math.max(0, Math.min(60, Math.round(db)));
+    this.preampGainDb.set(clamped);
+    if (this.preampGainNode && this.audioCtx) {
+      const linear = Math.pow(10, (clamped - 28) / 20);
+      this.preampGainNode.gain.value = linear;
+      try {
+        this.preampGainNode.gain.setTargetAtTime(linear, this.audioCtx.currentTime, 0.015);
+      } catch {}
+    }
+  }
+
+  public setMasterFaderDb(db: number): void {
+    const clamped = Math.max(-30, Math.min(6, Math.round(db * 2) / 2));
+    this.masterFaderDb.set(clamped);
+    if (this.masterGainNode && this.audioCtx && !this.isMasterMuted()) {
+      const linear = clamped <= -30 ? 0.0 : Math.pow(10, clamped / 20);
+      this.masterGainNode.gain.value = linear;
+      try {
+        this.masterGainNode.gain.setTargetAtTime(linear, this.audioCtx.currentTime, 0.015);
+      } catch {}
+    }
+  }
+
   public toggleMasterMute(): boolean {
     const next = !this.isMasterMuted();
     this.isMasterMuted.set(next);
     if (this.masterGainNode && this.audioCtx) {
-      this.masterGainNode.gain.setTargetAtTime(next ? 0.0 : 1.0, this.audioCtx.currentTime, 0.02);
+      const faderDb = this.masterFaderDb();
+      const restoredGain = faderDb <= -30 ? 0.0 : Math.pow(10, faderDb / 20);
+      this.masterGainNode.gain.setTargetAtTime(next ? 0.0 : restoredGain, this.audioCtx.currentTime, 0.02);
     }
     return next;
   }
