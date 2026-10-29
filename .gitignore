@@ -18,6 +18,7 @@ certs/*.pem
 certs/*.crt
 Grabaciones/
 Logs/
+tools/.android/
 
 # OS & Editor
 .DS_Store

@@ -16,7 +16,16 @@ from typing import Any, Dict, List, Optional
 
 
 def find_adb_executable() -> Optional[str]:
-    """Busca el ejecutable de ADB en el PATH o en ubicaciones estándar de Android SDK."""
+    """Busca el ejecutable de ADB en las herramientas locales de TX-Studio, en PATH o en ubicaciones de Android SDK."""
+    try:
+        from core.config import BASE_DIR, BUNDLE_DIR
+        for b_path in (BUNDLE_DIR, BASE_DIR):
+            bundled_adb = os.path.join(b_path, "tools", "platform-tools", "adb.exe")
+            if os.path.isfile(bundled_adb):
+                return bundled_adb
+    except Exception:
+        pass
+
     adb_path = shutil.which("adb")
     if adb_path:
         return adb_path
@@ -31,6 +40,35 @@ def find_adb_executable() -> Optional[str]:
         if os.path.isfile(candidate):
             return candidate
     return None
+
+
+def detect_connected_mtp_devices() -> List[Dict[str, Any]]:
+    """Detecta teléfonos móviles conectados por cable USB en modo MTP/Almacenamiento masivo que aún no tienen ADB activo."""
+    mtp_devices = []
+    try:
+        import winreg
+        usb_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Enum\USB")
+        for i in range(winreg.QueryInfoKey(usb_key)[0]):
+            vid_pid = winreg.EnumKey(usb_key, i)
+            try:
+                device_key = winreg.OpenKey(usb_key, vid_pid)
+                for j in range(winreg.QueryInfoKey(device_key)[0]):
+                    inst = winreg.EnumKey(device_key, j)
+                    inst_key = winreg.OpenKey(device_key, inst)
+                    try:
+                        service, _ = winreg.QueryValueEx(inst_key, "Service")
+                        desc, _ = winreg.QueryValueEx(inst_key, "DeviceDesc")
+                        if "mtp" in service.lower() or "wpd" in service.lower():
+                            # Limpiar nombre comercial
+                            clean_name = desc.split(";")[-1] if ";" in desc else desc
+                            mtp_devices.append({"id": inst, "service": service, "name": clean_name})
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return mtp_devices
 
 
 def get_adb_devices(port: int = 8443) -> Dict[str, Any]:
@@ -100,11 +138,21 @@ def get_adb_devices(port: int = 8443) -> Dict[str, Any]:
                     "direct_url": f"https://localhost:{port}"
                 })
 
+        pending_mtp = None
+        if not devices:
+            mtp_candidates = detect_connected_mtp_devices()
+            if mtp_candidates:
+                pending_mtp = mtp_candidates[0]
+
+        has_active_tunnel = any(d.get("reversed", False) for d in devices)
+
         return {
             "available": True,
             "adb_path": adb_bin,
             "devices": devices,
             "count": len(devices),
+            "pending_mtp": pending_mtp,
+            "has_active_tunnel": has_active_tunnel,
             "message": f"{len(devices)} dispositivo(s) detectado(s) vía cable USB ADB."
         }
     except Exception as exc:

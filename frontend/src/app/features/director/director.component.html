@@ -1896,10 +1896,41 @@
             </button>
           </div>
 
+          <!-- MTP Device Detected Alert (e.g. Phone connected but ADB not active yet) -->
+          <div *ngIf="webrtc.connectionMatrix()?.usb_adb?.pending_mtp && !webrtc.connectionMatrix()?.usb_adb?.devices?.length"
+               class="p-3 rounded-lg bg-amber-950/30 border border-amber-500/50 space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-mono font-bold text-amber-300 text-[12px]">
+                <span class="material-symbols-outlined text-[20px]">smartphone</span>
+                <span>Celular Detectado por Cable USB: {{ webrtc.connectionMatrix()?.usb_adb?.pending_mtp?.name || 'Dispositivo Android' }}</span>
+              </div>
+              <span class="px-2 py-0.5 rounded font-mono text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                MODO MTP (TRANSFERENCIA)
+              </span>
+            </div>
+            <div class="text-[11px] text-gray-200 font-sans leading-relaxed">
+              Tu teléfono está conectado al cable USB, pero aún está en modo de almacenamiento. Para que el túnel de video por cable funcione:
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[10px]">
+              <div class="p-2 rounded bg-black/40 border border-white/10">
+                <div class="text-primary font-bold">1. Modo Desarrollador</div>
+                <div class="text-gray-400 mt-0.5">En Ajustes > Acerca del teléfono, pulsa 7 veces seguidas en "Número de compilación".</div>
+              </div>
+              <div class="p-2 rounded bg-black/40 border border-white/10">
+                <div class="text-primary font-bold">2. Depuración por USB</div>
+                <div class="text-gray-400 mt-0.5">En Ajustes > Sistema > Opciones de desarrollador, activa <b>"Depuración por USB"</b>.</div>
+              </div>
+              <div class="p-2 rounded bg-black/40 border border-white/10">
+                <div class="text-primary font-bold">3. Aceptar en Celular</div>
+                <div class="text-gray-400 mt-0.5">Toca <b>"Permitir siempre"</b> en el mensaje de huella RSA en tu pantalla, luego pulsa <b>"Invertir Puertos ADB"</b>.</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Detected ADB Devices List -->
           <div *ngIf="webrtc.connectionMatrix()?.usb_adb?.devices?.length" class="space-y-1.5">
             <div class="text-[10px] font-mono text-gray-400 uppercase tracking-wider font-bold">
-              Dispositivos USB Detectados ({{ webrtc.connectionMatrix()?.usb_adb?.devices?.length }}):
+              Dispositivos USB Enlazados ({{ webrtc.connectionMatrix()?.usb_adb?.devices?.length }}):
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[11px]">
               <div *ngFor="let dev of webrtc.connectionMatrix()?.usb_adb?.devices"
@@ -1913,24 +1944,25 @@
                 </div>
                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold"
                       [ngClass]="dev.reversed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'">
-                  {{ dev.reversed ? 'TÚNEL OK' : 'PENDIENTE' }}
+                  {{ dev.reversed ? 'TÚNEL OK' : 'PENDIENTE INVERTIR' }}
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- ADB Not Found / No devices Guide -->
-          <div *ngIf="!webrtc.connectionMatrix()?.usb_adb?.devices?.length" class="p-3 rounded bg-[#181b24] border border-dashed border-[#353c4e] text-[11px] font-mono text-gray-400 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-amber-400 text-[18px]">info</span>
-              <span>Conecta tus celulares con cable USB y activa <b>Depuración por USB</b> en Ajustes de desarrollador.</span>
+          <!-- Warning if tunnel is not active yet -->
+          <div *ngIf="!webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel"
+               class="p-2.5 rounded bg-[#181b24] border border-amber-500/40 flex items-center justify-between text-[11px] font-mono gap-2">
+            <div class="flex items-center gap-2 text-amber-300">
+              <span class="material-symbols-outlined text-[18px]">info</span>
+              <span>⚠️ El túnel USB localhost aún no está activo. Si escaneas ahora saldrá "No se puede acceder". Activa Depuración USB o usa el enlace Wi-Fi.</span>
             </div>
-            <button (click)="onRefreshConnections()" class="text-primary hover:underline text-[10.5px] cursor-pointer shrink-0">
-              Re-escanear
+            <button (click)="setConnectionTab('tethering')" class="text-primary hover:underline text-[10.5px] cursor-pointer shrink-0 font-bold">
+              Ver USB Tethering (Sin ADB) →
             </button>
           </div>
 
-          <!-- 3-Camera QR Grid using Localhost -->
+          <!-- 3-Camera QR Grid -->
           <div class="grid grid-cols-3 gap-3 pt-1">
             <div *ngFor="let cam of webrtc.cameras().slice(0, 3)"
                  class="flex flex-col items-center p-3 bg-[#181b24] rounded-lg border border-[#2b3040] gap-2">
@@ -1942,12 +1974,14 @@
                 </span>
               </div>
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
-                <img [src]="getCustomQrUrl('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
+                <img [src]="getCustomQrUrl(webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel ? ('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id) : (webrtc.baseUrl() + '/cam/' + cam.id))"
                      class="w-36 h-36 object-contain" [alt]="'QR USB CAM 0' + cam.id">
               </div>
               <div class="w-full flex items-center justify-between gap-1 pt-1 font-mono text-[9.5px]">
-                <span class="text-primary truncate">https://localhost:{{ webrtc.connectionMatrix()?.port || 8443 }}/cam/{{ cam.id }}</span>
-                <button (click)="onCopyUrl('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
+                <span class="text-primary truncate">
+                  {{ webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel ? ('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id) : (webrtc.baseUrl() + '/cam/' + cam.id) }}
+                </span>
+                <button (click)="onCopyUrl(webrtc.connectionMatrix()?.usb_adb?.has_active_tunnel ? ('https://localhost:' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id) : (webrtc.baseUrl() + '/cam/' + cam.id))"
                         title="Copiar enlace" class="text-gray-400 hover:text-white cursor-pointer px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
                   Copiar
                 </button>

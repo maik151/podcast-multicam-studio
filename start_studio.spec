@@ -20,6 +20,7 @@ a = Analysis(
     datas=[
         ('frontend/dist/frontend/browser', 'frontend/dist/frontend/browser'),
         ('static', 'static'),
+        ('tools/platform-tools', 'tools/platform-tools'),
         ('favicon.ico', '.'),
     ],
     hiddenimports=[

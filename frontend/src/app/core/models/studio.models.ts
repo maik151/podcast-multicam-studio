@@ -159,6 +159,8 @@ export interface ConnectionMatrix {
     adb_path: string | null;
     devices: AdbDevice[];
     count?: number;
+    has_active_tunnel?: boolean;
+    pending_mtp?: { id: string; service: string; name: string } | null;
     message?: string;
   };
   port: number;
