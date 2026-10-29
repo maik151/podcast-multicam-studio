@@ -43,6 +43,10 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly selectedQuality = signal<string>('1080p60');
   public readonly isTbarDragging = signal<boolean>(false);
   public readonly activeKeys = signal<Set<string>>(new Set<string>());
+  public readonly viewLayout = signal<'dual' | 'live_column'>('dual');
+  public readonly isViewMenuOpen = signal<boolean>(false);
+  public readonly micGainDb = signal<number>(32);
+  public readonly masterFaderDb = signal<number>(0.0);
   public readonly ledSegments = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
   public readonly tutorialSteps = [
@@ -451,6 +455,36 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     return clean;
   }
 
+    public toggleViewMenu(): void {
+    this.isViewMenuOpen.update(v => !v);
+  }
+
+  public closeViewMenu(): void {
+    this.isViewMenuOpen.set(false);
+  }
+
+  public setLayout(mode: 'dual' | 'live_column'): void {
+    this.viewLayout.set(mode);
+    this.isViewMenuOpen.set(false);
+    this.showToast(mode === 'dual' ? 'Vista: Estudio Dual (Con Previo)' : 'Vista: Directa Live (3 Cámaras Columna + Live)');
+    setTimeout(() => {
+      this.startProgramCanvasLoop();
+    }, 50);
+  }
+
+  public onCycleMicGain(): void {
+    const levels = [18, 24, 32, 40, 48];
+    const idx = levels.indexOf(this.micGainDb());
+    const next = levels[(idx + 1) % levels.length];
+    this.micGainDb.set(next);
+    this.showToast(`Ganancia Preamp: +${next} dB`);
+  }
+
+  public onMasterFaderInput(event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    this.masterFaderDb.set(val);
+  }
+
   public onAudioDeviceChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
     const devId = select.value;
@@ -661,6 +695,10 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private startProgramCanvasLoop(): void {
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
     if (!this.programCanvasRef) return;
     const canvas = this.programCanvasRef.nativeElement;
     const ctx = canvas.getContext('2d');
