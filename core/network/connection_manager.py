@@ -383,11 +383,18 @@ def run_adb(args: List[str], timeout: int = 5) -> str:
 
     try:
         cmd = [adb_bin, "-P", ADB_SERVER_PORT] + args
-        return subprocess.check_output(cmd, env=env, text=True, errors="ignore", timeout=timeout, creationflags=flags)
-    except Exception as e:
-        # Fallback a puerto por defecto si 5039 falla
+        res = subprocess.run(cmd, env=env, text=True, errors="ignore", timeout=timeout, creationflags=flags, capture_output=True)
+        if res.returncode == 0 or res.stdout:
+            return res.stdout
+    except Exception:
+        pass
+
+    try:
         cmd_fallback = [adb_bin] + args
-        return subprocess.check_output(cmd_fallback, env=env, text=True, errors="ignore", timeout=timeout, creationflags=flags)
+        res = subprocess.run(cmd_fallback, env=env, text=True, errors="ignore", timeout=timeout, creationflags=flags, capture_output=True)
+        return res.stdout
+    except Exception:
+        return ""
 
 
 def detect_connected_mtp_devices() -> List[Dict[str, Any]]:
@@ -460,6 +467,10 @@ def get_adb_devices(port: int = 8443) -> Dict[str, Any]:
                 try:
                     rev_out = run_adb(["-s", serial, "reverse", "--list"], timeout=3)
                     if f"tcp:{port}" in rev_out:
+                        is_reversed = True
+                    elif state == "device":
+                        # Auto-establecer túnel reverso de inmediato para el cable USB
+                        run_adb(["-s", serial, "reverse", f"tcp:{port}", f"tcp:{port}"], timeout=3)
                         is_reversed = True
                 except Exception:
                     pass

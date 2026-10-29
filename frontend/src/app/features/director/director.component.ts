@@ -420,17 +420,12 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     const matrix = this.webrtc.connectionMatrix();
     const port = matrix?.port || 8443;
     const mode = this.usbQrMode();
-    if (mode === 'localhost') {
-      return `https://localhost:${port}/cam/${camId}`;
-    }
     if (mode === 'ip') {
       return `${this.webrtc.baseUrl()}/cam/${camId}`;
     }
-    // Auto: si el túnel ADB está activo, usar localhost; de lo contrario, usar IP de red para evitar ERR_CONNECTION_REFUSED
-    if (matrix?.usb_adb?.has_active_tunnel) {
-      return `https://localhost:${port}/cam/${camId}`;
-    }
-    return `${this.webrtc.baseUrl()}/cam/${camId}`;
+    // En la pestaña HUB USB, la dirección para el cable físico es SIEMPRE localhost
+    // El puerto 8443 del celular se mapea directamente al de la PC vía ADB reverse.
+    return `https://localhost:${port}/cam/${camId}`;
   }
 
   public async onRefreshConnections(): Promise<void> {
