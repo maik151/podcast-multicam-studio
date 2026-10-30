@@ -15,6 +15,11 @@ import shutil
 import subprocess
 from typing import Any, Dict, List, Optional
 
+# Forzar puerto 5039 a nivel de proceso para que el daemon de ADB nunca colisione con spacedesk (puerto 5037)
+ADB_SERVER_PORT = "5039"
+os.environ["ANDROID_ADB_SERVER_PORT"] = ADB_SERVER_PORT
+os.environ["ADB_SERVER_SOCKET"] = f"tcp:localhost:{ADB_SERVER_PORT}"
+
 
 KNOWN_PHONE_VIDS = {
     "339B": "Honor",
@@ -210,7 +215,7 @@ def get_connected_usb_hardware(adb_devices: Optional[List[Dict[str, Any]]] = Non
             if st == "device":
                 adb_state_label = "🟢 ADB AUTORIZADO (0ms)"
                 details = f"{brand} ({chosen_name}): Conexión USB autorizada y lista para 0ms de latencia."
-                hint = "Usa https://localhost:8443/cam/X para máxima velocidad sin latencia."
+                hint = "Usa http://localhost:8080/cam/X para máxima velocidad sin latencia y sin advertencias de certificado."
             elif st == "unauthorized":
                 adb_state_label = "⚠️ PENDIENTE EN PANTALLA"
                 details = f"{brand} ({chosen_name}): Conectado con depuración USB, pero en espera de permiso RSA en pantalla."
@@ -466,11 +471,12 @@ def get_adb_devices(port: int = 8443) -> Dict[str, Any]:
                 is_reversed = False
                 try:
                     rev_out = run_adb(["-s", serial, "reverse", "--list"], timeout=3)
-                    if f"tcp:{port}" in rev_out:
+                    if f"tcp:{port}" in rev_out or "tcp:8080" in rev_out:
                         is_reversed = True
                     elif state == "device":
-                        # Auto-establecer túnel reverso de inmediato para el cable USB
+                        # Auto-establecer túnel reverso dual (8443 HTTPS + 8080 HTTP) para el cable USB
                         run_adb(["-s", serial, "reverse", f"tcp:{port}", f"tcp:{port}"], timeout=3)
+                        run_adb(["-s", serial, "reverse", "tcp:8080", "tcp:8080"], timeout=3)
                         is_reversed = True
                 except Exception:
                     pass
@@ -481,7 +487,8 @@ def get_adb_devices(port: int = 8443) -> Dict[str, Any]:
                     "model": model,
                     "product": product,
                     "reversed": is_reversed,
-                    "direct_url": f"https://localhost:{port}"
+                    "direct_url": "http://localhost:8080",
+                    "https_url": f"https://localhost:{port}"
                 })
 
         pending_mtp = None
@@ -532,8 +539,9 @@ def reverse_all_adb_devices(port: int = 8443) -> Dict[str, Any]:
         serial = dev["serial"]
         try:
             run_adb(["-s", serial, "reverse", f"tcp:{port}", f"tcp:{port}"], timeout=4)
+            run_adb(["-s", serial, "reverse", "tcp:8080", "tcp:8080"], timeout=4)
             success_count += 1
-            results.append({"serial": serial, "status": "ok", "url": f"https://localhost:{port}"})
+            results.append({"serial": serial, "status": "ok", "url": "http://localhost:8080", "https_url": f"https://localhost:{port}"})
         except Exception as e:
             results.append({"serial": serial, "status": "error", "error": str(e)})
 
@@ -762,11 +770,12 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
         "title": "Hub USB Cable (Android ADB)",
         "badge": "0ms LATENCIA // CABLE FÍSICO",
         "ip": "localhost",
-        "base_url": f"https://localhost:{port}",
+        "base_url": "http://localhost:8080",
+        "https_url": f"https://localhost:{port}",
         "is_active": adb_data.get("available", False) and len(adb_data.get("devices", [])) > 0,
         "latency_label": "< 5ms (Inmune a interferencias)",
         "icon": "usb",
-        "description": "Ideal para conectar 3 celulares a un Hub USB con cero pérdida de paquetes y cero jitter."
+        "description": "Ideal para conectar celulares vía Hub USB. Acceso instantáneo en http://localhost:8080 sin advertencias de certificado."
     })
 
     # Opción 2: iPhone USB Tethering

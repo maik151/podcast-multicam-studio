@@ -423,9 +423,12 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     if (mode === 'ip') {
       return `${this.webrtc.baseUrl()}/cam/${camId}`;
     }
-    // En la pestaña HUB USB, la dirección para el cable físico es SIEMPRE localhost
-    // El puerto 8443 del celular se mapea directamente al de la PC vía ADB reverse.
-    return `https://localhost:${port}/cam/${camId}`;
+    if (mode === 'localhost') {
+      return `https://localhost:${port}/cam/${camId}`;
+    }
+    // En la pestaña HUB USB por defecto ('auto'), la dirección óptima es http://localhost:8080
+    // En Chromium/Android 'http://localhost' es Contexto Seguro nativo (sin alertas de certificado)
+    return `http://localhost:8080/cam/${camId}`;
   }
 
   public async onRefreshConnections(): Promise<void> {

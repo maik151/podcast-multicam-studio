@@ -73,14 +73,35 @@ def main():
         desktop_url = f"https://127.0.0.1:{port}"
         schedule_desktop_launch(desktop_url, delay_seconds=1.2)
 
-    # 6. Iniciar Servidor Asíncrono
-    web.run_app(
-        app,
-        host=HOST,
-        port=port,
-        ssl_context=ssl_context,
-        print=None
-    )
+    # 6. Iniciar Servidor Asíncrono Dual (8443 HTTPS + 8080 HTTP para USB ADB)
+    async def _start_dual_server():
+        runner = web.AppRunner(app)
+        await runner.setup()
+
+        site_https = web.TCPSite(runner, host=HOST, port=port, ssl_context=ssl_context)
+        await site_https.start()
+
+        http_port = 8080
+        try:
+            release_port_if_busy(http_port, auto_kill=True)
+            site_http = web.TCPSite(runner, host=HOST, port=http_port)
+            await site_http.start()
+            print(f" [USB DUAL]  http://localhost:{http_port}/cam/1 (Zero-warning USB ADB)")
+        except Exception as e:
+            print(f" [USB DUAL]  Aviso puerto {http_port}: {e}")
+
+        stop_event = asyncio.Event()
+        try:
+            await stop_event.wait()
+        except (KeyboardInterrupt, SystemExit, asyncio.CancelledError):
+            pass
+        finally:
+            await runner.cleanup()
+
+    try:
+        loop.run_until_complete(_start_dual_server())
+    except (KeyboardInterrupt, SystemExit):
+        pass
 
 if __name__ == "__main__":
     main()
