@@ -418,17 +418,20 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   public getUsbQrTargetUrl(camId: number): string {
     const matrix = this.webrtc.connectionMatrix();
-    const port = matrix?.port || 8443;
     const mode = this.usbQrMode();
     if (mode === 'ip') {
       return `${this.webrtc.baseUrl()}/cam/${camId}`;
     }
     if (mode === 'localhost') {
-      return `https://localhost:${port}/cam/${camId}`;
+      return `http://localhost:8080/cam/${camId}`;
     }
-    // En la pestaña HUB USB por defecto ('auto'), la dirección óptima es http://localhost:8080
-    // En Chromium/Android 'http://localhost' es Contexto Seguro nativo (sin alertas de certificado)
-    return `http://localhost:8080/cam/${camId}`;
+    // En modo 'auto': si ADB tiene dispositivo autorizado, enlazar por cable http://localhost:8080 (0ms)
+    // Si no hay dispositivo ADB autorizado en este instante, usar la IP de la laptop para evitar ERR_CONNECTION_REFUSED
+    const hasAdb = (matrix?.usb_adb?.devices?.length || 0) > 0;
+    if (hasAdb) {
+      return `http://localhost:8080/cam/${camId}`;
+    }
+    return `${this.webrtc.baseUrl()}/cam/${camId}`;
   }
 
   public async onRefreshConnections(): Promise<void> {

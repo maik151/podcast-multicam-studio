@@ -189,6 +189,29 @@ class SignalingHub:
                             if cam_ws and not cam_ws.closed:
                                 await cam_ws.send_str(msg.data)
 
+                    # 10. Streaming de Video TCP sobre WebSocket (USB Cable / ADB sin Wi-Fi)
+                    elif msg_type == "video_chunk":
+                        if self.director_ws and not self.director_ws.closed:
+                            if "camId" not in data:
+                                data["camId"] = int(registered_cam_id) if registered_cam_id and registered_cam_id.isdigit() else 1
+                            await self.director_ws.send_str(msg.data)
+
+                    elif msg_type in ("tcp_stream_start", "tcp_stream_stop"):
+                        if self.director_ws and not self.director_ws.closed:
+                            if "camId" not in data:
+                                data["camId"] = int(registered_cam_id) if registered_cam_id and registered_cam_id.isdigit() else 1
+                            await self.director_ws.send_str(msg.data)
+
+                elif msg.type == web.WSMsgType.BINARY:
+                    # Video binario transmitido por cable USB TCP de ultra-baja latencia
+                    if registered_role == "camera" and self.director_ws and not self.director_ws.closed:
+                        cam_num = int(registered_cam_id) if registered_cam_id and registered_cam_id.isdigit() else 1
+                        payload = bytes([cam_num]) + msg.data
+                        try:
+                            await self.director_ws.send_bytes(payload)
+                        except Exception:
+                            pass
+
                 elif msg.type == web.WSMsgType.ERROR:
                     print(f"[WS] Error en conexión WebSocket: {ws.exception()}")
 

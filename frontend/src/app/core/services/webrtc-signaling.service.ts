@@ -29,6 +29,17 @@ export class WebRtcSignalingService {
   private remoteStreams: { [camId: number]: MediaStream } = {};
   private pendingCandidates: { [camId: number]: RTCIceCandidateInit[] } = {};
 
+  // Decodificador de streaming TCP de baja latencia por WebSocket (Fallback de cable USB)
+  private tcpMediaSources: {
+    [camId: number]: {
+      mediaSource: MediaSource;
+      sourceBuffer: SourceBuffer | null;
+      video: HTMLVideoElement;
+      queue: ArrayBuffer[];
+      isReady: boolean;
+    };
+  } = {};
+
   // Configuración LAN pura sin bloqueo de STUN externo para baja latencia (< 50ms)
   private readonly rtcConfig: RTCConfiguration = {
     iceServers: []
@@ -150,6 +161,7 @@ export class WebRtcSignalingService {
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${window.location.host}/ws`;
     this.ws = new WebSocket(wsUrl);
+    this.ws.binaryType = 'arraybuffer';
 
     this.ws.onopen = () => {
       this.ngZone.run(() => {
@@ -172,8 +184,38 @@ export class WebRtcSignalingService {
     };
 
     this.ws.onmessage = async (event) => {
+      // 1. Manejo de tramas binarias directas de video sobre TCP (cable USB)
+      if (event.data instanceof ArrayBuffer) {
+        const view = new Uint8Array(event.data);
+        if (view.length > 1) {
+          const camId = view[0];
+          const payload = event.data.slice(1);
+          this.handleIncomingTcpChunk(camId, payload);
+        }
+        return;
+      }
+
+      // 2. Manejo de mensajes de señalización JSON
       try {
-        const msg = JSON.parse(event.data);
+        const msg = typeof event.data === 'string' ? JSON.parse(event.data) : null;
+        if (!msg) return;
+
+        if (msg.type === 'tcp_stream_start') {
+          this.handleTcpStreamStart(Number(msg.camId), msg.mimeType);
+          return;
+        } else if (msg.type === 'tcp_stream_stop') {
+          this.handleTcpStreamStop(Number(msg.camId));
+          return;
+        } else if (msg.type === 'video_chunk' && msg.data) {
+          const rawData = atob(msg.data);
+          const buf = new Uint8Array(rawData.length);
+          for (let i = 0; i < rawData.length; i++) {
+            buf[i] = rawData.charCodeAt(i);
+          }
+          this.handleIncomingTcpChunk(Number(msg.camId), buf.buffer);
+          return;
+        }
+
         await this.handleSignalingMessage(msg);
       } catch (e) {
         console.warn('[WebRtcService] Error parseando mensaje WS:', e);
@@ -502,6 +544,110 @@ export class WebRtcSignalingService {
     };
   }
 
+  public handleTcpStreamStart(camId: number, mimeType?: string): void {
+    if (this.tcpMediaSources[camId]) {
+      this.handleTcpStreamStop(camId);
+    }
+
+    try {
+      if (typeof window === 'undefined' || !('MediaSource' in window)) {
+        return;
+      }
+      const ms = new MediaSource();
+      const video = document.createElement('video');
+      video.muted = true;
+      video.autoplay = true;
+      video.playsInline = true;
+
+      const entry = {
+        mediaSource: ms,
+        sourceBuffer: null as SourceBuffer | null,
+        video: video,
+        queue: [] as ArrayBuffer[],
+        isReady: false
+      };
+      this.tcpMediaSources[camId] = entry;
+
+      const objectUrl = URL.createObjectURL(ms);
+      video.src = objectUrl;
+
+      ms.addEventListener('sourceopen', () => {
+        try {
+          const codec = mimeType || 'video/webm; codecs=vp8';
+          const targetMime = MediaSource.isTypeSupported(codec) ? codec : 'video/webm; codecs=vp8';
+          const sb = ms.addSourceBuffer(targetMime);
+          sb.mode = 'sequence';
+          entry.sourceBuffer = sb;
+          entry.isReady = true;
+
+          sb.addEventListener('updateend', () => {
+            if (entry.queue.length > 0 && !sb.updating) {
+              const next = entry.queue.shift();
+              if (next) {
+                try { sb.appendBuffer(next); } catch {}
+              }
+            }
+          });
+
+          video.play().then(() => {
+            const capture = (video as any).captureStream ? (video as any).captureStream() : (video as any).mozCaptureStream?.();
+            if (capture) {
+              this.remoteStreams[camId] = capture;
+              this.ngZone.run(() => {
+                this.updateCameraState(camId, { isConnected: true, isTcpStream: true });
+              });
+            }
+          }).catch(() => {});
+        } catch (e) {
+          console.warn(`[WebRtcService] Error creando SourceBuffer para CAM 0${camId}:`, e);
+        }
+      });
+    } catch (e) {
+      console.warn(`[WebRtcService] Fallo inicializando MediaSource para CAM 0${camId}:`, e);
+    }
+  }
+
+  public handleIncomingTcpChunk(camId: number, chunk: ArrayBuffer): void {
+    let entry = this.tcpMediaSources[camId];
+    if (!entry) {
+      this.handleTcpStreamStart(camId);
+      entry = this.tcpMediaSources[camId];
+      if (!entry) return;
+    }
+
+    if (entry.isReady && entry.sourceBuffer && !entry.sourceBuffer.updating && entry.queue.length === 0) {
+      try {
+        entry.sourceBuffer.appendBuffer(chunk);
+      } catch {
+        entry.queue.push(chunk);
+      }
+    } else {
+      entry.queue.push(chunk);
+      if (entry.queue.length > 30) {
+        entry.queue.splice(0, entry.queue.length - 15);
+      }
+    }
+  }
+
+  public handleTcpStreamStop(camId: number): void {
+    const entry = this.tcpMediaSources[camId];
+    if (entry) {
+      try {
+        if (entry.mediaSource.readyState === 'open') {
+          entry.mediaSource.endOfStream();
+        }
+      } catch {}
+      try {
+        entry.video.pause();
+        entry.video.src = '';
+      } catch {}
+      delete this.tcpMediaSources[camId];
+    }
+    this.ngZone.run(() => {
+      this.updateCameraState(camId, { isTcpStream: false });
+    });
+  }
+
   private cleanupPeer(camId: number): void {
     if (this.peerConnections[camId]) {
       try {
@@ -509,10 +655,12 @@ export class WebRtcSignalingService {
       } catch {}
       delete this.peerConnections[camId];
     }
+    this.handleTcpStreamStop(camId);
     delete this.remoteStreams[camId];
     this.updateCameraState(camId, {
       stream: null,
-      isConnected: false
+      isConnected: false,
+      isTcpStream: false
     });
   }
 

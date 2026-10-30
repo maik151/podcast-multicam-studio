@@ -753,6 +753,13 @@
 
           <span class="font-bold text-white">CAM 0{{ cam.id }}</span>
 
+          <span *ngIf="cam.isTcpStream" class="text-[8px] font-mono px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            USB TCP
+          </span>
+          <span *ngIf="cam.isConnected && !cam.isTcpStream" class="text-[8px] font-mono px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            UDP RTC
+          </span>
+
           <span class="text-[9px] text-outline opacity-80 uppercase">
 
             {{ cam.id === 1 ? 'HOST' : (cam.id === 2 ? 'INVITADO' : 'GENERAL') }}

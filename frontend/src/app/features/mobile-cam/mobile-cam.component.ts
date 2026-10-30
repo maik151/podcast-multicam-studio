@@ -57,6 +57,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   // Soporte PWA & Fullscreen
   public canInstallPwa = signal<boolean>(false);
   public isFullscreen = signal<boolean>(false);
+  public isTcpStreamingActive = signal<boolean>(false);
   private deferredPwaPrompt: any = null;
 
   private localStream: MediaStream | null = null;
@@ -67,6 +68,8 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   private batteryInterval: number | null = null;
   private reconnectTimer: number | null = null;
   private noticeTimeout: number | null = null;
+  private tcpMediaRecorder: MediaRecorder | null = null;
+  private usbFallbackTimer: number | null = null;
 
   private readonly rtcConfig: RTCConfiguration = {
     iceServers: []
@@ -133,6 +136,11 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   }
 
   private cleanupAllResources(): void {
+    if (this.usbFallbackTimer) {
+      clearTimeout(this.usbFallbackTimer);
+      this.usbFallbackTimer = null;
+    }
+    this.stopTcpVideoFallback();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -152,6 +160,60 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     if (this.ws) {
       try { this.ws.onclose = null; this.ws.close(); } catch {}
       this.ws = null;
+    }
+  }
+
+  public startTcpVideoStreaming(): void {
+    if (this.isTcpStreamingActive() || !this.localStream || this.isManuallyStopped()) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    try {
+      let mimeType = 'video/webm;codecs=vp8';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
+          ? 'video/mp4;codecs=avc1'
+          : (MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '');
+      }
+
+      const options: MediaRecorderOptions = {
+        videoBitsPerSecond: 8000000
+      };
+      if (mimeType) options.mimeType = mimeType;
+
+      this.tcpMediaRecorder = new MediaRecorder(this.localStream, options);
+
+      this.tcpMediaRecorder.ondataavailable = async (e: BlobEvent) => {
+        if (e.data && e.data.size > 0 && this.ws && this.ws.readyState === WebSocket.OPEN) {
+          const buffer = await e.data.arrayBuffer();
+          this.ws.send(buffer);
+        }
+      };
+
+      this.tcpMediaRecorder.start(60); // Emite un chunk cada 60ms (~16 fps/chunks fluidos para el cable USB)
+      this.isTcpStreamingActive.set(true);
+      this.statusText.set(`EN VIVO // CABLE USB (0ms TCP)`);
+      this.sendWs({
+        type: 'tcp_stream_start',
+        camId: this.camId(),
+        mimeType: mimeType || 'video/webm'
+      });
+      console.log('[MobileCam] ⚡ Streaming de video TCP sobre cable USB activado con éxito.');
+    } catch (err) {
+      console.error('[MobileCam] Error iniciando MediaRecorder TCP:', err);
+    }
+  }
+
+  public stopTcpVideoFallback(): void {
+    if (this.tcpMediaRecorder && this.tcpMediaRecorder.state !== 'inactive') {
+      try { this.tcpMediaRecorder.stop(); } catch {}
+      this.tcpMediaRecorder = null;
+    }
+    if (this.isTcpStreamingActive()) {
+      this.isTcpStreamingActive.set(false);
+      this.sendWs({
+        type: 'tcp_stream_stop',
+        camId: this.camId()
+      });
     }
   }
 
@@ -429,10 +491,22 @@ export class MobileCamComponent implements OnInit, OnDestroy {
           this.verifyAndReportActualFormat(videoTrack, preset, false);
         }
       }
+
+      // Si estamos conectados por cable USB ADB (localhost / 127.0.0.1), activar watchdog para streaming TCP
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if (this.usbFallbackTimer) clearTimeout(this.usbFallbackTimer);
+        this.usbFallbackTimer = window.setTimeout(() => {
+          if (!this.pc || this.pc.connectionState !== 'connected') {
+            console.log('[MobileCam] WebRTC sin ruta UDP en cable USB. Activando transmisión TCP por WebSocket...');
+            this.startTcpVideoStreaming();
+          }
+        }, 2200);
+      }
     };
 
     this.ws.onclose = () => {
       this.isConnected.set(false);
+      this.stopTcpVideoFallback();
       if (!this.isManuallyStopped()) {
         this.statusText.set('Desconectado. Reintentando enlace...');
         this.reconnectTimer = window.setTimeout(() => this.connectWs(), 2000);
@@ -484,8 +558,10 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       this.pc.onconnectionstatechange = () => {
         if (this.pc?.connectionState === 'connected') {
           this.statusText.set(`EN VIVO // ${this.actualResolutionText()}`);
+          this.stopTcpVideoFallback();
         } else if (this.pc?.connectionState === 'failed') {
-          console.warn('[MobileCam] WebRTC fallido. Solicitando recuperación rápida...');
+          console.warn('[MobileCam] WebRTC fallido. Solicitando recuperación rápida y activando TCP fallback...');
+          this.startTcpVideoStreaming();
           this.requestRenegotiation(500);
         } else if (this.pc?.connectionState === 'disconnected') {
           this.requestRenegotiation(1500);

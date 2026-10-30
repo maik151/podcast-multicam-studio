@@ -15,6 +15,7 @@ export interface CameraFeed {
   currentZoom?: number;
   isTorchOn?: boolean;
   isOledActive?: boolean;
+  isTcpStream?: boolean;
 }
 
 export interface AudioMetrics {

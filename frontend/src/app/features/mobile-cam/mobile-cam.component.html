@@ -158,7 +158,7 @@
     <!-- Connection & Real Sensor Format Status Bar -->
     <div class="w-full flex items-center justify-between text-[11px] text-white/90 border-t border-white/10 pt-1.5">
       <span class="truncate">ESTADO: <strong>{{ statusText() }}</strong></span>
-      <span class="text-[#22c55e] font-bold whitespace-nowrap ml-2">{{ actualResolutionText() }} // WEBRTC</span>
+      <span class="text-[#22c55e] font-bold whitespace-nowrap ml-2">{{ actualResolutionText() }} // {{ isTcpStreamingActive() ? 'CABLE USB (TCP)' : 'WEBRTC (UDP)' }}</span>
     </div>
   </div>
 
