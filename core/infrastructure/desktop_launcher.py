@@ -34,12 +34,30 @@ def find_chromium_executable():
 
 def launch_desktop_window(url: str, width: int = 1520, height: int = 920) -> bool:
     """Lanza la URL en una ventana de aplicación independiente sin barra de navegación."""
+    # Para el monitor local del director en la PC, SIEMPRE usar 127.0.0.1 o localhost.
+    # Esto garantiza que Chromium aplique --allow-insecure-localhost y nunca bloquee por SSL.
+    local_url = url
+    for prefix in ["https://192.168.", "https://10.", "https://172."]:
+        if url.startswith(prefix):
+            parts = url.split(":")
+            if len(parts) >= 3:
+                port_part = parts[2].split("/")[0]
+                local_url = f"https://127.0.0.1:{port_part}"
+            else:
+                local_url = "https://127.0.0.1:8443"
+            break
+
     browser_path = find_chromium_executable()
     if browser_path:
         try:
+            # Perfil aislado para que no herede sesiones del Edge personal ni desactive el bypass de certificados
+            profile_dir = os.path.expandvars(r"%LOCALAPPDATA%\TX-Studio\browser_profile")
+            os.makedirs(profile_dir, exist_ok=True)
+
             cmd = [
                 browser_path,
-                f"--app={url}",
+                f"--app={local_url}",
+                f"--user-data-dir={profile_dir}",
                 f"--window-size={width},{height}",
                 "--ignore-certificate-errors",
                 "--allow-insecure-localhost",
@@ -56,7 +74,7 @@ def launch_desktop_window(url: str, width: int = 1520, height: int = 920) -> boo
 
     # Fallback si no hay navegador Chromium disponible
     import webbrowser
-    webbrowser.open(url)
+    webbrowser.open(local_url)
     return False
 
 

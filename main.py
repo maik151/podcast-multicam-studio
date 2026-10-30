@@ -70,7 +70,8 @@ def main():
     # 5. Lanzar ventana de escritorio nativa (Edge App Mode) si no se especifica --no-window
     if "--no-window" not in sys.argv:
         from core.infrastructure.desktop_launcher import schedule_desktop_launch
-        schedule_desktop_launch(base_url, delay_seconds=1.2)
+        desktop_url = f"https://127.0.0.1:{port}"
+        schedule_desktop_launch(desktop_url, delay_seconds=1.2)
 
     # 6. Iniciar Servidor Asíncrono
     web.run_app(
