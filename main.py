@@ -29,11 +29,8 @@ def main():
     setup_windows_console()
 
     # Configurar loop de asyncio para suprimir resets benignos en Windows
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     _silence_proactor_reset(loop)
 
     # Parsear argumentos opcionales de puerto
@@ -53,7 +50,7 @@ def main():
     base_url = f"https://{primary_ip}:{port}"
 
     print("=" * 65)
-    print(" 🎙️ PODCAST MULTICAM STUDIO // CLEAN ARCHITECTURE BACKEND")
+    print(" [TX] PODCAST MULTICAM STUDIO // CLEAN ARCHITECTURE BACKEND")
     print("=" * 65)
     print(f" [ESTADO]  Servidor Local Seguro Activo (TLS v1.3)")
     print(f" [RED]     {iface_desc}")

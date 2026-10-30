@@ -53,7 +53,7 @@ def release_port_if_busy(port: int = 8443, auto_kill: bool = True) -> bool:
 
             if auto_kill:
                 for pid in pids_to_kill:
-                    print(f"[PORT] 🧹 Cerrando proceso huérfano previo (PID: {pid}) en puerto {port}...")
+                    print(f"[PORT] [AUTO-CLEAN] Cerrando proceso previo (PID: {pid}) en puerto {port}...")
                     try:
                         subprocess.run(
                             f"taskkill /F /PID {pid}",
@@ -70,10 +70,10 @@ def release_port_if_busy(port: int = 8443, auto_kill: bool = True) -> bool:
                 time.sleep(0.5)
                 
                 if not is_port_in_use(port):
-                    print(f"[PORT] ✅ Puerto {port} liberado exitosamente.")
+                    print(f"[PORT] [OK] Puerto {port} liberado exitosamente.")
                     return True
                 else:
-                    print(f"[PORT] ⚠️ Puerto {port} aún ocupado tras intento de liberación.")
+                    print(f"[PORT] [AVISO] Puerto {port} aun ocupado tras intento de liberacion.")
                     return False
 
         except Exception as e:
