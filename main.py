@@ -12,11 +12,16 @@ from core.infrastructure.network import release_port_if_busy, detect_primary_ip,
 from core.presentation.app_factory import create_application
 
 def _silence_proactor_reset(loop):
-    """Suprime advertencias inofensivas de reset de socket en Windows (WinError 10054)."""
+    """Suprime desconexiones inofensivas y cambios dinámicos de interfaz de red en Windows (WinError 10054, 64, 121, 10053)."""
     orig_handler = loop.get_exception_handler()
     def _handler(loop, context):
         exc = context.get("exception")
-        if isinstance(exc, ConnectionResetError) and getattr(exc, "winerror", 0) == 10054:
+        if isinstance(exc, (ConnectionResetError, ConnectionAbortedError, OSError)):
+            winerror = getattr(exc, "winerror", 0)
+            if winerror in (10054, 10053, 64, 121, 22):
+                return
+        msg = context.get("message", "")
+        if "Accept failed on a socket" in msg and any(f"WinError {e}" in str(exc) for e in (64, 121, 10054)):
             return
         if orig_handler:
             orig_handler(loop, context)
@@ -79,6 +84,7 @@ def main():
         await site_https.start()
 
         http_port = 8080
+        site_http = None
         try:
             release_port_if_busy(http_port, auto_kill=True)
             site_http = web.TCPSite(runner, host=HOST, port=http_port)
@@ -86,6 +92,23 @@ def main():
             print(f" [USB DUAL]  http://localhost:{http_port}/cam/1 (Zero-warning USB ADB)")
         except Exception as e:
             print(f" [USB DUAL]  Aviso puerto {http_port}: {e}")
+
+        # Watchdog de autorecuperación ante cambios de red en Windows (WinError 64 / Hotspot toggle)
+        async def _network_healing_watchdog():
+            while True:
+                await asyncio.sleep(4)
+                try:
+                    if site_https._server is None or not site_https._server.is_serving():
+                        await site_https.start()
+                except Exception:
+                    pass
+                if site_http is not None:
+                    try:
+                        if site_http._server is None or not site_http._server.is_serving():
+                            await site_http.start()
+                    except Exception:
+                        pass
+        asyncio.create_task(_network_healing_watchdog())
 
         stop_event = asyncio.Event()
         try:

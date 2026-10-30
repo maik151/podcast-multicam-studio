@@ -14,6 +14,8 @@ from core.infrastructure.network import (
     open_windows_hotspot_settings
 )
 
+_QR_SVG_CACHE = {}
+
 class NetworkController:
     def __init__(self, port: int):
         self.port = port
@@ -39,9 +41,17 @@ class NetworkController:
 
     async def handle_qr(self, request: web.Request) -> web.Response:
         try:
-            primary_ip, _ = detect_primary_ip()
-            default_target = f"https://{primary_ip}:{self.port}/cam/1"
-            target_url = request.query.get("url") or request.query.get("data") or default_target
+            target_url = request.query.get("url") or request.query.get("data")
+            if not target_url:
+                primary_ip, _ = detect_primary_ip()
+                target_url = f"https://{primary_ip}:{self.port}/cam/1"
+
+            if target_url in _QR_SVG_CACHE:
+                return web.Response(
+                    body=_QR_SVG_CACHE[target_url],
+                    content_type="image/svg+xml",
+                    headers={"Cache-Control": "max-age=300, public", "Access-Control-Allow-Origin": "*"}
+                )
 
             qr = qrcode.QRCode(
                 version=1,
@@ -56,11 +66,14 @@ class NetworkController:
 
             buf = io.BytesIO()
             img.save(buf)
+            svg_bytes = buf.getvalue()
+            _QR_SVG_CACHE[target_url] = svg_bytes
+
             return web.Response(
-                body=buf.getvalue(),
+                body=svg_bytes,
                 content_type="image/svg+xml",
                 headers={
-                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Cache-Control": "max-age=300, public",
                     "Access-Control-Allow-Origin": "*"
                 }
             )

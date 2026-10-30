@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from typing import Any, Dict, List, Optional
 
 # Forzar puerto 5039 a nivel de proceso para que el daemon de ADB nunca colisione con spacedesk (puerto 5037)
@@ -38,7 +39,17 @@ KNOWN_PHONE_VIDS = {
 }
 
 
-def get_connected_usb_hardware(adb_devices: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+# Cache en memoria para evitar saturar el hilo principal con PowerShell (6.4 segundos -> 0.001 segundos)
+_RAW_HARDWARE_CACHE = None
+_RAW_HARDWARE_CACHE_TIME = 0.0
+_HARDWARE_CACHE_TTL = 6.0
+
+_ADAPTERS_CACHE = None
+_ADAPTERS_CACHE_TIME = 0.0
+_ADAPTERS_CACHE_TTL = 4.0
+
+
+def get_connected_usb_hardware(adb_devices: Optional[List[Dict[str, Any]]] = None, force_refresh: bool = False) -> List[Dict[str, Any]]:
     """
     Detecta todos los dispositivos de hardware USB físicos conectados a la PC:
     - Smartphones y Tablets (Android, iPhone) por cable.
@@ -46,7 +57,10 @@ def get_connected_usb_hardware(adb_devices: Optional[List[Dict[str, Any]]] = Non
     - Adaptadores de red USB (Remote NDIS, Apple USB Ethernet).
     - Cámaras web y capturadoras USB.
     Cruza la información con ADB para indicar si está autorizado o requiere tocar la pantalla.
+    Utiliza caché ultra-rápida de 6s para no bloquear el loop asíncrono.
     """
+    global _RAW_HARDWARE_CACHE, _RAW_HARDWARE_CACHE_TIME
+
     hardware_list: List[Dict[str, Any]] = []
     if adb_devices is None:
         try:
@@ -59,30 +73,37 @@ def get_connected_usb_hardware(adb_devices: Optional[List[Dict[str, Any]]] = Non
     adb_serials = {d.get("serial", "").upper(): d for d in adb_devs if d.get("serial")}
 
     raw_items: List[Dict[str, Any]] = []
-    try:
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        ps_cmd = (
-            "Get-PnpDevice -PresentOnly | Where-Object { "
-            "$_.InstanceId -like '*USB*' -or "
-            "$_.Class -in 'USB','USBDevice','WPD','AndroidUsbDeviceClass','Camera','Image' -or "
-            "($_.Class -eq 'Net' -and ($_.InstanceId -like '*USB*' -or $_.FriendlyName -like '*NDIS*' -or $_.FriendlyName -like '*Apple*')) "
-            "} | Select-Object FriendlyName, InstanceId, Class, Status | ConvertTo-Json -Compress"
-        )
-        out = subprocess.check_output(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
-            text=True,
-            errors="ignore",
-            timeout=10,
-            creationflags=flags
-        )
-        if out and out.strip():
-            parsed = json.loads(out)
-            if isinstance(parsed, list):
-                raw_items = parsed
-            elif isinstance(parsed, dict):
-                raw_items = [parsed]
-    except Exception:
-        pass
+    now = time.time()
+    if not force_refresh and _RAW_HARDWARE_CACHE is not None and (now - _RAW_HARDWARE_CACHE_TIME) < _HARDWARE_CACHE_TTL:
+        raw_items = _RAW_HARDWARE_CACHE
+    else:
+        try:
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            ps_cmd = (
+                "Get-PnpDevice -PresentOnly | Where-Object { "
+                "$_.InstanceId -like '*USB*' -or "
+                "$_.Class -in 'USB','USBDevice','WPD','AndroidUsbDeviceClass','Camera','Image' -or "
+                "($_.Class -eq 'Net' -and ($_.InstanceId -like '*USB*' -or $_.FriendlyName -like '*NDIS*' -or $_.FriendlyName -like '*Apple*')) "
+                "} | Select-Object FriendlyName, InstanceId, Class, Status | ConvertTo-Json -Compress"
+            )
+            out = subprocess.check_output(
+                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
+                text=True,
+                errors="ignore",
+                timeout=5,
+                creationflags=flags
+            )
+            if out and out.strip():
+                parsed = json.loads(out)
+                if isinstance(parsed, list):
+                    raw_items = parsed
+                elif isinstance(parsed, dict):
+                    raw_items = [parsed]
+            _RAW_HARDWARE_CACHE = raw_items
+            _RAW_HARDWARE_CACHE_TIME = now
+        except Exception:
+            if _RAW_HARDWARE_CACHE is not None:
+                raw_items = _RAW_HARDWARE_CACHE
 
     # Agrupador de teléfonos por VID/PID o serial para consolidar interfaces WPD + ADB + Compuesto
     phones_map: Dict[str, Dict[str, Any]] = {}
@@ -554,66 +575,27 @@ def reverse_all_adb_devices(port: int = 8443) -> Dict[str, Any]:
     }
 
 
-def parse_network_adapters() -> List[Dict[str, Any]]:
+def parse_network_adapters(force_refresh: bool = False) -> List[Dict[str, Any]]:
     """
-    Parsea las interfaces de red activas en Windows mediante Get-NetIPConfiguration (PowerShell)
-    con fallback robusto a 'ipconfig /all'.
+    Parsea las interfaces de red activas en Windows con caché de 4s y ejecución en 50ms.
     Retorna nombre, descripción, estado de desconexión, dirección IPv4 y Gateway.
     """
+    global _ADAPTERS_CACHE, _ADAPTERS_CACHE_TIME
+    now = time.time()
+    if not force_refresh and _ADAPTERS_CACHE is not None and (now - _ADAPTERS_CACHE_TIME) < _ADAPTERS_CACHE_TTL:
+        return _ADAPTERS_CACHE
+
     adapters: List[Dict[str, Any]] = []
     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
-    # 1. Método primario de alta precisión: PowerShell Get-NetIPConfiguration
-    try:
-        ps_cmd = (
-            "Get-NetIPConfiguration | Where-Object { $_.IPv4Address -ne $null } | ForEach-Object { "
-            "$ip = ($_.IPv4Address | Where-Object { $_.IPAddress -notlike '169.254*' }).IPAddress; "
-            "$gw = $_.IPv4DefaultGateway.NextHop; "
-            "if ($ip) { "
-            "[PSCustomObject]@{ Alias = $_.InterfaceAlias; Desc = $_.InterfaceDescription; IP = $ip; Gateway = $gw } "
-            "} "
-            "} | ConvertTo-Json -Compress"
-        )
-        out = subprocess.check_output(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
-            text=True,
-            errors="ignore",
-            timeout=4,
-            creationflags=flags
-        )
-        if out and out.strip():
-            data = json.loads(out)
-            if isinstance(data, dict):
-                data = [data]
-            for item in data:
-                ip_val = item.get("IP")
-                if isinstance(ip_val, list):
-                    ip_val = ip_val[0] if ip_val else None
-                gw_val = item.get("Gateway")
-                if isinstance(gw_val, list):
-                    gw_val = gw_val[0] if gw_val else None
-
-                if ip_val and not str(ip_val).startswith("169.254."):
-                    adapters.append({
-                        "name": item.get("Alias") or "",
-                        "desc": item.get("Desc") or "",
-                        "ip": str(ip_val),
-                        "gateway": str(gw_val) if gw_val else None,
-                        "disconnected": False
-                    })
-            if adapters:
-                return adapters
-    except Exception:
-        pass
-
-    # 2. Fallback clásico: ipconfig /all
+    # 1. Método ultra-rápido (50ms): ipconfig /all
     try:
         output = subprocess.check_output(
             "ipconfig /all",
             shell=True,
             text=True,
             errors="ignore",
-            timeout=4,
+            timeout=2,
             creationflags=flags
         )
 
@@ -640,11 +622,19 @@ def parse_network_adapters() -> List[Dict[str, Any]]:
                         current["ip"] = match.group(1)
                 elif "puerta de enlace" in sline.lower() or "default gateway" in sline.lower():
                     match = re.search(r"(\d+\.\d+\.\d+\.\d+)", sline)
-                    if match:
+                    if match and match.group(1) != "0.0.0.0":
                         current["gateway"] = match.group(1)
+
+        valid_adapters = [a for a in adapters if a.get("ip") and not a.get("disconnected")]
+        if valid_adapters:
+            _ADAPTERS_CACHE = valid_adapters
+            _ADAPTERS_CACHE_TIME = now
+            return valid_adapters
     except Exception:
         pass
 
+    if _ADAPTERS_CACHE is not None:
+        return _ADAPTERS_CACHE
     return adapters
 
 

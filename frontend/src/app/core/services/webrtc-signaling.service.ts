@@ -106,7 +106,7 @@ export class WebRtcSignalingService {
     const port = matrix?.port || 8443;
 
     if (route === 'usb_hub_adb') {
-      return `https://localhost:${port}/cam/${camId}`;
+      return `http://localhost:8080/cam/${camId}`;
     }
 
     if (route === 'windows_hotspot_5g') {
