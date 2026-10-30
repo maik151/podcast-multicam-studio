@@ -70,6 +70,10 @@ Dim psCmd
 psCmd = "powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -Command ""Expand-Archive -Path '" & zipPath & "' -DestinationPath '" & installDir & "' -Force; Remove-Item -Path '" & zipPath & "' -Force -ErrorAction SilentlyContinue"""
 shell.Run psCmd, 0, True
 
+' 2.1 Habilitar reglas de Firewall de Windows para el puerto 8443 y la aplicacion
+shell.Run "netsh advfirewall firewall add rule name=""TX-STUDIO Broadcast (Port 8443)"" dir=in action=allow protocol=TCP localport=8443 profile=any", 0, True
+shell.Run "netsh advfirewall firewall add rule name=""TX-STUDIO Application"" dir=in action=allow program=""" & installDir & "\start_studio.exe"" enable=yes", 0, True
+
 ' 3. Generar Desinstalador directo en la carpeta del programa
 Set uninstBat = fso.CreateTextFile(installDir & "\\Desinstalar TX-STUDIO.bat", True)
 uninstBat.WriteLine "@echo off"
