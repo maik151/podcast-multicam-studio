@@ -652,10 +652,21 @@ def open_windows_hotspot_settings() -> bool:
         return False
 
 
-def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
+_MATRIX_CACHE = None
+_MATRIX_CACHE_TIME = 0.0
+_MATRIX_CACHE_TTL = 3.5
+
+
+def get_full_connection_matrix(port: int = 8443, force_refresh: bool = False) -> Dict[str, Any]:
     """
     Compila la matriz completa de conexiones físicas, USB y Wi-Fi con diagnósticos y rutas de enlace.
+    Posee caché ultra-rápida de 3.5s para no saturar el event loop en el sondeo continuo.
     """
+    global _MATRIX_CACHE, _MATRIX_CACHE_TIME
+    now = time.time()
+    if not force_refresh and _MATRIX_CACHE is not None and (now - _MATRIX_CACHE_TIME) < _MATRIX_CACHE_TTL:
+        return _MATRIX_CACHE
+
     adapters = parse_network_adapters()
 
     hotspot_info = {
@@ -839,7 +850,7 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
     elif android_rndis_info["active"]:
         recommended_route = "android_rndis_tethering"
 
-    return {
+    result = {
         "hotspot_5ghz": hotspot_info,
         "apple_usb": apple_usb_info,
         "android_rndis": android_rndis_info,
@@ -852,3 +863,6 @@ def get_full_connection_matrix(port: int = 8443) -> Dict[str, Any]:
         "available_routes": available_routes,
         "active_ips": all_active_ips
     }
+    _MATRIX_CACHE = result
+    _MATRIX_CACHE_TIME = now
+    return result
