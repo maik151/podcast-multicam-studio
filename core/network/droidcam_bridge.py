@@ -325,14 +325,17 @@ class DroidCamBridgeManager:
                                 subprocess.run([adb_bin, "-P", ADB_SERVER_PORT, "-s", device_id, "shell", "monkey", "-p", pkg, "-c", "android.intent.category.LAUNCHER", "1"], env=env, timeout=3, creationflags=flags)
                             except Exception:
                                 pass
-                        time.sleep(1.0)
-                        for cand in candidate_ports:
-                            cmd = [adb_bin, "-P", ADB_SERVER_PORT, "-s", device_id, "forward", f"tcp:{local_port}", f"tcp:{cand}"]
-                            subprocess.call(cmd, env=env, timeout=3, creationflags=flags)
-                            if _probe_port(local_port):
-                                target_port = cand
-                                port_connected = True
-                                break
+                        # Reintentar sondeo activo durante hasta 3.5s (el sensor y el socket de la app tardan ~1-2.5s en abrir)
+                        start_wait = time.time()
+                        while time.time() - start_wait < 3.5 and not port_connected:
+                            time.sleep(0.5)
+                            for cand in candidate_ports:
+                                cmd = [adb_bin, "-P", ADB_SERVER_PORT, "-s", device_id, "forward", f"tcp:{local_port}", f"tcp:{cand}"]
+                                subprocess.call(cmd, env=env, timeout=2, creationflags=flags)
+                                if _probe_port(local_port):
+                                    target_port = cand
+                                    port_connected = True
+                                    break
 
                     binding_info = {
                         "cam_id": cam_id,
