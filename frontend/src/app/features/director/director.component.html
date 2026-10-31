@@ -17,33 +17,33 @@
   <!-- =========================================================================
        1. TOP TITLEBAR (FILA 1: ISOTIPO + MENÚS DESKTOP + WINDOW CONTROLS)
        ========================================================================= -->
-  <header class="h-7 w-full bg-[#0e1015] border-b border-[#1f222d] flex items-center justify-between shrink-0 z-30 select-none text-[11.5px] font-sans pl-2 pr-0">
+  <header class="h-8 w-full bg-[#0e1015] border-b border-[#1f222d] flex items-center justify-between shrink-0 z-30 select-none font-mono text-[14px] pl-2 pr-0">
 
     <!-- Lado Izquierdo: Solo Isotipo Naranja + Menús Desktop Clásicos -->
-    <div class="flex items-center gap-0.5 shrink-0">
+    <div class="flex items-center gap-1 shrink-0">
       <!-- Solo Isotipo Naranja (Sin texto TX-STUDIO) -->
-      <div class="flex items-center justify-center p-1 rounded hover:bg-white/10 transition-colors cursor-pointer mr-1"
+      <div class="flex items-center justify-center p-1 rounded hover:bg-white/10 transition-colors cursor-pointer mr-1.5"
            (click)="onOpenRecordingsFolder()" title="TX-STUDIO Broadcast Suite v3.8 - Abrir Grabaciones">
-        <img src="/tx_studio_Isotipo_naranja.svg" alt="TX" class="h-4 w-4 object-contain" />
+        <img src="/tx_studio_Isotipo_naranja.svg" alt="TX" class="h-4.5 w-4.5 object-contain" />
       </div>
 
       <!-- Menú: Estudio -->
       <div class="relative">
         <button (click)="toggleDesktopMenu('estudio', $event)"
-                class="px-2 py-0.5 rounded transition-colors text-gray-300 hover:text-white cursor-pointer"
-                [ngClass]="activeDesktopMenu() === 'estudio' ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/10'">
+                class="px-2.5 py-1 rounded transition-colors text-gray-300 hover:text-white cursor-pointer font-bold tracking-wider text-[13.5px]"
+                [ngClass]="activeDesktopMenu() === 'estudio' ? 'bg-white/15 text-white' : 'hover:bg-white/10'">
           Estudio
         </button>
         <div *ngIf="activeDesktopMenu() === 'estudio'" (click)="$event.stopPropagation()"
-             class="absolute left-0 top-full mt-0.5 w-56 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[11px] font-sans">
+             class="absolute left-0 top-full mt-0.5 w-60 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[12.5px] font-mono">
           <button (click)="onOpenRecordingsFolder(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[14px] text-primary">folder_open</span>
-            <span>Abrir Carpeta de Grabaciones</span>
+            <span class="material-symbols-outlined text-[15px] text-primary">folder_open</span>
+            <span>Abrir Carpeta Grabaciones</span>
           </button>
           <button (click)="onOpenLogsFolder(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[14px] text-cyan-400">description</span>
+            <span class="material-symbols-outlined text-[15px] text-cyan-400">description</span>
             <span>Ver Logs del Sistema</span>
           </button>
           <div class="my-1 border-t border-[#262b3d]"></div>
@@ -53,12 +53,12 @@
               <span class="w-2 h-2 rounded-full" [ngClass]="recorder.recordingState().isRecording ? 'bg-red-500 animate-ping' : 'bg-red-500'"></span>
               <span>{{ recorder.recordingState().isRecording ? 'Detener Grabación' : 'Iniciar Grabación' }}</span>
             </div>
-            <span class="text-[9.5px] text-gray-500 font-mono">Ctrl+R</span>
+            <span class="text-[11px] text-gray-500 font-mono">Ctrl+R</span>
           </button>
           <div class="my-1 border-t border-[#262b3d]"></div>
           <button (click)="onCloseWindow()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#881337] text-left text-red-300 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[14px]">power_settings_new</span>
+            <span class="material-symbols-outlined text-[15px]">power_settings_new</span>
             <span>Cerrar TX-STUDIO</span>
           </button>
         </div>
@@ -67,46 +67,46 @@
       <!-- Menú: Vista -->
       <div class="relative">
         <button (click)="toggleDesktopMenu('vista', $event)"
-                class="px-2 py-0.5 rounded transition-colors text-gray-300 hover:text-white cursor-pointer"
-                [ngClass]="activeDesktopMenu() === 'vista' ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/10'">
+                class="px-2.5 py-1 rounded transition-colors text-gray-300 hover:text-white cursor-pointer font-bold tracking-wider text-[13.5px]"
+                [ngClass]="activeDesktopMenu() === 'vista' ? 'bg-white/15 text-white' : 'hover:bg-white/10'">
           Vista
         </button>
         <div *ngIf="activeDesktopMenu() === 'vista'" (click)="$event.stopPropagation()"
-             class="absolute left-0 top-full mt-0.5 w-60 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[11px] font-sans">
+             class="absolute left-0 top-full mt-0.5 w-64 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[12.5px] font-mono">
           <button (click)="setLayout('dual'); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#252a3b] text-left cursor-pointer"
                   [ngClass]="viewLayout() === 'dual' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[15px]">view_column</span>
+              <span class="material-symbols-outlined text-[16px]">view_column</span>
               <span>Estudio Dual (Con Previo)</span>
             </div>
-            <span class="text-[9.5px] text-gray-500 font-mono">Alt+1</span>
+            <span class="text-[11px] text-gray-500 font-mono">Alt+1</span>
           </button>
           <button (click)="setLayout('live_column'); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#252a3b] text-left cursor-pointer"
                   [ngClass]="viewLayout() === 'live_column' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[15px]">view_sidebar</span>
+              <span class="material-symbols-outlined text-[16px]">view_sidebar</span>
               <span>Directa Live (Sin Previo)</span>
             </div>
-            <span class="text-[9.5px] text-gray-500 font-mono">Alt+2</span>
+            <span class="text-[11px] text-gray-500 font-mono">Alt+2</span>
           </button>
           <div class="my-1 border-t border-[#262b3d]"></div>
           <button (click)="onCycleFramingGuide(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[15px]">crop</span>
+              <span class="material-symbols-outlined text-[16px]">crop</span>
               <span>Guías: {{ ['OFF', 'SAFE 80%', 'TIKTOK 9:16', 'TERCIOS'][switcher.framingMode()] }}</span>
             </div>
-            <span class="text-[9.5px] text-gray-500 font-mono">G</span>
+            <span class="text-[11px] text-gray-500 font-mono">G</span>
           </button>
           <button (click)="onMaximizeWindow(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[15px]">fullscreen</span>
+              <span class="material-symbols-outlined text-[16px]">fullscreen</span>
               <span>Pantalla Completa</span>
             </div>
-            <span class="text-[9.5px] text-gray-500 font-mono">F11</span>
+            <span class="text-[11px] text-gray-500 font-mono">F11</span>
           </button>
         </div>
       </div>
@@ -114,53 +114,53 @@
       <!-- Menú: Conexiones -->
       <div class="relative">
         <button (click)="toggleDesktopMenu('conexiones', $event)"
-                class="px-2 py-0.5 rounded transition-colors text-gray-300 hover:text-white cursor-pointer flex items-center gap-1.5"
-                [ngClass]="activeDesktopMenu() === 'conexiones' ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/10'">
+                class="px-2.5 py-1 rounded transition-colors text-gray-300 hover:text-white cursor-pointer flex items-center gap-1.5 font-bold tracking-wider text-[13.5px]"
+                [ngClass]="activeDesktopMenu() === 'conexiones' ? 'bg-white/15 text-white' : 'hover:bg-white/10'">
           <span>Conexiones</span>
           <span *ngIf="webrtc.connectionMatrix()?.usb_adb?.devices?.length"
-                class="px-1 py-0.1 rounded bg-emerald-500/20 text-emerald-400 text-[8.5px] font-mono font-bold">
+                class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold">
             USB:{{ webrtc.connectionMatrix()?.usb_adb?.devices?.length }}
           </span>
           <span *ngIf="webrtc.connectionMatrix()?.hotspot_5ghz?.active"
-                class="px-1 py-0.1 rounded bg-cyan-500/20 text-cyan-400 text-[8.5px] font-mono font-bold">
+                class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 text-[10px] font-mono font-bold">
             5G
           </span>
         </button>
         <div *ngIf="activeDesktopMenu() === 'conexiones'" (click)="$event.stopPropagation()"
-             class="absolute left-0 top-full mt-0.5 w-64 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[11px] font-sans">
+             class="absolute left-0 top-full mt-0.5 w-68 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[12.5px] font-mono">
           <button (click)="openQrModal('usb'); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[15px] text-primary">usb</span>
+            <span class="material-symbols-outlined text-[16px] text-primary">usb</span>
             <div>
               <div class="leading-tight font-bold">Cable USB (DroidCam Hub)</div>
-              <div class="text-[9px] text-gray-400">Android ADB & iPhone usbmuxd 0ms</div>
+              <div class="text-[10px] text-gray-400">Android ADB & iPhone usbmuxd 0ms</div>
             </div>
           </button>
           <button (click)="openQrModal('hotspot'); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[15px] text-cyan-400">wifi_tethering</span>
+            <span class="material-symbols-outlined text-[16px] text-cyan-400">wifi_tethering</span>
             <div>
               <div class="leading-tight font-bold">Hotspot 5 GHz (Windows)</div>
-              <div class="text-[9px] text-gray-400">Red 5GHz directa sin router</div>
+              <div class="text-[10px] text-gray-400">Red 5GHz directa sin router</div>
             </div>
           </button>
           <button (click)="openQrModal('wifi'); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[15px] text-amber-400">wifi</span>
+            <span class="material-symbols-outlined text-[16px] text-amber-400">wifi</span>
             <div>
               <div class="leading-tight font-bold">Wi-Fi Normal (LAN Local)</div>
-              <div class="text-[9px] text-gray-400">IP: {{ getPrimaryIp() }}</div>
+              <div class="text-[10px] text-gray-400">IP: {{ getPrimaryIp() }}</div>
             </div>
           </button>
           <div class="my-1 border-t border-[#262b3d]"></div>
           <button (click)="onRefreshConnections(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[14px]">refresh</span>
+            <span class="material-symbols-outlined text-[15px]">refresh</span>
             <span>Re-escanear Puertos y Conexiones</span>
           </button>
           <button (click)="onReverseAdb(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[14px] text-emerald-400">sync_alt</span>
+            <span class="material-symbols-outlined text-[15px] text-emerald-400">sync_alt</span>
             <span>Invertir Puertos ADB (Reverse 8443)</span>
           </button>
         </div>
@@ -169,44 +169,44 @@
       <!-- Menú: Herramientas -->
       <div class="relative">
         <button (click)="toggleDesktopMenu('herramientas', $event)"
-                class="px-2 py-0.5 rounded transition-colors text-gray-300 hover:text-white cursor-pointer"
-                [ngClass]="activeDesktopMenu() === 'herramientas' ? 'bg-white/15 text-white font-medium' : 'hover:bg-white/10'">
+                class="px-2.5 py-1 rounded transition-colors text-gray-300 hover:text-white cursor-pointer font-bold tracking-wider text-[13.5px]"
+                [ngClass]="activeDesktopMenu() === 'herramientas' ? 'bg-white/15 text-white' : 'hover:bg-white/10'">
           Herramientas
         </button>
         <div *ngIf="activeDesktopMenu() === 'herramientas'" (click)="$event.stopPropagation()"
-             class="absolute left-0 top-full mt-0.5 w-60 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[11px] font-sans">
+             class="absolute left-0 top-full mt-0.5 w-64 bg-[#181a22] border border-[#2c3144] rounded-md shadow-2xl py-1 z-50 text-[12.5px] font-mono">
           <button (click)="audio.playCalibrationTone(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[15px] text-primary">graphic_eq</span>
+            <span class="material-symbols-outlined text-[16px] text-primary">graphic_eq</span>
             <span>Emitir Tono Senoidal 440Hz</span>
           </button>
           <button (click)="resetMicGain(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
-            <span class="material-symbols-outlined text-[15px]">tune</span>
+            <span class="material-symbols-outlined text-[16px]">tune</span>
             <span>Restablecer Preamp a +28 dB</span>
           </button>
           <button (click)="onToggleCompressor(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[15px]">compress</span>
+              <span class="material-symbols-outlined text-[16px]">compress</span>
               <span>Compresor de Voz</span>
             </div>
-            <span class="text-[9.5px] font-bold" [ngClass]="audio.isCompressor() ? 'text-primary' : 'text-gray-500'">{{ audio.isCompressor() ? 'ON' : 'OFF' }}</span>
+            <span class="text-[11px] font-bold" [ngClass]="audio.isCompressor() ? 'text-primary' : 'text-gray-500'">{{ audio.isCompressor() ? 'ON' : 'OFF' }}</span>
           </button>
           <button (click)="onToggleLowCut(); closeDesktopMenu()"
                   class="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#252a3b] text-left text-gray-200 hover:text-white cursor-pointer">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[15px]">equalizer</span>
+              <span class="material-symbols-outlined text-[16px]">equalizer</span>
               <span>Filtro Low-Cut 80Hz</span>
             </div>
-            <span class="text-[9.5px] font-bold" [ngClass]="audio.isLowCut() ? 'text-emerald-400' : 'text-gray-500'">{{ audio.isLowCut() ? 'ON' : 'OFF' }}</span>
+            <span class="text-[11px] font-bold" [ngClass]="audio.isLowCut() ? 'text-emerald-400' : 'text-gray-500'">{{ audio.isLowCut() ? 'ON' : 'OFF' }}</span>
           </button>
         </div>
       </div>
     </div>
 
     <!-- Centro: Área libre / Nombre sutil de la app -->
-    <div class="flex-1 h-full flex items-center justify-center text-[10.5px] text-gray-500/60 font-mono tracking-widest pointer-events-none uppercase">
+    <div class="flex-1 h-full flex items-center justify-center text-[12px] text-gray-500/70 font-mono tracking-widest pointer-events-none uppercase font-semibold">
       TX-STUDIO • BROADCAST SUITE
     </div>
 
@@ -215,19 +215,19 @@
       <!-- Minimize Button -->
       <button (click)="onMinimizeWindow()" title="Minimizar"
               class="h-full w-11 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
-        <svg width="10" height="1" viewBox="0 0 10 1" fill="currentColor">
-          <rect width="10" height="1" />
+        <svg width="11" height="1.5" viewBox="0 0 11 1.5" fill="currentColor">
+          <rect width="11" height="1.5" />
         </svg>
       </button>
 
       <!-- Maximize / Restore Button -->
       <button (click)="onMaximizeWindow()" [title]="isWindowFullscreen() ? 'Restaurar' : 'Maximizar'"
               class="h-full w-11 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
-        <svg *ngIf="isWindowFullscreen()" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1">
+        <svg *ngIf="isWindowFullscreen()" width="11" height="11" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2">
           <path d="M2.5 7.5H1.5V1.5H7.5V2.5" />
           <rect x="2.5" y="2.5" width="6" height="6" />
         </svg>
-        <svg *ngIf="!isWindowFullscreen()" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1">
+        <svg *ngIf="!isWindowFullscreen()" width="11" height="11" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2">
           <rect x="1" y="1" width="8" height="8" />
         </svg>
       </button>
@@ -235,7 +235,7 @@
       <!-- Close Button -->
       <button (click)="onCloseWindow()" title="Cerrar"
               class="h-full w-11 flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#e81123] transition-colors cursor-pointer">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.1">
+        <svg width="11" height="11" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3">
           <line x1="1" y1="1" x2="9" y2="9" />
           <line x1="9" y1="1" x2="1" y2="9" />
         </svg>
@@ -247,58 +247,58 @@
   <!-- =========================================================================
        FILA 2: TOOLBAR DE CONTROL, TELEMETRÍA Y EMISIÓN (DESPUÉS DE HERRAMIENTAS)
        ========================================================================= -->
-  <div class="h-8.5 w-full bg-[#15171f] border-b border-[#242735] px-3 flex items-center justify-between gap-2 shrink-0 z-20 select-none text-[11px] font-mono">
+  <div class="h-9 w-full bg-[#15171f] border-b border-[#242735] px-3 flex items-center justify-between gap-2.5 shrink-0 z-20 select-none font-mono text-[13.5px]">
 
     <!-- Izquierda: Campo de Toma Actual -->
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0b0c10] border border-white/[0.08] text-gray-300">
-      <span class="text-primary font-bold text-[10px] tracking-wide">TOMA:</span>
+    <div class="flex items-center gap-2 px-3 py-1 rounded bg-[#0b0c10] border border-white/[0.08] text-gray-300">
+      <span class="text-primary font-bold text-[12px] tracking-wide">TOMA:</span>
       <input type="text"
              [value]="recorder.customRecordingName()"
              (input)="onCustomNameInput($event)"
              placeholder="NOMBRE_PROYECTO_O_TOMA..."
              style="border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important;"
-             class="bg-transparent border-0 ring-0 outline-none p-0 m-0 text-white font-mono text-[11px] font-semibold w-40 sm:w-56 placeholder:text-gray-600">
+             class="bg-transparent border-0 ring-0 outline-none p-0 m-0 text-white font-mono text-[13px] font-bold w-44 sm:w-60 placeholder:text-gray-600">
     </div>
 
     <!-- Centro: Telemetría Delimitada + Perfil + Timecode -->
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2.5">
       <!-- Telemetría CPU / RAM / DISCO -->
-      <div class="flex items-center gap-2.5 px-3 py-1 rounded bg-[#0b0c10] border border-white/[0.08] text-gray-400">
-        <div class="flex items-center gap-1">
-          <span class="text-gray-500 text-[10px]">CPU</span>
-          <span class="font-bold" [ngClass]="telemetry.telemetry().cpuPercent > 80 ? 'text-rose-400' : 'text-emerald-400'">{{ telemetry.telemetry().cpuPercent }}%</span>
+      <div class="flex items-center gap-3 px-3.5 py-1 rounded bg-[#0b0c10] border border-white/[0.08] text-gray-400">
+        <div class="flex items-center gap-1.5">
+          <span class="text-gray-500 text-[11.5px] font-semibold">CPU</span>
+          <span class="font-bold text-[13.5px]" [ngClass]="telemetry.telemetry().cpuPercent > 80 ? 'text-rose-400' : 'text-emerald-400'">{{ telemetry.telemetry().cpuPercent }}%</span>
         </div>
-        <span class="text-white/10">|</span>
-        <div class="flex items-center gap-1">
-          <span class="text-gray-500 text-[10px]">RAM</span>
-          <span class="font-bold text-gray-200">{{ telemetry.telemetry().ramPercent }}%</span>
+        <span class="text-white/10 font-light">|</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-gray-500 text-[11.5px] font-semibold">RAM</span>
+          <span class="font-bold text-gray-200 text-[13.5px]">{{ telemetry.telemetry().ramPercent }}%</span>
         </div>
-        <span class="text-white/10">|</span>
-        <div class="flex items-center gap-1">
-          <span class="text-gray-500 text-[10px]">DISCO</span>
-          <span class="font-bold text-gray-200">{{ telemetry.telemetry().diskFreeGb }}GB</span>
+        <span class="text-white/10 font-light">|</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-gray-500 text-[11.5px] font-semibold">DISCO</span>
+          <span class="font-bold text-gray-200 text-[13.5px]">{{ telemetry.telemetry().diskFreeGb }}GB</span>
         </div>
       </div>
 
       <!-- Selector de Perfil -->
       <button (click)="onCycleVideoProfile()" title="Alternar Resolución y FPS"
-              class="px-2.5 py-1 rounded bg-[#0b0c10] border border-white/[0.08] hover:border-primary/50 text-primary font-bold text-[10.5px] cursor-pointer transition-colors">
+              class="px-3 py-1 rounded bg-[#0b0c10] border border-white/[0.08] hover:border-primary/50 text-primary font-bold text-[12.5px] tracking-wide cursor-pointer transition-colors">
         {{ recorder.currentProfile() === '1080p60' ? '1080p 60fps' : (recorder.currentProfile() === '2K60' ? '2K 60fps' : '4K 60fps') }}
       </button>
 
       <!-- Reloj REC Timecode -->
-      <div class="flex items-center gap-2 px-3 py-1 rounded bg-[#07080a] border border-white/[0.08]">
-        <span class="w-2 h-2 rounded-full" [ngClass]="recorder.recordingState().isRecording ? 'bg-red-500 animate-ping' : 'bg-gray-600'"></span>
-        <span class="font-bold text-white tracking-wider text-[12px]">{{ recorder.recordingState().timecode }}</span>
+      <div class="flex items-center gap-2 px-3.5 py-1 rounded bg-[#07080a] border border-white/[0.08]">
+        <span class="w-2.5 h-2.5 rounded-full" [ngClass]="recorder.recordingState().isRecording ? 'bg-red-500 animate-ping' : 'bg-gray-600'"></span>
+        <span class="font-bold text-white tracking-widest text-[14px]">{{ recorder.recordingState().timecode }}</span>
       </div>
     </div>
 
     <!-- Derecha: Botón de Cámaras QR + Botón Maestro REC -->
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2.5">
       <!-- Botón Vincular Cámaras -->
       <button (click)="openQrModal()" title="Vincular Cámaras Móviles por QR o USB"
-              class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1c202c] hover:bg-[#252b3b] border border-[#2e3549] text-gray-200 hover:text-white text-[11px] font-mono cursor-pointer transition-colors shadow-sm">
-        <span class="material-symbols-outlined text-[15px] text-cyan-400">qr_code_2</span>
+              class="flex items-center gap-2 px-3 py-1 rounded bg-[#1c202c] hover:bg-[#252b3b] border border-[#2e3549] text-gray-200 hover:text-white text-[12.5px] font-mono font-bold tracking-wide cursor-pointer transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[17px] text-cyan-400">qr_code_2</span>
         <span>CÁMARAS ({{ getConnectedCamerasCount() }}/3)</span>
       </button>
 
@@ -306,11 +306,11 @@
       <button (click)="onToggleRecording()"
               [class.ring-2]="isKeyActive('r')"
               title="Iniciar/Detener Grabación Master [Ctrl+R o R]"
-              class="flex items-center gap-1.5 px-3.5 py-1 rounded text-[11px] font-mono font-bold tracking-wider transition-all cursor-pointer shadow-sm"
+              class="flex items-center gap-2 px-4 py-1 rounded text-[12.5px] font-mono font-black tracking-wider transition-all cursor-pointer shadow-sm"
               [ngClass]="recorder.recordingState().isRecording
-                ? 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-400 shadow-[0_0_10px_rgba(225,29,72,0.5)] animate-pulse'
+                ? 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-400 shadow-[0_0_12px_rgba(225,29,72,0.6)] animate-pulse'
                 : 'bg-[#222736] hover:bg-[#2c3347] text-white border border-[#353d54]'">
-        <span class="w-2 h-2 rounded-full" [ngClass]="recorder.recordingState().isRecording ? 'bg-white animate-ping' : 'bg-rose-500'"></span>
+        <span class="w-2.5 h-2.5 rounded-full" [ngClass]="recorder.recordingState().isRecording ? 'bg-white animate-ping' : 'bg-rose-500'"></span>
         <span>{{ recorder.recordingState().isRecording ? 'GRABANDO' : 'INICIAR REC' }}</span>
       </button>
     </div>
