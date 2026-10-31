@@ -539,14 +539,71 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   }
 
+  public selectedGuideTab = signal<'android' | 'ios' | 'webcam'>('android');
+
+  public setGuideTab(tab: 'android' | 'ios' | 'webcam'): void {
+    this.selectedGuideTab.set(tab);
+  }
+
+  public getConnectedUsbDevices(): any[] {
+    const droidcamDevs = this.webrtc.droidcamStatus()?.devices || [];
+    const webcams = ((this.webrtc.connectionMatrix() as any)?.hardware_devices || [])
+      .filter((d: any) => d.category === 'camera')
+      .map((w: any) => ({
+        id: w.id || w.name,
+        name: w.name,
+        model: 'Capturadora USB / UVC',
+        platform: 'webcam',
+        state: 'ready',
+        authorized: true,
+        serial: w.serial || 'UVC-COMPLIANT',
+        assigned_cam: null
+      }));
+    return [...droidcamDevs, ...webcams];
+  }
+
+  public async onAssignDeviceToCamera(camId: number, dev: any): Promise<void> {
+    const platform = (dev.platform === 'ios') ? 'ios' : 'android';
+    const deviceId = dev.id || dev.serial;
+    const res = await this.webrtc.bindDroidCam(camId, deviceId, platform);
+    if (res.success) {
+      this.refreshDroidCamFeed(camId);
+      this.showToast(`CAM 0${camId} enlazada a ${dev.name || dev.model}`);
+    } else {
+      this.showAlert(res.message);
+    }
+  }
+
+  public isDeviceAssignedToCam(dev: any, camId: number): boolean {
+    const binding = this.webrtc.droidcamStatus()?.active_bindings?.[camId];
+    if (!binding) return false;
+    const devId = dev.id || dev.serial;
+    const bAny = binding as any;
+    return bAny.id === devId || bAny.device_id === devId || String(bAny.device_id) === String(dev.device_id);
+  }
+
+  public getDeviceAssignedCam(dev: any): number | null {
+    const active = this.webrtc.droidcamStatus()?.active_bindings || {};
+    const devId = dev.id || dev.serial;
+    for (const [camIdStr, binding] of Object.entries(active)) {
+      const bAny = binding as any;
+      if (binding && (bAny.id === devId || bAny.device_id === devId || String(bAny.device_id) === String(dev.device_id))) {
+        return Number(camIdStr);
+      }
+    }
+    return null;
+  }
+
   public openQrModal(tab: 'usb' | 'tethering' | 'hotspot' | 'hybrid' = 'usb'): void {
     this.activeConnectionTab.set(tab);
     this.isQrModalOpen.set(true);
     this.webrtc.fetchConnectionMatrix(true);
+    this.webrtc.fetchDroidCamStatus(true);
     if (this.connectionPollInterval) clearInterval(this.connectionPollInterval);
     this.connectionPollInterval = setInterval(() => {
       if (this.isQrModalOpen()) {
         this.webrtc.fetchConnectionMatrix(true);
+        this.webrtc.fetchDroidCamStatus(true);
       } else {
         clearInterval(this.connectionPollInterval);
       }
@@ -592,8 +649,11 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public async onRefreshConnections(): Promise<void> {
-    await this.webrtc.fetchConnectionMatrix();
-    this.showToast('Matriz de conexiones actualizada.');
+    await Promise.all([
+      this.webrtc.fetchConnectionMatrix(false),
+      this.webrtc.fetchDroidCamStatus(false)
+    ]);
+    this.showToast('Dispositivos y matriz USB escaneados.');
   }
 
   public async onReverseAdb(): Promise<void> {
