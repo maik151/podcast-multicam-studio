@@ -20,7 +20,7 @@ a = Analysis(
     datas=[
         ('frontend/dist/frontend/browser', 'frontend/dist/frontend/browser'),
         ('static', 'static'),
-        ('tools/platform-tools', 'tools/platform-tools'),
+        ('tools', 'tools'),
         ('favicon.ico', '.'),
     ],
     hiddenimports=[
@@ -49,6 +49,7 @@ a = Analysis(
         'core.infrastructure.network',
         'core.infrastructure.desktop_launcher',
         'core.infrastructure.json_logger',
+        'core.infrastructure.video_hub_process',
         'core.presentation.app_factory',
         'core.presentation.controllers.network_controller',
         'core.presentation.controllers.recording_controller',
