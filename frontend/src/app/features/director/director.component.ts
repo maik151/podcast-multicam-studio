@@ -329,9 +329,27 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showToast(`CAM 0${camId}: Modo de conexión cambiado a ${mode.toUpperCase()}`);
   }
 
+  public droidcamFeedNonce = signal<{ [camId: number]: number }>({ 1: Date.now(), 2: Date.now(), 3: Date.now() });
+
+  public getDroidCamFeedUrl(camId: number): string {
+    const nonce = this.droidcamFeedNonce()[camId] || Date.now();
+    return `/api/droidcam/feed/${camId}?t=${nonce}`;
+  }
+
+  public refreshDroidCamFeed(camId: number): void {
+    this.droidcamFeedNonce.update(curr => ({ ...curr, [camId]: Date.now() }));
+  }
+
+  public onDroidCamFeedError(camId: number): void {
+    setTimeout(() => {
+      this.refreshDroidCamFeed(camId);
+    }, 2000);
+  }
+
   public async onConnectDroidCam(camId: number, deviceId?: string): Promise<void> {
     const res = await this.webrtc.bindDroidCam(camId, deviceId);
     if (res.success) {
+      this.refreshDroidCamFeed(camId);
       this.showToast(res.message);
     } else {
       this.showAlert(res.message);

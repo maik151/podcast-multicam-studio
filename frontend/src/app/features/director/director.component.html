@@ -880,7 +880,8 @@
         <!-- DroidCam USB MJPEG Feed Element -->
         <img [id]="'iso-img-' + cam.id"
              *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && isDroidCamOnline(cam.id)"
-             [src]="'/api/droidcam/feed/' + cam.id"
+             [src]="getDroidCamFeedUrl(cam.id)"
+             (error)="onDroidCamFeedError(cam.id)"
              class="w-full h-full object-cover"
              [alt]="'DROIDCAM USB FEED CAM 0' + cam.id">
 

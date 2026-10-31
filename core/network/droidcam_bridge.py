@@ -117,34 +117,44 @@ class UsbMuxForwarder:
                 mux_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     mux_sock.settimeout(3.0)
-                    mux_sock.connect(("127.0.0.1", cls.USBMUXD_PORT))
+                    # Intentar conectar con el puerto del iPhone (4748 para DroidCam OBS o 4747 para estándar)
+                    connected_mux = False
+                    for p in (target_port, 4748 if target_port == 4747 else 4747):
+                        try:
+                            if mux_sock is None:
+                                mux_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                mux_sock.settimeout(3.0)
+                                mux_sock.connect(("127.0.0.1", cls.USBMUXD_PORT))
+                            port_be = ((p << 8) & 0xFF00) | ((p >> 8) & 0x00FF)
+                            connect_req = {
+                                "MessageType": "Connect",
+                                "ClientVersionString": "TX-Studio-1.0",
+                                "ProgName": "TX-Studio",
+                                "DeviceID": device_id,
+                                "PortNumber": port_be
+                            }
+                            payload = plistlib.dumps(connect_req)
+                            hdr = struct.pack("<IIII", len(payload) + 16, 1, 8, 2)
+                            mux_sock.sendall(hdr + payload)
 
-                    # El número de puerto en el protocolo usbmux requiere htons (big-endian)
-                    port_be = ((target_port << 8) & 0xFF00) | ((target_port >> 8) & 0x00FF)
-                    connect_req = {
-                        "MessageType": "Connect",
-                        "ClientVersionString": "TX-Studio-1.0",
-                        "ProgName": "TX-Studio",
-                        "DeviceID": device_id,
-                        "PortNumber": port_be
-                    }
-                    payload = plistlib.dumps(connect_req)
-                    hdr = struct.pack("<IIII", len(payload) + 16, 1, 8, 2)
-                    mux_sock.sendall(hdr + payload)
-
-                    resp_hdr = mux_sock.recv(16)
-                    if len(resp_hdr) == 16:
-                        length, _, _, _ = struct.unpack("<IIII", resp_hdr)
-                        res_body = mux_sock.recv(length - 16)
-                        res = plistlib.loads(res_body)
-                        if res.get("Number") != 0:
-                            # Error al conectar con el puerto del dispositivo
-                            client_conn.close()
+                            resp_hdr = mux_sock.recv(16)
+                            if len(resp_hdr) == 16:
+                                length, _, _, _ = struct.unpack("<IIII", resp_hdr)
+                                res_body = mux_sock.recv(length - 16)
+                                res = plistlib.loads(res_body)
+                                if res.get("Number") == 0:
+                                    connected_mux = True
+                                    break
                             mux_sock.close()
-                            continue
-                    else:
+                            mux_sock = None
+                        except Exception:
+                            if mux_sock:
+                                try: mux_sock.close()
+                                except Exception: pass
+                            mux_sock = None
+
+                    if not connected_mux:
                         client_conn.close()
-                        mux_sock.close()
                         continue
 
                     # Iniciar retransmisión bidireccional no bloqueante
@@ -281,25 +291,69 @@ class DroidCamBridgeManager:
                     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
                     env = os.environ.copy()
                     env["ANDROID_ADB_SERVER_PORT"] = ADB_SERVER_PORT
-                    cmd = [adb_bin, "-P", ADB_SERVER_PORT, "-s", device_id, "forward", f"tcp:{local_port}", f"tcp:{DROIDCAM_DEVICE_DEFAULT_PORT}"]
-                    subprocess.check_call(cmd, env=env, timeout=4, creationflags=flags)
+
+                    # DroidCam OBS usa puerto 4748 por defecto, DroidCam estándar usa 4747
+                    candidate_ports = [4748, 4747]
+                    target_port = candidate_ports[0]
+                    port_connected = False
+
+                    def _probe_port(lp: int) -> bool:
+                        try:
+                            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            s.settimeout(0.6)
+                            s.connect(("127.0.0.1", lp))
+                            s.sendall(b"GET /video HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n")
+                            chunk = s.recv(128)
+                            s.close()
+                            return bool(chunk and b"200" in chunk)
+                        except Exception:
+                            return False
+
+                    # 1. Probar si alguna variante ya está emitiendo en el celular
+                    for cand in candidate_ports:
+                        cmd = [adb_bin, "-P", ADB_SERVER_PORT, "-s", device_id, "forward", f"tcp:{local_port}", f"tcp:{cand}"]
+                        subprocess.call(cmd, env=env, timeout=3, creationflags=flags)
+                        if _probe_port(local_port):
+                            target_port = cand
+                            port_connected = True
+                            break
+
+                    # 2. Si no responde, despertar la app DroidCam en el teléfono por si está dormida o en segundo plano
+                    if not port_connected:
+                        for pkg in ("com.dev47apps.obsdroidcam", "com.dev47apps.droidcam"):
+                            try:
+                                subprocess.run([adb_bin, "-P", ADB_SERVER_PORT, "-s", device_id, "shell", "monkey", "-p", pkg, "-c", "android.intent.category.LAUNCHER", "1"], env=env, timeout=3, creationflags=flags)
+                            except Exception:
+                                pass
+                        time.sleep(1.0)
+                        for cand in candidate_ports:
+                            cmd = [adb_bin, "-P", ADB_SERVER_PORT, "-s", device_id, "forward", f"tcp:{local_port}", f"tcp:{cand}"]
+                            subprocess.call(cmd, env=env, timeout=3, creationflags=flags)
+                            if _probe_port(local_port):
+                                target_port = cand
+                                port_connected = True
+                                break
 
                     binding_info = {
                         "cam_id": cam_id,
                         "id": device_id,
                         "platform": "android",
                         "local_port": local_port,
-                        "target_port": DROIDCAM_DEVICE_DEFAULT_PORT,
+                        "target_port": target_port,
                         "stream_url": f"http://127.0.0.1:{local_port}/video",
                         "proxy_url": f"/api/droidcam/feed/{cam_id}",
                         "status": "FORWARDED",
+                        "is_streaming": port_connected,
                         "bound_at": time.time()
                     }
                     self.active_bindings[cam_id] = binding_info
+                    msg = f"CAM 0{cam_id} enlazada por cable USB a Android ({device_id}) en puerto {local_port} -> cel:{target_port}."
+                    if not port_connected:
+                        msg += " (Abre la app DroidCam en tu cel si no ves video inmediato)."
                     return {
                         "success": True,
                         "binding": binding_info,
-                        "message": f"CAM 0{cam_id} enlazada por cable USB a Android ({device_id}) en puerto {local_port}."
+                        "message": msg
                     }
                 except Exception as e:
                     return {"success": False, "message": f"Error al ejecutar adb forward: {e}"}
