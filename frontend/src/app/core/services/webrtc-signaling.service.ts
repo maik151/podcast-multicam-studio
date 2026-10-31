@@ -1,5 +1,5 @@
 import { Injectable, signal, NgZone } from '@angular/core';
-import { CameraFeed, ConnectionMatrix, ConnectionRoute } from '../models/studio.models';
+import { CameraFeed, ConnectionMatrix, ConnectionRoute, CameraConnectionMode, DroidCamStatusResponse, DroidCamDeviceInfo } from '../models/studio.models';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +11,17 @@ export class WebRtcSignalingService {
   public readonly isRefreshingConnections = signal<boolean>(false);
   public readonly isAdbReversing = signal<boolean>(false);
 
-  // Asignación de rutas independientes por cámara para Modo Mixto / Híbrido
+  // Selector dinámico independiente de modo de conexión por cada una de las 3 cámaras
+  public readonly cameraConnectionModes = signal<{ [camId: number]: CameraConnectionMode }>({
+    1: 'droidcam_usb',
+    2: 'droidcam_usb',
+    3: 'tx_web_wifi'
+  });
+
+  public readonly droidcamStatus = signal<DroidCamStatusResponse | null>(null);
+  public readonly isRefreshingDroidCam = signal<boolean>(false);
+
+  // Asignación de rutas legacy para compatibilidad
   public readonly cameraRoutes = signal<{ [camId: number]: string }>({
     1: 'auto',
     2: 'auto',
@@ -19,9 +29,9 @@ export class WebRtcSignalingService {
   });
 
   public readonly cameras = signal<CameraFeed[]>([
-    { id: 1, label: 'Host (Plano Medio)', stream: null, isConnected: false, isProgram: true, isPreview: false, fps: 60, resolution: '1080p', bitrateKbps: 8000, currentZoom: 1.0, isTorchOn: false, isOledActive: false },
-    { id: 2, label: 'Invitado (Plano Medio)', stream: null, isConnected: false, isProgram: false, isPreview: true, fps: 60, resolution: '1080p', bitrateKbps: 8000, currentZoom: 1.0, isTorchOn: false, isOledActive: false },
-    { id: 3, label: 'Set General (Wide)', stream: null, isConnected: false, isProgram: false, isPreview: false, fps: 60, resolution: '1080p', bitrateKbps: 8000, currentZoom: 0.5, isTorchOn: false, isOledActive: false }
+    { id: 1, label: 'Host (Plano Medio)', stream: null, isConnected: false, isProgram: true, isPreview: false, fps: 60, resolution: '1080p', bitrateKbps: 8000, currentZoom: 1.0, isTorchOn: false, isOledActive: false, connectionMode: 'droidcam_usb', droidcamPort: 4741 },
+    { id: 2, label: 'Invitado (Plano Medio)', stream: null, isConnected: false, isProgram: false, isPreview: true, fps: 60, resolution: '1080p', bitrateKbps: 8000, currentZoom: 1.0, isTorchOn: false, isOledActive: false, connectionMode: 'droidcam_usb', droidcamPort: 4742 },
+    { id: 3, label: 'Set General (Wide)', stream: null, isConnected: false, isProgram: false, isPreview: false, fps: 60, resolution: '1080p', bitrateKbps: 8000, currentZoom: 0.5, isTorchOn: false, isOledActive: false, connectionMode: 'tx_web_wifi', droidcamPort: 4743 }
   ]);
 
   private ws: WebSocket | null = null;
@@ -37,6 +47,7 @@ export class WebRtcSignalingService {
       video: HTMLVideoElement;
       queue: ArrayBuffer[];
       isReady: boolean;
+      objectUrl: string;
     };
   } = {};
 
@@ -104,6 +115,79 @@ export class WebRtcSignalingService {
     }
   }
 
+  public async fetchDroidCamStatus(): Promise<DroidCamStatusResponse | null> {
+    this.isRefreshingDroidCam.set(true);
+    try {
+      const res = await fetch('/api/droidcam/devices');
+      if (res.ok) {
+        const data: DroidCamStatusResponse = await res.json();
+        this.ngZone.run(() => {
+          this.droidcamStatus.set(data);
+          this.cameras.update(current => current.map(c => {
+            const mode = this.cameraConnectionModes()[c.id] || 'tx_web_wifi';
+            const binding = data.active_bindings ? data.active_bindings[c.id] : null;
+            if (mode === 'droidcam_usb') {
+              return {
+                ...c,
+                connectionMode: mode,
+                droidcamPort: binding?.port || (4740 + c.id),
+                isDroidCamActive: Boolean(binding?.bound)
+              };
+            }
+            return { ...c, connectionMode: mode };
+          }));
+        });
+        return data;
+      }
+    } catch (e) {
+      console.warn('[WebRtcService] Error consultando /api/droidcam/devices:', e);
+    } finally {
+      this.isRefreshingDroidCam.set(false);
+    }
+    return null;
+  }
+
+  public async bindDroidCam(camId: number, deviceId?: string, platform: 'android' | 'ios' = 'android'): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch('/api/droidcam/bind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cam_id: camId, device_id: deviceId || '', platform })
+      });
+      const data = await res.json();
+      await this.fetchDroidCamStatus();
+      return { success: Boolean(data.success), message: data.message || 'Puerto DroidCam configurado' };
+    } catch (e: any) {
+      return { success: false, message: `Error enlazando DroidCam: ${e?.message || e}` };
+    }
+  }
+
+  public async unbindDroidCam(camId: number): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch('/api/droidcam/unbind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cam_id: camId })
+      });
+      const data = await res.json();
+      await this.fetchDroidCamStatus();
+      return { success: Boolean(data.success), message: data.message || 'Puerto DroidCam liberado' };
+    } catch (e: any) {
+      return { success: false, message: `Error liberando DroidCam: ${e?.message || e}` };
+    }
+  }
+
+  public setCameraConnectionMode(camId: number, mode: CameraConnectionMode): void {
+    this.cameraConnectionModes.update(modes => ({
+      ...modes,
+      [camId]: mode
+    }));
+    this.cameras.update(current => current.map(c => c.id === camId ? { ...c, connectionMode: mode } : c));
+    if (mode === 'droidcam_usb') {
+      this.fetchDroidCamStatus();
+    }
+  }
+
   public setCameraRoute(camId: number, routeId: string): void {
     this.cameraRoutes.update(routes => ({
       ...routes,
@@ -112,34 +196,25 @@ export class WebRtcSignalingService {
   }
 
   public getCameraTargetUrl(camId: number): string {
-    const route = this.cameraRoutes()[camId] || 'auto';
+    const mode = this.cameraConnectionModes()[camId] || 'tx_web_wifi';
     const matrix = this.connectionMatrix();
     const port = matrix?.port || 8443;
 
-    if (route === 'usb_hub_adb') {
+    if (mode === 'droidcam_usb') {
+      const p = 4740 + camId;
+      return `http://127.0.0.1:${p}/video`;
+    }
+
+    if (mode === 'tx_web_adb') {
       return `http://localhost:8080/cam/${camId}`;
     }
 
-    if (route === 'windows_hotspot_5g') {
-      const ip = matrix?.hotspot_5ghz?.ip || '192.168.137.1';
+    if (mode === 'tx_web_tethering') {
+      const ip = matrix?.apple_usb?.ip || matrix?.android_rndis?.ip || matrix?.wifi_lan?.ip || window.location.hostname;
       return `https://${ip}:${port}/cam/${camId}`;
     }
 
-    if (route === 'apple_usb_tethering') {
-      const ip = matrix?.apple_usb?.ip || matrix?.wifi_lan?.ip || window.location.hostname;
-      return `https://${ip}:${port}/cam/${camId}`;
-    }
-
-    if (route === 'android_rndis_tethering') {
-      const ip = matrix?.android_rndis?.ip || matrix?.wifi_lan?.ip || window.location.hostname;
-      return `https://${ip}:${port}/cam/${camId}`;
-    }
-
-    if (route === 'wifi_lan' && matrix?.wifi_lan?.ip) {
-      return `https://${matrix.wifi_lan.ip}:${port}/cam/${camId}`;
-    }
-
-    // Por defecto / auto: si el hotspot está activo, usarlo; sino la base URL
+    // Por defecto 'tx_web_wifi': si el hotspot está activo, usarlo; sino la base URL
     if (matrix?.hotspot_5ghz?.active && matrix.hotspot_5ghz.ip) {
       return `https://${matrix.hotspot_5ghz.ip}:${port}/cam/${camId}`;
     }
@@ -149,7 +224,7 @@ export class WebRtcSignalingService {
 
   public getQrImageUrlForCamera(camId: number): string {
     const targetUrl = this.getCameraTargetUrl(camId);
-    return `/api/qr?url=${encodeURIComponent(targetUrl)}&t=${Date.now()}`;
+    return `/api/qr?url=${encodeURIComponent(targetUrl)}`;
   }
 
 
@@ -341,7 +416,7 @@ export class WebRtcSignalingService {
     };
 
     pc.ontrack = (e) => {
-      console.log(`[WebRtcService] 🎥 Track ${e.track.kind} recibido de Cámara 0${camId}`);
+      console.log(`[WebRtcService] [TRACK] Track ${e.track.kind} recibido de Camara 0${camId}`);
       if (e.receiver) {
         try {
           if ('playoutDelayHint' in e.receiver) {
@@ -366,7 +441,8 @@ export class WebRtcSignalingService {
         }
       }
       let stream = this.remoteStreams[camId];
-      if (!stream) {
+      const camState = this.cameras().find(c => c.id === camId);
+      if (!stream || camState?.isTcpStream) {
         stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream();
         this.remoteStreams[camId] = stream;
       }
@@ -376,7 +452,8 @@ export class WebRtcSignalingService {
       this.ngZone.run(() => {
         this.updateCameraState(camId, {
           stream: stream,
-          isConnected: true
+          isConnected: true,
+          isTcpStream: false
         });
       });
     };
@@ -544,6 +621,59 @@ export class WebRtcSignalingService {
     };
   }
 
+  private getOrCreateTcpHost(): HTMLElement | null {
+    if (typeof document === 'undefined') return null;
+    let host = document.getElementById('tx-tcp-media-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'tx-tcp-media-host';
+      host.style.position = 'fixed';
+      host.style.width = '2px';
+      host.style.height = '2px';
+      host.style.opacity = '0.001';
+      host.style.pointerEvents = 'none';
+      host.style.left = '-9999px';
+      host.style.top = '-9999px';
+      host.style.overflow = 'hidden';
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+
+  private appendNextTcpChunk(entry: {
+    mediaSource: MediaSource;
+    sourceBuffer: SourceBuffer | null;
+    video: HTMLVideoElement;
+    queue: ArrayBuffer[];
+    isReady: boolean;
+    objectUrl: string;
+  }): void {
+    if (!entry.isReady || !entry.sourceBuffer || entry.sourceBuffer.updating) {
+      return;
+    }
+    if (entry.queue.length === 0) {
+      return;
+    }
+    const chunk = entry.queue.shift();
+    if (!chunk) return;
+
+    try {
+      entry.sourceBuffer.appendBuffer(chunk);
+    } catch (err: any) {
+      if (err.name === 'QuotaExceededError') {
+        try {
+          if (!entry.sourceBuffer.updating && entry.sourceBuffer.buffered.length > 0) {
+            const start = entry.sourceBuffer.buffered.start(0);
+            const end = Math.max(0, entry.video.currentTime - 1.0);
+            if (end > start) {
+              entry.sourceBuffer.remove(start, end);
+            }
+          }
+        } catch {}
+      }
+    }
+  }
+
   public handleTcpStreamStart(camId: number, mimeType?: string): void {
     if (this.tcpMediaSources[camId]) {
       this.handleTcpStreamStop(camId);
@@ -558,43 +688,90 @@ export class WebRtcSignalingService {
       video.muted = true;
       video.autoplay = true;
       video.playsInline = true;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+
+      // Adjuntar a host invisible en el DOM para evitar que Chromium aplique background throttling
+      const host = this.getOrCreateTcpHost();
+      if (host) {
+        host.appendChild(video);
+      }
+
+      const objectUrl = URL.createObjectURL(ms);
+      video.src = objectUrl;
 
       const entry = {
         mediaSource: ms,
         sourceBuffer: null as SourceBuffer | null,
         video: video,
         queue: [] as ArrayBuffer[],
-        isReady: false
+        isReady: false,
+        objectUrl: objectUrl
       };
       this.tcpMediaSources[camId] = entry;
 
-      const objectUrl = URL.createObjectURL(ms);
-      video.src = objectUrl;
-
       ms.addEventListener('sourceopen', () => {
         try {
-          const codec = mimeType || 'video/webm; codecs=vp8';
-          const targetMime = MediaSource.isTypeSupported(codec) ? codec : 'video/webm; codecs=vp8';
+          const candidateCodecs = [
+            mimeType,
+            'video/webm; codecs="vp8, opus"',
+            'video/webm; codecs=vp8',
+            'video/webm; codecs=h264',
+            'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
+            'video/webm'
+          ].filter(Boolean) as string[];
+
+          let targetMime = 'video/webm; codecs=vp8';
+          for (const cand of candidateCodecs) {
+            if (MediaSource.isTypeSupported(cand)) {
+              targetMime = cand;
+              break;
+            }
+          }
+
           const sb = ms.addSourceBuffer(targetMime);
           sb.mode = 'sequence';
           entry.sourceBuffer = sb;
           entry.isReady = true;
 
           sb.addEventListener('updateend', () => {
-            if (entry.queue.length > 0 && !sb.updating) {
-              const next = entry.queue.shift();
-              if (next) {
-                try { sb.appendBuffer(next); } catch {}
+            // 1. Sincronización continua de borde en vivo: Elimina lip-sync latency
+            if (sb.buffered.length > 0) {
+              const liveEdge = sb.buffered.end(sb.buffered.length - 1);
+              const delay = liveEdge - video.currentTime;
+              if (delay > 0.15) {
+                video.currentTime = Math.max(0, liveEdge - 0.03);
               }
             }
+
+            // 2. Poda de buffer antiguo para mantener RAM constante (< 50MB) a 60 FPS continuos
+            if (!sb.updating && sb.buffered.length > 0) {
+              const start = sb.buffered.start(0);
+              if (video.currentTime - start > 3.0) {
+                try {
+                  sb.remove(start, video.currentTime - 1.0);
+                  return;
+                } catch {}
+              }
+            }
+
+            // 3. Procesar el siguiente paquete acumulado en la cola
+            this.appendNextTcpChunk(entry);
           });
 
+          // Drenar inmediatamente cualquier chunk acumulado antes de que sourceopen disparara
+          this.appendNextTcpChunk(entry);
+
           video.play().then(() => {
-            const capture = (video as any).captureStream ? (video as any).captureStream() : (video as any).mozCaptureStream?.();
+            const capture = (video as any).captureStream ? (video as any).captureStream(60) : (video as any).mozCaptureStream?.(60);
             if (capture) {
               this.remoteStreams[camId] = capture;
               this.ngZone.run(() => {
-                this.updateCameraState(camId, { isConnected: true, isTcpStream: true });
+                this.updateCameraState(camId, {
+                  isConnected: true,
+                  isTcpStream: true,
+                  stream: capture
+                });
               });
             }
           }).catch(() => {});
@@ -615,18 +792,8 @@ export class WebRtcSignalingService {
       if (!entry) return;
     }
 
-    if (entry.isReady && entry.sourceBuffer && !entry.sourceBuffer.updating && entry.queue.length === 0) {
-      try {
-        entry.sourceBuffer.appendBuffer(chunk);
-      } catch {
-        entry.queue.push(chunk);
-      }
-    } else {
-      entry.queue.push(chunk);
-      if (entry.queue.length > 30) {
-        entry.queue.splice(0, entry.queue.length - 15);
-      }
-    }
+    entry.queue.push(chunk);
+    this.appendNextTcpChunk(entry);
   }
 
   public handleTcpStreamStop(camId: number): void {
@@ -640,6 +807,12 @@ export class WebRtcSignalingService {
       try {
         entry.video.pause();
         entry.video.src = '';
+        if (entry.video.parentNode) {
+          entry.video.parentNode.removeChild(entry.video);
+        }
+      } catch {}
+      try {
+        URL.revokeObjectURL(entry.objectUrl);
       } catch {}
       delete this.tcpMediaSources[camId];
     }

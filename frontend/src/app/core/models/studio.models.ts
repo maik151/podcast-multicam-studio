@@ -1,4 +1,37 @@
 // Modelos de Datos Tipados para Podcast Multicam Studio
+export type CameraConnectionMode =
+  | 'droidcam_usb'      // Cable USB con App DroidCam (Android ADB o iPhone USB)
+  | 'tx_web_wifi'       // Wi-Fi Local / Hotspot 5GHz (Web PWA QR)
+  | 'tx_web_adb'        // Cable USB ADB directo (Web PWA localhost:8080)
+  | 'tx_web_tethering'; // Cable USB Tethering (Apple 172.x / Android 192.x)
+
+export interface DroidCamDeviceInfo {
+  id: string;
+  serial?: string;
+  model: string;
+  name: string;
+  platform: 'android' | 'ios';
+  state?: string;
+  authorized?: boolean;
+  assigned_cam?: number | null;
+}
+
+export interface DroidCamStatusResponse {
+  devices: DroidCamDeviceInfo[];
+  android_count: number;
+  ios_count: number;
+  active_bindings: {
+    [camId: number]: {
+      bound: boolean;
+      platform?: string;
+      id?: string;
+      port: number;
+      stream_url?: string;
+      proxy_url?: string;
+    };
+  };
+}
+
 export interface CameraFeed {
   id: number;
   label: string;
@@ -16,6 +49,10 @@ export interface CameraFeed {
   isTorchOn?: boolean;
   isOledActive?: boolean;
   isTcpStream?: boolean;
+  connectionMode?: CameraConnectionMode;
+  droidcamPort?: number;
+  droidcamDeviceName?: string;
+  isDroidCamActive?: boolean;
 }
 
 export interface AudioMetrics {

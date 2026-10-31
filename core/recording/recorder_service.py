@@ -8,6 +8,14 @@ import sys
 import datetime
 import subprocess
 
+
+def _safe_print(msg: str) -> None:
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
+        print(msg.encode(encoding, errors="replace").decode(encoding))
+
 class RecorderService:
     def __init__(self, base_recordings_dir: str):
         self.base_recordings_dir = base_recordings_dir
@@ -35,7 +43,7 @@ class RecorderService:
 
         # Sellar toma anterior de forma segura si quedó abierta
         if self.current_recording_file and not self.current_recording_file.closed:
-            print("[RECORDER] ⚠️ Sello automático de toma previa antes de abrir nueva toma.")
+            _safe_print("[RECORDER] ⚠️ Sello automático de toma previa antes de abrir nueva toma.")
             self.stop_take()
 
         self.current_recording_folder = os.path.join(self.base_recordings_dir, proj_clean, ep_clean)
@@ -80,7 +88,7 @@ class RecorderService:
 
             file_size_bytes = os.path.getsize(self.current_recording_path) if os.path.exists(self.current_recording_path) else 0
             file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
-            print(f"[RECORDER] ✅ Toma sellada exitosamente: {self.current_recording_path} ({file_size_mb} MB)\n")
+            _safe_print(f"[RECORDER] ✅ Toma sellada exitosamente: {self.current_recording_path} ({file_size_mb} MB)\n")
 
             saved_path = self.current_recording_path
             saved_folder = self.current_recording_folder

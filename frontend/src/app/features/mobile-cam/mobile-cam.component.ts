@@ -59,6 +59,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   public isFullscreen = signal<boolean>(false);
   public isTcpStreamingActive = signal<boolean>(false);
   private deferredPwaPrompt: any = null;
+  private wakeLockSentinel: any = null;
 
   private localStream: MediaStream | null = null;
   private ws: WebSocket | null = null;
@@ -75,9 +76,33 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     iceServers: []
   };
 
+  private async requestWakeLock(): Promise<void> {
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+      try {
+        this.wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+        this.wakeLockSentinel.addEventListener('release', () => {
+          this.wakeLockSentinel = null;
+        });
+        console.log('[MobileCam] [WAKE-LOCK] Screen Wake Lock activo (pantalla encendida para el podcast).');
+      } catch (e) {
+        console.warn('[MobileCam] Screen Wake Lock no disponible o denegado:', e);
+      }
+    }
+  }
+
+  private releaseWakeLock(): void {
+    if (this.wakeLockSentinel) {
+      try {
+        this.wakeLockSentinel.release();
+      } catch {}
+      this.wakeLockSentinel = null;
+    }
+  }
+
   @HostListener('document:visibilitychange')
   public onVisibilityChange(): void {
     if (document.visibilityState === 'visible' && !this.isManuallyStopped()) {
+      this.requestWakeLock();
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
         this.connectWs();
       }
@@ -124,9 +149,11 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       this.camId.set(parseInt(idParam, 10) || 1);
     }
 
-    // 1. Iniciar hardware de cámara primero antes de anunciar conexión
+    // 1. Mantener pantalla despierta durante la sesión de podcast
+    await this.requestWakeLock();
+    // 2. Iniciar hardware de cámara primero antes de anunciar conexión
     await this.startCamera(this.qualityPresets[1]); // 1080p30 por defecto inicial seguro
-    // 2. Conectar al bus de señalización sólo con el sensor estabilizado
+    // 3. Conectar al bus de señalización sólo con el sensor estabilizado
     this.connectWs();
     this.monitorBattery();
   }
@@ -136,6 +163,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   }
 
   private cleanupAllResources(): void {
+    this.releaseWakeLock();
     if (this.usbFallbackTimer) {
       clearTimeout(this.usbFallbackTimer);
       this.usbFallbackTimer = null;
@@ -168,11 +196,18 @@ export class MobileCamComponent implements OnInit, OnDestroy {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
     try {
-      let mimeType = 'video/webm;codecs=vp8';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
-          ? 'video/mp4;codecs=avc1'
-          : (MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '');
+      let mimeType = '';
+      const candidateCodecs = [
+        'video/webm;codecs=h264',
+        'video/webm;codecs=vp8',
+        'video/webm',
+        'video/mp4;codecs=avc1'
+      ];
+      for (const c of candidateCodecs) {
+        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(c)) {
+          mimeType = c;
+          break;
+        }
       }
 
       const options: MediaRecorderOptions = {
@@ -189,15 +224,18 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         }
       };
 
-      this.tcpMediaRecorder.start(60); // Emite un chunk cada 60ms (~16 fps/chunks fluidos para el cable USB)
-      this.isTcpStreamingActive.set(true);
-      this.statusText.set(`EN VIVO // CABLE USB (0ms TCP)`);
+      // Notificar al Director ANTES para que cree el SourceBuffer antes del primer chunk
       this.sendWs({
         type: 'tcp_stream_start',
         camId: this.camId(),
         mimeType: mimeType || 'video/webm'
       });
-      console.log('[MobileCam] ⚡ Streaming de video TCP sobre cable USB activado con éxito.');
+
+      // Emite un chunk cada 40ms (~25 chunks/segundo fluidos para 60 FPS sin saturación)
+      this.tcpMediaRecorder.start(40);
+      this.isTcpStreamingActive.set(true);
+      this.statusText.set(`EN VIVO // CABLE USB (0ms TCP)`);
+      console.log('[MobileCam] [USB-TCP] Streaming de video TCP sobre cable USB activado con exito.');
     } catch (err) {
       console.error('[MobileCam] Error iniciando MediaRecorder TCP:', err);
     }
@@ -245,6 +283,7 @@ export class MobileCamComponent implements OnInit, OnDestroy {
   public async resumeTransmission(): Promise<void> {
     this.isManuallyStopped.set(false);
     this.statusText.set('Reanudando sensor y conexión con el estudio...');
+    await this.requestWakeLock();
     const preset = this.qualityPresets.find(p => p.id === this.selectedPresetId()) || this.qualityPresets[1];
     await this.startCamera(preset);
     this.connectWs();
@@ -492,15 +531,15 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Si estamos conectados por cable USB ADB (localhost / 127.0.0.1), activar watchdog para streaming TCP
+      // Si estamos conectados por cable USB ADB (localhost / 127.0.0.1), activar watchdog ágil para streaming TCP
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         if (this.usbFallbackTimer) clearTimeout(this.usbFallbackTimer);
         this.usbFallbackTimer = window.setTimeout(() => {
           if (!this.pc || this.pc.connectionState !== 'connected') {
-            console.log('[MobileCam] WebRTC sin ruta UDP en cable USB. Activando transmisión TCP por WebSocket...');
+            console.log('[MobileCam] WebRTC sin ruta UDP en cable USB ADB. Activando transmisión TCP por WebSocket...');
             this.startTcpVideoStreaming();
           }
-        }, 2200);
+        }, 400);
       }
     };
 
@@ -546,12 +585,10 @@ export class MobileCamComponent implements OnInit, OnDestroy {
       };
 
       this.pc.oniceconnectionstatechange = () => {
-        if (this.pc?.iceConnectionState === 'failed') {
-          console.warn('[MobileCam] ICE fallido. Solicitando recuperación rápida...');
-          this.requestRenegotiation(500);
-        } else if (this.pc?.iceConnectionState === 'disconnected') {
-          // Recuperación ágil ante fluctuaciones de red
-          this.requestRenegotiation(1500);
+        if (this.pc?.iceConnectionState === 'failed' || this.pc?.iceConnectionState === 'disconnected') {
+          console.warn('[MobileCam] ICE interrumpido. Activando streaming TCP de respaldo inmediatamente...');
+          this.startTcpVideoStreaming();
+          this.requestRenegotiation(800);
         }
       };
 
@@ -559,12 +596,10 @@ export class MobileCamComponent implements OnInit, OnDestroy {
         if (this.pc?.connectionState === 'connected') {
           this.statusText.set(`EN VIVO // ${this.actualResolutionText()}`);
           this.stopTcpVideoFallback();
-        } else if (this.pc?.connectionState === 'failed') {
-          console.warn('[MobileCam] WebRTC fallido. Solicitando recuperación rápida y activando TCP fallback...');
+        } else if (this.pc?.connectionState === 'failed' || this.pc?.connectionState === 'disconnected') {
+          console.warn('[MobileCam] WebRTC desconectado/fallido. Activando streaming TCP por cable USB...');
           this.startTcpVideoStreaming();
-          this.requestRenegotiation(500);
-        } else if (this.pc?.connectionState === 'disconnected') {
-          this.requestRenegotiation(1500);
+          this.requestRenegotiation(800);
         }
       };
 

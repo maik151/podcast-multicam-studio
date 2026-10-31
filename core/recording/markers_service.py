@@ -4,8 +4,17 @@ Genera reportes simultáneos en formato texto plano y JSON para editores de vide
 """
 
 import os
+import sys
 import json
 import datetime
+
+
+def _safe_print(msg: str) -> None:
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
+        print(msg.encode(encoding, errors="replace").decode(encoding))
 
 class MarkersService:
     def __init__(self, base_recordings_dir: str):
@@ -46,7 +55,7 @@ class MarkersService:
         with open(marker_json_path, "w", encoding="utf-8") as f:
             json.dump(markers_list, f, indent=2, ensure_ascii=False)
 
-        print(f"[MARCADOR REC] 🚩 {entry_txt.strip()}")
+        _safe_print(f"[MARCADOR REC] 🚩 {entry_txt.strip()}")
         return {"status": "marker_added", "marker": marker_obj, "total": len(markers_list)}
 
     def get_markers(self, project: str, episode: str, take: int, current_folder: str = None) -> list:

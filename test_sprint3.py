@@ -28,6 +28,11 @@ class TestSprint3RecordingEngine(unittest.TestCase):
         )
         cls.app_js_path = os.path.join(BASE_DIR, "static", "director", "app.js")
         cls.test_recordings_dir = os.path.join(BASE_DIR, "Grabaciones", "Test_Sprint3_Takes")
+        if os.path.exists(cls.test_recordings_dir):
+            try:
+                shutil.rmtree(cls.test_recordings_dir)
+            except Exception:
+                pass
 
         with open(cls.recorder_service_path, "r", encoding="utf-8") as f:
             cls.recorder_ts = f.read()

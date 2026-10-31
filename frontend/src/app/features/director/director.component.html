@@ -92,7 +92,7 @@
 
               <span class="text-[10px] text-gray-500 font-mono">Alt+1</span>
 
-              <span *ngIf="viewLayout() === 'dual'" class="text-[#ff7a1a] font-bold">✓</span>
+              <span *ngIf="viewLayout() === 'dual'" class="material-symbols-outlined text-[15px] text-[#ff7a1a]">check</span>
 
             </div>
 
@@ -124,7 +124,7 @@
 
               <span class="text-[10px] text-gray-500 font-mono">Alt+2</span>
 
-              <span *ngIf="viewLayout() === 'live_column'" class="text-[#ff7a1a] font-bold">✓</span>
+              <span *ngIf="viewLayout() === 'live_column'" class="material-symbols-outlined text-[15px] text-[#ff7a1a]">check</span>
 
             </div>
 
@@ -583,13 +583,13 @@
 
         </div>
 
-        <!-- RIGHT PANE: PROGRAM BUS GIGANTE + AUDIO STRIP Y SWITCHER -->
+        <!-- RIGHT PANE: PROGRAM BUS COMPACTO + AUDIO STRIP Y SWITCHER -->
 
         <div class="flex-1 min-h-0 flex flex-col gap-1.5 overflow-hidden">
 
-          <!-- UPPER SECTION: PROGRAM BUS GIGANTE (64% altura) -->
+          <!-- UPPER SECTION: PROGRAM BUS COMPACTO 16:9 (50% altura para equilibrar con panel inferior) -->
 
-          <div class="h-[64%] flex flex-col bg-surface-container-lowest rounded border border-secondary-container/80 overflow-hidden shadow">
+          <div class="h-[50%] flex flex-col bg-surface-container-lowest rounded border border-secondary-container/80 overflow-hidden shadow">
 
             <!-- PGM Header -->
 
@@ -683,13 +683,13 @@
 
           </div>
 
-          <!-- LOWER SECTION: AUDIO STRIP + LIVE SWITCHER -->
+          <!-- LOWER SECTION: AUDIO STRIP + LIVE SWITCHER (57% altura disponible) -->
 
           <div class="flex-1 min-h-0 flex gap-1.5 overflow-hidden">
 
             <!-- Pro Audio Channel Strip -->
 
-            <ng-container *ngTemplateOutlet="audioChannelStripTpl; context: { widthClass: 'w-[45%]' }"></ng-container>
+            <ng-container *ngTemplateOutlet="audioChannelStripTpl; context: { widthClass: 'w-[48%]' }"></ng-container>
 
             <!-- Live Switcher & Transitions -->
 
@@ -734,97 +734,126 @@
          }">
 
       <!-- Card Header: Tally, Cam Title, Battery & Controls -->
-
-      <div class="h-6 px-1.5 flex items-center justify-between bg-surface-container shrink-0 text-[11px] font-mono">
-
-        <div class="flex items-center gap-1">
-
-          <span class="w-1.5 h-1.5 rounded-full"
-
+      <div class="h-6 px-1 flex items-center justify-between bg-surface-container shrink-0 text-[10px] font-mono select-none overflow-hidden">
+        <div class="flex items-center gap-1 min-w-0 flex-nowrap">
+          <span class="w-1.5 h-1.5 rounded-full shrink-0"
                 [ngClass]="{
-
                   'bg-secondary-container animate-ping': switcher.activeCam() === cam.id,
-
                   'bg-emerald-400': switcher.previewCam() === cam.id && switcher.activeCam() !== cam.id,
-
                   'bg-surface-variant': switcher.activeCam() !== cam.id && switcher.previewCam() !== cam.id
-
                 }"></span>
+          <span class="font-bold text-white shrink-0 text-[10.5px]">CAM 0{{ cam.id }}</span>
 
-          <span class="font-bold text-white">CAM 0{{ cam.id }}</span>
+          <!-- Selector de Modo de Conexión Personalizado OP-1 (Dark Synth Dropdown) -->
+          <div class="relative shrink-0">
+            <button (click)="toggleCamModeDropdown(cam.id, $event)"
+                    type="button"
+                    class="px-1 py-0.5 rounded bg-surface-container-highest hover:bg-[#282d3c] border border-white/10 hover:border-primary/50 text-white text-[8px] font-mono flex items-center gap-0.5 cursor-pointer transition-colors shadow-sm whitespace-nowrap flex-nowrap">
+              <span class="material-symbols-outlined text-[11px] text-primary" *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb'">usb</span>
+              <span class="material-symbols-outlined text-[11px] text-cyan-400" *ngIf="getCameraConnectionMode(cam.id) === 'tx_web_wifi'">wifi</span>
+              <span class="material-symbols-outlined text-[11px] text-amber-400" *ngIf="getCameraConnectionMode(cam.id) === 'tx_web_adb'">bolt</span>
+              <span class="material-symbols-outlined text-[11px] text-emerald-400" *ngIf="getCameraConnectionMode(cam.id) === 'tx_web_tethering'">link</span>
+              <span class="whitespace-nowrap font-bold">
+                {{ getCameraConnectionMode(cam.id) === 'droidcam_usb' ? 'USB' : (getCameraConnectionMode(cam.id) === 'tx_web_wifi' ? 'WIFI' : (getCameraConnectionMode(cam.id) === 'tx_web_adb' ? 'ADB' : 'TETH')) }}
+              </span>
+              <span class="text-[6.5px] text-outline ml-0.5">▼</span>
+            </button>
 
-          <span *ngIf="cam.isTcpStream" class="text-[8px] font-mono px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-            USB TCP
+            <!-- Menú Flotante Dropdown OP-1 -->
+            <div *ngIf="activeCamModeDropdown() === cam.id"
+                 (click)="$event.stopPropagation()"
+                 class="absolute left-0 top-full mt-1 w-44 bg-[#14161f] border border-[#2d3243] rounded shadow-2xl py-1 z-50 text-[9px] font-mono">
+              <div class="px-2 py-0.5 text-[8px] text-gray-400 uppercase font-bold border-b border-[#232734]">
+                Modo Enlace CAM 0{{ cam.id }}
+              </div>
+              <button (click)="selectCamMode(cam.id, 'droidcam_usb', $event)"
+                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                      [ngClass]="getCameraConnectionMode(cam.id) === 'droidcam_usb' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
+                <span class="material-symbols-outlined text-[13px] text-primary">usb</span>
+                <div>
+                  <div class="leading-tight font-bold">[USB] DROIDCAM</div>
+                  <div class="text-[7.5px] text-gray-400 font-normal">Cable USB (Baja Latencia)</div>
+                </div>
+              </button>
+              <button (click)="selectCamMode(cam.id, 'tx_web_wifi', $event)"
+                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                      [ngClass]="getCameraConnectionMode(cam.id) === 'tx_web_wifi' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
+                <span class="material-symbols-outlined text-[13px] text-cyan-400">wifi</span>
+                <div>
+                  <div class="leading-tight font-bold">[WLAN] TX WIFI</div>
+                  <div class="text-[7.5px] text-gray-400 font-normal">PWA Escaneo QR (Wi-Fi)</div>
+                </div>
+              </button>
+              <button (click)="selectCamMode(cam.id, 'tx_web_adb', $event)"
+                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                      [ngClass]="getCameraConnectionMode(cam.id) === 'tx_web_adb' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
+                <span class="material-symbols-outlined text-[13px] text-amber-400">bolt</span>
+                <div>
+                  <div class="leading-tight font-bold">[ADB] TX FAST</div>
+                  <div class="text-[7.5px] text-gray-400 font-normal">Túnel ADB localhost:8443</div>
+                </div>
+              </button>
+              <button (click)="selectCamMode(cam.id, 'tx_web_tethering', $event)"
+                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                      [ngClass]="getCameraConnectionMode(cam.id) === 'tx_web_tethering' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
+                <span class="material-symbols-outlined text-[13px] text-emerald-400">link</span>
+                <div>
+                  <div class="leading-tight font-bold">[ETH] TX TETHER</div>
+                  <div class="text-[7.5px] text-gray-400 font-normal">Ethernet por Cable Virtual</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Badges de Estado -->
+          <span *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && isDroidCamOnline(cam.id)" class="text-[7.5px] font-mono px-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0">
+            :{{ 4740 + cam.id }}
           </span>
-          <span *ngIf="cam.isConnected && !cam.isTcpStream" class="text-[8px] font-mono px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-            UDP RTC
+          <span *ngIf="getCameraConnectionMode(cam.id) !== 'droidcam_usb' && cam.isTcpStream" class="text-[7.5px] font-mono px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+            TCP
+          </span>
+          <span *ngIf="getCameraConnectionMode(cam.id) !== 'droidcam_usb' && cam.isConnected && !cam.isTcpStream" class="text-[7.5px] font-mono px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+            RTC
           </span>
 
-          <span class="text-[9px] text-outline opacity-80 uppercase">
-
-            {{ cam.id === 1 ? 'HOST' : (cam.id === 2 ? 'INVITADO' : 'GENERAL') }}
-
+          <span class="text-[8px] text-outline opacity-70 uppercase truncate shrink-0"
+                [ngClass]="layout === 'vertical' ? 'inline' : 'hidden 2xl:inline'">
+            {{ cam.id === 1 ? 'HOST' : (cam.id === 2 ? 'INVIT' : 'GEN') }}
           </span>
-
         </div>
 
         <!-- Battery Indicator & Thermal Status -->
+        <div class="flex items-center gap-1 shrink-0 flex-nowrap">
+          <span [id]="'bat-cam-' + cam.id" class="flex items-center gap-0.5 text-outline text-[9px] shrink-0">
+            <span class="material-symbols-outlined text-[13px] leading-none text-primary" *ngIf="cam.isCharging">bolt</span>
+            <span class="material-symbols-outlined text-[13px] leading-none" *ngIf="!cam.isCharging">battery_std</span>
+            <span class="text-[8.5px]">{{ cam.batteryLevel !== undefined ? (cam.batteryLevel + '%') : (cam.isConnected ? 'LIVE' : 'OFF') }}</span>
+          </span>
 
-        <span class="hidden" aria-hidden="true">🔋 ⚡</span>
+          <span class="text-[7.5px] px-0.5 rounded border border-surface-container-highest shrink-0"
+                *ngIf="cam.thermalStatus === 'WARM'"
+                [ngClass]="'text-primary'">
+            WARM
+          </span>
 
-        <span [id]="'bat-cam-' + cam.id" class="flex items-center gap-0.5 text-outline text-[10px]">
-
-          <span class="material-symbols-outlined text-[13px] leading-none text-primary" *ngIf="cam.isCharging">bolt</span>
-
-          <span class="material-symbols-outlined text-[13px] leading-none" *ngIf="!cam.isCharging">battery_std</span>
-
-          <span>{{ cam.batteryLevel !== undefined ? (cam.batteryLevel + '%') : (cam.isConnected ? 'LIVE' : 'OFF') }}</span>
-
-        </span>
-
-        <span class="text-[9px] px-1 rounded border border-surface-container-highest"
-
-              [ngClass]="cam.thermalStatus === 'WARM' ? 'text-primary' : 'text-tertiary'">
-
-          {{ cam.thermalStatus || 'OK' }}
-
-        </span>
-
-        <!-- Action Controls: OLED Saver & Flash -->
-
-        <div class="flex items-center gap-0.5">
-
+          <!-- Action Controls: OLED Saver & Flash (Solo icono para Flash para no desbordar) -->
           <button [id]="'btn-remote-oled-' + cam.id" (click)="toggleRemoteOled(cam.id)"
-
             [title]="'Ahorro OLED CAM 0' + cam.id"
-
-            class="px-1 py-0.2 rounded font-mono text-[9px] cursor-pointer border"
-
-            [ngClass]="cam.isOledActive ? 'bg-primary/20 text-primary border-primary' : 'bg-surface-container-high text-white/60 border-surface-container-highest'">
-
+            class="px-1 py-0.2 rounded font-mono text-[7.5px] cursor-pointer border shrink-0 transition-colors"
+            [ngClass]="cam.isOledActive ? 'bg-primary/20 text-primary border-primary' : 'bg-surface-container-high text-white/60 border-surface-container-highest hover:text-white'">
             OLED
-
           </button>
 
           <button [id]="'btn-remote-torch-' + cam.id" (click)="toggleRemoteTorch(cam.id)"
-
-            [title]="'Linterna CAM 0' + cam.id"
-
-            class="px-1 py-0.2 rounded font-mono text-[9px] cursor-pointer border flex items-center gap-0.5"
-
-            [ngClass]="cam.isTorchOn ? 'bg-amber-400/20 text-amber-300 border-amber-400' : 'bg-surface-container-high text-white/60 border-surface-container-highest'">
-
-            <span class="material-symbols-outlined text-[11px] leading-none">flash_on</span>
-
-            <span>FLASH</span>
-
+            [title]="'FLASH / Linterna CAM 0' + cam.id" aria-label="FLASH"
+            class="p-0.5 w-5 h-4 rounded font-mono cursor-pointer border flex items-center justify-center shrink-0 transition-colors"
+            [ngClass]="cam.isTorchOn ? 'bg-amber-400/20 text-amber-300 border-amber-400' : 'bg-surface-container-high text-white/60 border-surface-container-highest hover:text-white'">
+            <span class="material-symbols-outlined text-[12px] leading-none">flash_on</span>
           </button>
-
         </div>
-
       </div>
 
-      <!-- Card Viewport (Video Stream if Connected, else Giant QR Code) -->
+      <!-- Card Viewport (Video Stream if Connected, else DroidCam USB Control or QR Code) -->
 
       <div class="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
 
@@ -842,33 +871,96 @@
 
                [volume]="0"
 
+               [class.hidden]="getCameraConnectionMode(cam.id) === 'droidcam_usb'"
+
                class="w-full h-full object-cover">
 
         </video>
 
-        <!-- QR Display When Camera Offline -->
+        <!-- DroidCam USB MJPEG Feed Element -->
+        <img [id]="'iso-img-' + cam.id"
+             *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && isDroidCamOnline(cam.id)"
+             [src]="'/api/droidcam/feed/' + cam.id"
+             class="w-full h-full object-cover"
+             [alt]="'DROIDCAM USB FEED CAM 0' + cam.id">
 
-        <div *ngIf="!cam.isConnected || !cam.stream"
+        <!-- UI cuando está en Modo DROIDCAM USB pero NO está transmitiendo aún -->
+        <div *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && !isDroidCamOnline(cam.id)"
+             class="absolute inset-0 flex flex-col items-center justify-center p-2 bg-surface-container-lowest/95 text-center gap-1.5 z-10">
+          <div class="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+            <span class="material-symbols-outlined text-[22px]">usb</span>
+          </div>
 
-             class="absolute inset-0 flex flex-col items-center justify-center p-1 bg-surface-container-lowest/95 gap-1">
+          <div>
+            <div class="text-[10px] font-bold text-white uppercase tracking-wider font-mono">DROIDCAM USB (PORT {{ 4740 + cam.id }})</div>
+            <div class="text-[8px] text-cyan-300 font-mono mt-0.5">Android ADB // iPhone usbmuxd</div>
+          </div>
 
-          <div class="p-1 bg-white rounded border border-white/20 shadow-md flex items-center justify-center"
+          <!-- Selector de Dispositivos USB Detectados -->
+          <div class="w-full max-w-[210px] flex flex-col gap-1 items-center" *ngIf="getAvailableDroidCamDevices().length > 0">
+            <select #devSelect class="w-full bg-surface-container-high text-white text-[8.5px] font-mono px-1 py-0.5 rounded border border-white/20">
+              <option *ngFor="let dev of getAvailableDroidCamDevices()" [value]="dev.id">
+                [{{ dev.platform | uppercase }}] {{ dev.name || dev.id }}
+              </option>
+            </select>
+            <button (click)="onConnectDroidCam(cam.id, devSelect.value)"
+                    class="w-full py-0.5 px-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-[9px] font-bold uppercase transition flex items-center justify-center gap-1 cursor-pointer shadow-md">
+              <span class="material-symbols-outlined text-[13px]">link</span>
+              <span>CONECTAR DISPOSITIVO</span>
+            </button>
+          </div>
 
-               [ngClass]="layout === 'vertical' ? 'max-w-[130px] max-h-[130px]' : 'max-w-[160px] max-h-[160px]'">
+          <!-- Si no hay dispositivos detectados o botón automático -->
+          <div class="flex flex-col gap-1 items-center shrink-0" *ngIf="getAvailableDroidCamDevices().length === 0">
+            <button (click)="onConnectDroidCam(cam.id)"
+                    class="py-1 px-2.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-[9px] font-bold uppercase transition flex items-center gap-1 cursor-pointer shadow-md">
+              <span class="material-symbols-outlined text-[13px]">sensors</span>
+              <span>AUTO-CONECTAR USB</span>
+            </button>
+            <span class="text-[7.5px] text-outline font-mono">Abre DroidCam en el cel antes de conectar</span>
+          </div>
+
+          <!-- Acceso rápido a refrescar dispositivos -->
+          <button (click)="webrtc.fetchDroidCamStatus()"
+                  class="text-[7.5px] font-mono text-outline hover:text-white flex items-center gap-0.5 cursor-pointer shrink-0">
+            <span class="material-symbols-outlined text-[11px]">refresh</span>
+            <span>Escanear Cables USB</span>
+          </button>
+        </div>
+
+        <!-- DroidCam USB Overlay Controls when connected -->
+        <div *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && isDroidCamOnline(cam.id)"
+             class="absolute bottom-1 left-1 flex items-center gap-1 bg-black/80 rounded px-1.5 py-0.5 border border-cyan-500/40 text-[8.5px] font-mono z-10 text-cyan-300">
+          <span>PORT {{ 4740 + cam.id }}</span>
+          <button (click)="onUnbindDroidCam(cam.id)"
+                  title="Desconectar túnel DroidCam"
+                  class="text-red-400 hover:text-red-300 underline cursor-pointer ml-1">
+            DESCONECTAR
+          </button>
+        </div>
+
+        <!-- QR Display When Camera Offline (Solo en Modos Web TX) -->
+
+        <div *ngIf="getCameraConnectionMode(cam.id) !== 'droidcam_usb' && (!cam.isConnected || !cam.stream)"
+
+             class="absolute inset-0 flex flex-col items-center justify-center p-1 bg-surface-container-lowest/95 gap-1.5 z-10">
+
+          <div class="p-1 bg-white rounded border border-white/20 shadow-md flex items-center justify-center shrink-0"
+               class="w-24 h-24 max-w-[96px] max-h-[96px]">
 
             <img [src]="getQrImageUrl(cam.id)"
-
+                 loading="eager"
+                 decoding="sync"
                  class="w-full h-full object-contain"
-
                  [alt]="'QR CAM 0' + cam.id">
 
           </div>
 
           <button (click)="openQrModal()"
 
-                  class="text-[9px] font-mono text-outline hover:text-white uppercase tracking-wider flex items-center gap-1 cursor-pointer bg-surface-container px-2 py-0.5 rounded border border-surface-container-highest">
+                  class="text-[9px] font-mono text-outline hover:text-white uppercase tracking-wider flex items-center gap-1 cursor-pointer bg-surface-container px-2 py-0.5 rounded border border-surface-container-highest shrink-0">
 
-            <span class="material-symbols-outlined text-[11px] text-primary">qr_code_2</span>
+            <span class="material-symbols-outlined text-[13px] text-primary">qr_code_2</span>
 
             <span>ESCANEAR CAM 0{{ cam.id }}</span>
 
@@ -974,51 +1066,56 @@
 
         </div>
 
-        <!-- Selector de Micrófono / Interfaz USB / Celulares -->
+        <!-- Selector de Micrófono / Interfaz USB Estilo OP-1 (Dark Synth Popover) -->
+        <div class="relative w-full">
+          <button (click)="toggleAudioDropdown($event)"
+                  type="button"
+                  class="w-full bg-[#161820] hover:bg-[#1d202b] rounded border border-[#2c303c] hover:border-[#ff7a1a]/60 px-2 py-1 flex items-center justify-between text-left text-[#e2e8f0] text-[10.5px] font-semibold outline-none cursor-pointer transition-colors shadow-sm">
+            <div class="flex items-center gap-1.5 truncate">
+              <span class="material-symbols-outlined text-[13px] text-primary shrink-0">mic</span>
+              <span class="truncate">{{ getSelectedAudioDeviceLabel() }}</span>
+            </div>
+            <span class="text-[8px] text-outline ml-1 shrink-0">▼</span>
+          </button>
 
-        <div class="relative w-full bg-[#161820] rounded border border-[#2c303c] px-2 py-1 hover:border-[#ff7a1a]/60 transition-colors">
+          <!-- Dropdown Popover de Audio Estilo OP-1 -->
+          <div *ngIf="isAudioDropdownOpen()"
+               (click)="$event.stopPropagation()"
+               class="absolute left-0 top-full mt-1 w-full bg-[#14161f] border border-[#2d3243] rounded-lg shadow-2xl py-1 z-50 text-[10px] font-mono max-h-52 overflow-y-auto">
+            <div class="px-2.5 py-1 text-[8px] text-gray-400 uppercase font-bold border-b border-[#232734] bg-[#10121a]">
+              Micrófonos PC / Interfaz USB
+            </div>
+            <button *ngFor="let dev of audio.audioDevices()"
+                    (click)="selectAudioDevice(dev.deviceId, formatAudioDeviceLabel(dev.label), $event)"
+                    class="w-full px-2.5 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                    [ngClass]="audio.selectedDeviceId() === dev.deviceId ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
+              <span class="material-symbols-outlined text-[13px] text-primary">graphic_eq</span>
+              <span class="truncate">{{ formatAudioDeviceLabel(dev.label) }}</span>
+            </button>
+            <div *ngIf="audio.audioDevices().length === 0"
+                 (click)="selectAudioDevice('default', 'Micrófono por Defecto', $event)"
+                 class="px-2.5 py-1 text-gray-400 text-[9px] hover:bg-[#222736] cursor-pointer">
+              Micrófono por Defecto
+            </div>
 
-          <select [value]="audio.selectedDeviceId()"
-
-                  (change)="onAudioDeviceChange($event)"
-
-                  title="Seleccionar micrófono o interfaz de audio"
-
-                  class="w-full bg-transparent text-left text-[#e2e8f0] text-[11px] font-semibold outline-none truncate cursor-pointer appearance-none pr-5">
-
-            <optgroup label="Micrófonos de la PC / Interfaz USB" class="bg-[#161820] text-white">
-
-              <option *ngIf="audio.audioDevices().length === 0" value="default">Scarlett 4i4 / Micrófono USB</option>
-
-              <option *ngFor="let dev of audio.audioDevices()" [value]="dev.deviceId">
-
-                {{ formatAudioDeviceLabel(dev.label) }}
-
-              </option>
-
-            </optgroup>
-
-            <optgroup label="Audio de Celulares WebRTC" class="bg-[#161820] text-white">
-
-              <option *ngFor="let cam of webrtc.cameras().slice(0, 3)" [value]="'cam:' + cam.id">
-
-                CAM 0{{ cam.id }} Móvil {{ cam.isConnected ? '(En Vivo)' : '(Offline)' }}
-
-              </option>
-
-            </optgroup>
-
-          </select>
-
-          <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-outline text-[10px]">▼</span>
-
+            <div class="px-2.5 py-1 text-[8px] text-gray-400 uppercase font-bold border-b border-t border-[#232734] bg-[#10121a] mt-1">
+              Audio de Celulares WebRTC
+            </div>
+            <button *ngFor="let cam of webrtc.cameras().slice(0, 3)"
+                    (click)="selectAudioDevice('cam:' + cam.id, 'CAM 0' + cam.id + ' Móvil', $event)"
+                    class="w-full px-2.5 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                    [ngClass]="audio.selectedDeviceId() === ('cam:' + cam.id) ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
+              <span class="material-symbols-outlined text-[13px]" [ngClass]="cam.isConnected ? 'text-emerald-400' : 'text-gray-500'">smartphone</span>
+              <span>CAM 0{{ cam.id }} Móvil {{ cam.isConnected ? '(En Vivo)' : '(Offline)' }}</span>
+            </button>
+          </div>
         </div>
 
       </div>
 
       <!-- 2. SLIDER INTUITIVO DE GANANCIA DE ENTRADA (PREAMP GAIN) -->
 
-      <div class="my-1.5 p-2 bg-[#161820] border border-[#252833] rounded flex flex-col gap-1 shrink-0">
+      <div class="my-1 p-1.5 bg-[#161820] border border-[#252833] rounded flex flex-col gap-0.5 shrink-0">
 
         <div class="flex items-center justify-between text-[10.5px]">
 
@@ -1094,7 +1191,7 @@
 
         <!-- Escala de Ganancia rápida y Toggle 80Hz -->
 
-        <div class="flex items-center justify-between pt-1 border-t border-[#20232c] text-[9px]">
+        <div class="flex items-center justify-between pt-0.5 border-t border-[#20232c] text-[9px]">
 
           <div class="flex items-center gap-1.5 text-[#6b7280]">
 
@@ -1144,7 +1241,7 @@
 
       <!-- 3. BOTONERA DE CONTROL RÁPIDO (M, S, COMP) -->
 
-      <div class="grid grid-cols-3 gap-1.5 shrink-0 my-1">
+      <div class="grid grid-cols-3 gap-1.5 shrink-0 my-0.5">
 
         <!-- MUTE [M] -->
 
@@ -1154,7 +1251,7 @@
 
                 title="Silenciar Micrófono Master [Atajo: M]"
 
-                class="h-8 rounded border font-mono text-[10px] font-bold flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm"
+                class="h-7 rounded border font-mono text-[10px] font-bold flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm"
 
                 [ngClass]="audio.isMasterMuted()
 
@@ -1186,7 +1283,7 @@
 
                 title="Monitorear audio por audífonos en tiempo real [Atajo: H]"
 
-                class="h-8 rounded border font-mono text-[10px] font-bold flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm"
+                class="h-7 rounded border font-mono text-[10px] font-bold flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm"
 
                 [ngClass]="!audio.isCueMuted()
 
@@ -1216,7 +1313,7 @@
 
                 title="Compresor dinámico nivelador de voz (-18dB, 4:1)"
 
-                class="h-8 rounded border font-mono text-[10px] font-bold flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm"
+                class="h-7 rounded border font-mono text-[10px] font-bold flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm"
 
                 [ngClass]="audio.isCompressor()
 
@@ -1244,17 +1341,17 @@
 
       <!-- 4. SECCIÓN AMPLIA Y ELEGANTE DE MEZCLA: VÚMETRO ESTÉREO + FADER MASTER -->
 
-      <div class="flex-1 min-h-0 bg-[#161820] border border-[#252833] rounded p-2 flex flex-col justify-between my-1 overflow-hidden shadow-inner">
+      <div class="flex-1 min-h-0 bg-[#161820] border border-[#252833] rounded p-1.5 flex flex-col justify-between my-0.5 overflow-hidden shadow-inner">
 
         <!-- Fila Superior: Lector de Volumen Master y Pico -->
 
-        <div class="flex items-center justify-between pb-1.5 border-b border-[#222531]">
+        <div class="flex items-center justify-between pb-1 border-b border-[#222531]">
 
           <div class="flex items-center gap-2">
 
             <span class="text-[#9ca3af] text-[9.5px] font-bold uppercase tracking-wider">SALIDA MASTER:</span>
 
-            <div class="px-2 py-0.5 rounded bg-black border border-[#2e3341] text-white font-mono font-black text-[12px] min-w-[70px] text-center">
+            <div class="px-2 py-0.5 rounded bg-black border border-[#2e3341] text-white font-mono font-black text-[11px] min-w-[65px] text-center">
 
               {{ audio.masterFaderDb() <= -30 ? '-∞ dB' : (audio.masterFaderDb() > 0 ? '+' : '') + audio.masterFaderDb().toFixed(1) + ' dB' }}
 
@@ -1290,7 +1387,7 @@
 
         <!-- Vúmetro Estéreo Dual Horizontal (L & R) -->
 
-        <div class="my-1.5 flex flex-col gap-1 bg-[#0d0e12] p-1.5 rounded border border-[#1f222b]">
+        <div class="my-1 flex flex-col gap-0.5 bg-[#0d0e12] p-1 rounded border border-[#1f222b]">
 
           <!-- Canal L -->
 
@@ -1298,7 +1395,7 @@
 
             <span class="text-[#9ca3af] font-bold w-3">L</span>
 
-            <div class="flex-1 h-3 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
+            <div class="flex-1 h-2.5 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
 
               <div *ngFor="let seg of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]"
 
@@ -1320,7 +1417,7 @@
 
             <span class="text-[#9ca3af] font-bold w-3">R</span>
 
-            <div class="flex-1 h-3 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
+            <div class="flex-1 h-2.5 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
 
               <div *ngFor="let seg of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]"
 
@@ -1340,9 +1437,9 @@
 
         <!-- Fader Master Horizontal Intuitivo -->
 
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-0.5">
 
-          <div class="flex items-center justify-between text-[8.5px] text-[#6b7280]">
+          <div class="flex items-center justify-between text-[8px] text-[#6b7280]">
 
             <span>-30 dB</span>
 
@@ -1366,7 +1463,7 @@
 
                  title="Fader de Mezcla Master (-30dB a +6dB)"
 
-                 class="w-full h-2.5 bg-[#0c0d11] rounded-lg appearance-none cursor-pointer accent-[#ff7a1a]">
+                 class="w-full h-2 bg-[#0c0d11] rounded-lg appearance-none cursor-pointer accent-[#ff7a1a]">
 
         </div>
 
@@ -1502,7 +1599,7 @@
 
               title="Poner CAM 01 al aire [Atajo: 1]"
 
-              class="h-9 rounded border font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow active:scale-95"
+              class="h-7.5 rounded border font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow active:scale-95"
 
               [ngClass]="switcher.activeCam() === 1
 
@@ -1510,9 +1607,9 @@
 
                 : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
 
-              <span class="text-[12px] leading-tight font-black">CAM 1</span>
+              <span class="text-[11.5px] leading-tight font-black">CAM 1</span>
 
-              <span class="text-[8px] opacity-80 uppercase tracking-tighter">HOST</span>
+              <span class="text-[7.5px] opacity-80 uppercase tracking-tighter">HOST</span>
 
             </button>
 
@@ -1522,7 +1619,7 @@
 
               title="Poner CAM 02 al aire [Atajo: 2]"
 
-              class="h-9 rounded border font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow active:scale-95"
+              class="h-7.5 rounded border font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow active:scale-95"
 
               [ngClass]="switcher.activeCam() === 2
 
@@ -1530,9 +1627,9 @@
 
                 : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
 
-              <span class="text-[12px] leading-tight font-black">CAM 2</span>
+              <span class="text-[11.5px] leading-tight font-black">CAM 2</span>
 
-              <span class="text-[8px] opacity-80 uppercase tracking-tighter">INVITADO</span>
+              <span class="text-[7.5px] opacity-80 uppercase tracking-tighter">INVITADO</span>
 
             </button>
 
@@ -1542,7 +1639,7 @@
 
               title="Poner CAM 03 al aire [Atajo: 3]"
 
-              class="h-9 rounded border font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow active:scale-95"
+              class="h-7.5 rounded border font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow active:scale-95"
 
               [ngClass]="switcher.activeCam() === 3
 
@@ -1550,9 +1647,9 @@
 
                 : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
 
-              <span class="text-[12px] leading-tight font-black">CAM 3</span>
+              <span class="text-[11.5px] leading-tight font-black">CAM 3</span>
 
-              <span class="text-[8px] opacity-80 uppercase tracking-tighter">GENERAL</span>
+              <span class="text-[7.5px] opacity-80 uppercase tracking-tighter">GENERAL</span>
 
             </button>
 
@@ -1562,9 +1659,9 @@
 
         <!-- SECCIÓN 2: TIPO DE TRANSICIÓN ACTIVA -->
 
-        <div class="flex flex-col gap-1 p-1 bg-surface-container rounded border border-surface-container-highest">
+        <div class="flex flex-col gap-0.5 p-1 bg-surface-container rounded border border-surface-container-highest">
 
-          <span class="text-[9.5px] text-outline font-bold tracking-wider uppercase">MODO DE CAMBIO:</span>
+          <span class="text-[9px] text-outline font-bold tracking-wider uppercase">MODO DE CAMBIO:</span>
 
           <div class="grid grid-cols-2 gap-1">
 
@@ -1572,7 +1669,7 @@
 
               title="Cambio inmediato de cámara en 0 milisegundos"
 
-              class="h-7.5 rounded border font-bold text-[10.5px] flex items-center justify-center gap-1 transition-all cursor-pointer"
+              class="h-6.5 rounded border font-bold text-[10px] flex items-center justify-center gap-1 transition-all cursor-pointer"
 
               [ngClass]="switcher.transitionMode() === 'cut'
 
@@ -1590,7 +1687,7 @@
 
               title="Cambio cinemático con desvanecimiento suave"
 
-              class="h-7.5 rounded border font-bold text-[10.5px] flex items-center justify-center gap-1 transition-all cursor-pointer"
+              class="h-6.5 rounded border font-bold text-[10px] flex items-center justify-center gap-1 transition-all cursor-pointer"
 
               [ngClass]="switcher.transitionMode() === 'fade'
 
@@ -1652,7 +1749,7 @@
 
         <!-- SECCIÓN 3: ACCIONES RÁPIDAS (AUTO, DIP Y CORTE A NEGRO) -->
 
-        <div class="mt-auto flex flex-col gap-1 pt-1 border-t border-surface-container-highest">
+        <div class="mt-auto flex flex-col gap-0.5 pt-0.5 border-t border-surface-container-highest">
 
           <div class="grid grid-cols-2 gap-1">
 
@@ -1664,7 +1761,7 @@
 
               title="Transición automática entre la cámara al aire (PGM) y la armada en Previo (PVW) [Atajo: ESPACIO]"
 
-              class="h-8.5 bg-surface-container hover:bg-surface-container-high text-primary rounded font-bold text-[10px] border border-primary/40 flex flex-col items-center justify-center cursor-pointer active:scale-95 shadow">
+              class="h-7.5 bg-surface-container hover:bg-surface-container-high text-primary rounded font-bold text-[9.5px] border border-primary/40 flex flex-col items-center justify-center cursor-pointer active:scale-95 shadow">
 
               <div class="flex items-center gap-1 leading-tight font-black">
 
@@ -1674,7 +1771,7 @@
 
               </div>
 
-              <span class="text-[7.5px] opacity-75 font-normal tracking-tight">PASA A PREVIEW</span>
+              <span class="text-[7px] opacity-75 font-normal tracking-tight">PASA A PREVIEW</span>
 
             </button>
 
@@ -1686,7 +1783,7 @@
 
               title="Transición cinemática que funde a negro 0.4s y emerge en la otra cámara [Atajo: D]"
 
-              class="h-8.5 rounded border font-bold text-[10px] flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 shadow"
+              class="h-7.5 rounded border font-bold text-[9.5px] flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 shadow"
 
               [ngClass]="switcher.transitionMode() === 'dip_black' ? 'bg-primary text-black border-primary' : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-surface-container-highest'">
 
@@ -1698,7 +1795,7 @@
 
               </div>
 
-              <span class="text-[7.5px] opacity-75 font-normal tracking-tight">FUNDIDO Y CAMBIO</span>
+              <span class="text-[7px] opacity-75 font-normal tracking-tight">FUNDIDO Y CAMBIO</span>
 
             </button>
 
@@ -1712,7 +1809,7 @@
 
             title="PANTALLA NEGRA FIJA: Apaga el video a negro permanente para pausas, comerciales o inicio de podcast. Pulsa [B] de nuevo para salir."
 
-            class="h-7.5 rounded font-mono text-[10.5px] uppercase font-bold tracking-wider border flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow"
+            class="h-7 rounded font-mono text-[10px] uppercase font-bold tracking-wider border flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow"
 
             [ngClass]="switcher.isEmergencyBlack()
 
@@ -1722,13 +1819,13 @@
 
             <span class="w-1.5 h-1.5 rounded-full" [ngClass]="switcher.isEmergencyBlack() ? 'bg-white animate-ping' : 'bg-red-500'"></span>
 
-            <span class="material-symbols-outlined text-[14px] leading-none" [ngClass]="switcher.isEmergencyBlack() ? 'animate-spin' : ''">
+            <span class="material-symbols-outlined text-[17px] leading-none" [ngClass]="switcher.isEmergencyBlack() ? 'animate-spin' : ''">
 
               {{ switcher.isEmergencyBlack() ? 'settings_backup_restore' : 'stop' }}
 
             </span>
 
-            <span>{{ switcher.isEmergencyBlack() ? '● SALIR DE NEGRO [B]' : '⬛ PANTALLA NEGRA / PAUSA [B]' }}</span>
+            <span>{{ switcher.isEmergencyBlack() ? 'SALIR DE NEGRO [B]' : 'PANTALLA NEGRA / PAUSA [B]' }}</span>
 
           </button>
 
@@ -1819,7 +1916,7 @@
         </div>
         <button (click)="closeQrModal()" title="Cerrar ventana"
                 class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer text-[14px] font-bold">
-          ✕
+          <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
 
@@ -2050,6 +2147,8 @@
               </div>
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
                 <img [src]="getCustomQrUrl(getUsbQrTargetUrl(cam.id))"
+                     loading="eager"
+                     decoding="sync"
                      class="w-36 h-36 object-contain" [alt]="'QR USB CAM 0' + cam.id">
               </div>
               <div class="w-full flex items-center justify-between gap-1 pt-1 font-mono text-[9.5px]">
@@ -2109,7 +2208,7 @@
                 <p>2. En el iPhone: entra a <b>Ajustes > Compartir Internet</b> y activa <b>Permitir a otros conectarse</b>.</p>
                 <p>3. Si el iPhone pregunta, selecciona <b>"Solo USB"</b>.</p>
                 <div *ngIf="webrtc.connectionMatrix()?.apple_usb?.active" class="pt-1 font-mono text-[10px] text-emerald-300">
-                  ✓ IP PC: {{ webrtc.connectionMatrix()?.apple_usb?.ip }} <span *ngIf="webrtc.connectionMatrix()?.apple_usb?.gateway">• Gateway: {{ webrtc.connectionMatrix()?.apple_usb?.gateway }}</span>
+                  [OK] IP PC: {{ webrtc.connectionMatrix()?.apple_usb?.ip }} <span *ngIf="webrtc.connectionMatrix()?.apple_usb?.gateway">• Gateway: {{ webrtc.connectionMatrix()?.apple_usb?.gateway }}</span>
                 </div>
               </div>
             </div>
@@ -2131,7 +2230,7 @@
                 <p>2. En Android: ve a <b>Ajustes > Redes e Internet > Compartir conexión</b>.</p>
                 <p>3. Activa la casilla <b>"Compartir conexión por USB (Tethering)"</b>.</p>
                 <div *ngIf="webrtc.connectionMatrix()?.android_rndis?.active" class="pt-1 font-mono text-[10px] text-emerald-300">
-                  ✓ IP PC: {{ webrtc.connectionMatrix()?.android_rndis?.ip }} <span *ngIf="webrtc.connectionMatrix()?.android_rndis?.gateway">• Gateway: {{ webrtc.connectionMatrix()?.android_rndis?.gateway }}</span>
+                  [OK] IP PC: {{ webrtc.connectionMatrix()?.android_rndis?.ip }} <span *ngIf="webrtc.connectionMatrix()?.android_rndis?.gateway">• Gateway: {{ webrtc.connectionMatrix()?.android_rndis?.gateway }}</span>
                 </div>
               </div>
             </div>
@@ -2278,26 +2377,29 @@
                 <select [value]="webrtc.cameraRoutes()[cam.id] || 'auto'"
                         (change)="onSelectCameraRoute(cam.id, $any($event.target).value)"
                         class="w-full bg-[#111318] border border-[#343b4d] text-white font-mono text-[10px] rounded px-2 py-1.5 cursor-pointer outline-none focus:border-primary">
-                  <option value="auto">🔄 Auto / Mejor disponible</option>
-                  <option value="usb_hub_adb">🔌 Hub USB ADB (localhost:8443)</option>
+                  <option value="auto">[AUTO] MEJOR DISPONIBLE</option>
+                  <option value="usb_hub_adb">[ADB] HUB USB (8443)</option>
                   <option value="apple_usb_tethering" [disabled]="!webrtc.connectionMatrix()?.apple_usb?.active">
-                    📱 iPhone USB ({{ webrtc.connectionMatrix()?.apple_usb?.ip || 'Desconectado' }})
+                    [IPHONE] USB TETHER ({{ webrtc.connectionMatrix()?.apple_usb?.ip || 'OFF' }})
                   </option>
                   <option value="android_rndis_tethering" [disabled]="!webrtc.connectionMatrix()?.android_rndis?.active">
-                    🤖 Android USB ({{ webrtc.connectionMatrix()?.android_rndis?.ip || 'Desconectado' }})
+                    [ANDROID] USB RNDIS ({{ webrtc.connectionMatrix()?.android_rndis?.ip || 'OFF' }})
                   </option>
                   <option value="windows_hotspot_5g" [disabled]="!webrtc.connectionMatrix()?.hotspot_5ghz?.active">
-                    📶 Hotspot 5 GHz ({{ webrtc.connectionMatrix()?.hotspot_5ghz?.ip || 'Inactivo' }})
+                    [HOTSPOT] 5 GHz ({{ webrtc.connectionMatrix()?.hotspot_5ghz?.ip || 'OFF' }})
                   </option>
                   <option value="wifi_lan" [disabled]="!webrtc.connectionMatrix()?.wifi_lan?.active">
-                    🌐 Red Wi-Fi Local ({{ webrtc.connectionMatrix()?.wifi_lan?.ip || 'LAN' }})
+                    [LAN] RED WI-FI ({{ webrtc.connectionMatrix()?.wifi_lan?.ip || 'OFF' }})
                   </option>
                 </select>
               </div>
 
               <!-- Dedicated Dynamic QR Code -->
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30 self-center">
-                <img [src]="getQrImageUrl(cam.id)" class="w-36 h-36 object-contain" [alt]="'QR CAM 0' + cam.id">
+                <img [src]="getQrImageUrl(cam.id)"
+                     loading="eager"
+                     decoding="sync"
+                     class="w-36 h-36 object-contain" [alt]="'QR CAM 0' + cam.id">
               </div>
 
               <!-- Link & Copy Actions -->

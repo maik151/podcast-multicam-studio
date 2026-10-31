@@ -34,7 +34,7 @@ import { RecorderService } from '../../core/services/recorder.service';
 
 import { TelemetryService } from '../../core/services/telemetry.service';
 
-import { CameraFeed, TransitionMode, VideoProfile } from '../../core/models/studio.models';
+import { CameraFeed, TransitionMode, VideoProfile, CameraConnectionMode } from '../../core/models/studio.models';
 
 @Component({
 
@@ -227,7 +227,9 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.checkFirstTimeTutorial();
     await this.webrtc.fetchNetworkInfo();
     await this.webrtc.fetchConnectionMatrix();
+    await this.webrtc.fetchDroidCamStatus();
     this.connectionInterval = window.setInterval(() => {
+      this.webrtc.fetchDroidCamStatus();
       if (this.isQrModalOpen()) {
         this.webrtc.fetchConnectionMatrix();
       }
@@ -237,6 +239,98 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.telemetry.logEvent('SYSTEM', 'DIRECTOR_COMPONENT', 'STUDIO_INIT', 'Consola de Director inicializada', {
       lanUrl: this.webrtc.baseUrl()
     });
+  }
+
+  public activeCamModeDropdown = signal<number | null>(null);
+  public isAudioDropdownOpen = signal<boolean>(false);
+  private qrUrlCache = new Map<string, string>();
+
+  public toggleCamModeDropdown(camId: number, event: MouseEvent): void {
+    event.stopPropagation();
+    this.isAudioDropdownOpen.set(false);
+    this.activeCamModeDropdown.update(curr => (curr === camId ? null : camId));
+  }
+
+  public selectCamMode(camId: number, mode: CameraConnectionMode, event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+    this.webrtc.setCameraConnectionMode(camId, mode);
+    this.activeCamModeDropdown.set(null);
+    this.showToast(`CAM 0${camId}: Modo ${mode.toUpperCase()} activado`);
+  }
+
+  public toggleAudioDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.activeCamModeDropdown.set(null);
+    this.isAudioDropdownOpen.update(v => !v);
+  }
+
+  public selectAudioDevice(devId: string, label?: string, event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+    this.audio.selectedDeviceId.set(devId);
+    this.audio.switchAudioInput(devId, (camId) => this.webrtc.getCameraStream(camId));
+    this.isAudioDropdownOpen.set(false);
+    this.showToast(`Fuente de Audio: ${label || devId}`);
+  }
+
+  public getSelectedAudioDeviceLabel(): string {
+    const currentId = this.audio.selectedDeviceId();
+    if (currentId.startsWith('cam:')) {
+      const camId = currentId.split(':')[1];
+      const cam = this.webrtc.cameras().find(c => c.id === Number(camId));
+      return `CAM 0${camId} Móvil ${cam?.isConnected ? '(En Vivo)' : '(Offline)'}`;
+    }
+    const dev = this.audio.audioDevices().find(d => d.deviceId === currentId);
+    if (dev) {
+      return this.formatAudioDeviceLabel(dev.label);
+    }
+    return 'Intel Smart Mic / Micrófono Principal';
+  }
+
+  public closeAllDropdowns(): void {
+    this.activeCamModeDropdown.set(null);
+    this.isAudioDropdownOpen.set(false);
+  }
+
+  public getCameraConnectionMode(camId: number): CameraConnectionMode {
+    return this.webrtc.cameraConnectionModes()[camId] || 'droidcam_usb';
+  }
+
+  public onCameraModeChange(camId: number, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const mode = select.value as CameraConnectionMode;
+    this.webrtc.setCameraConnectionMode(camId, mode);
+    this.showToast(`CAM 0${camId}: Modo de conexión cambiado a ${mode.toUpperCase()}`);
+  }
+
+  public async onConnectDroidCam(camId: number, deviceId?: string): Promise<void> {
+    const res = await this.webrtc.bindDroidCam(camId, deviceId);
+    if (res.success) {
+      this.showToast(res.message);
+    } else {
+      this.showAlert(res.message);
+    }
+  }
+
+  public async onUnbindDroidCam(camId: number): Promise<void> {
+    const res = await this.webrtc.unbindDroidCam(camId);
+    this.showToast(res.message);
+  }
+
+  public isDroidCamOnline(camId: number): boolean {
+    const cam = this.webrtc.cameras().find(c => c.id === camId);
+    return Boolean(cam && cam.connectionMode === 'droidcam_usb' && cam.isDroidCamActive);
+  }
+
+  public get droidcamStatus() {
+    return this.webrtc.droidcamStatus();
+  }
+
+  public getDroidCamBinding(camId: number) {
+    return this.webrtc.droidcamStatus()?.active_bindings?.[camId] || null;
+  }
+
+  public getAvailableDroidCamDevices() {
+    return this.webrtc.droidcamStatus()?.devices || [];
   }
 
   private checkFirstTimeTutorial(): void {
@@ -1440,7 +1534,10 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public getCustomQrUrl(url: string): string {
-    return `/api/qr?url=${encodeURIComponent(url)}`;
+    if (!this.qrUrlCache.has(url)) {
+      this.qrUrlCache.set(url, `/api/qr?url=${encodeURIComponent(url)}`);
+    }
+    return this.qrUrlCache.get(url)!;
   }
 
   public encodeUri(val: string): string {
@@ -1598,163 +1695,130 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
 
       const videoElements: { [camId: number]: HTMLVideoElement } = {};
-
+      const cachedIsoElements: { [camId: number]: HTMLVideoElement | null } = {};
+      const cachedIsoImgElements: { [camId: number]: HTMLImageElement | null } = {};
+      const lastAssignedTrackIds: { [camId: number]: string } = {};
+      let cachedPvwElement: HTMLVideoElement | null = null;
       const lastGoodFrames: { [camId: number]: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; lastSeen: number } } = {};
 
       for (let i = 1; i <= 3; i++) {
-
         const v = document.createElement('video');
-
         v.autoplay = true;
-
         v.playsInline = true;
-
         v.muted = true;
-
         videoElements[i] = v;
 
         const offCanvas = document.createElement('canvas');
-
         offCanvas.width = 1920;
-
         offCanvas.height = 1080;
-
         const offCtx = offCanvas.getContext('2d');
-
         if (offCtx) {
-
           lastGoodFrames[i] = { canvas: offCanvas, ctx: offCtx, lastSeen: 0 };
-
         }
-
       }
 
       const drawLoop = () => {
-
         if (!this.isRendering) return;
 
-        // Enlazar y sincronizar elementos de video DOM en vivo (iso-video-1..3) para decodificación por hardware continua
-
+        // Enlazar y sincronizar elementos de video DOM en vivo con caché de referencias (Zero DOM Thrashing a 60 FPS)
         for (let i = 1; i <= 3; i++) {
-
           const stream = this.webrtc.getCameraStream(i);
+          let domVid = cachedIsoElements[i];
+          if (!domVid || !domVid.isConnected) {
+            domVid = document.getElementById(`iso-video-${i}`) as HTMLVideoElement | null;
+            cachedIsoElements[i] = domVid;
+          }
 
-          const domVid = document.getElementById(`iso-video-${i}`) as HTMLVideoElement | null;
+          let domImg = cachedIsoImgElements[i];
+          if (!domImg || !domImg.isConnected) {
+            domImg = document.getElementById(`iso-img-${i}`) as HTMLImageElement | null;
+            cachedIsoImgElements[i] = domImg;
+          }
 
           if (domVid) {
-
             videoElements[i] = domVid;
-
-            domVid.muted = true;
-
-            domVid.volume = 0;
+            if (!domVid.muted) domVid.muted = true;
 
             if (stream) {
-
               const vTracks = stream.getVideoTracks();
-
               if (vTracks.length > 0) {
-
-                const currentVTrack = domVid.srcObject ? (domVid.srcObject as MediaStream).getVideoTracks()[0] : null;
-
-                if (!currentVTrack || currentVTrack.id !== vTracks[0].id) {
-
-                  domVid.srcObject = new MediaStream(vTracks);
-
+                const trackId = vTracks[0].id;
+                if (lastAssignedTrackIds[i] !== trackId) {
+                  lastAssignedTrackIds[i] = trackId;
+                  domVid.srcObject = new MediaStream([vTracks[0]]);
                 }
-
               }
-
+            } else {
+              lastAssignedTrackIds[i] = '';
             }
 
             if (stream && domVid.paused) {
-
               domVid.play().catch(() => {});
-
             }
-
           } else {
-
             const v = videoElements[i];
-
-            v.muted = true;
-
-            v.volume = 0;
-
-            if (stream && v.srcObject !== stream) {
-
+            if (stream) {
               const vTracks = stream.getVideoTracks();
-
-              v.srcObject = vTracks.length > 0 ? new MediaStream(vTracks) : stream;
-
+              if (vTracks.length > 0) {
+                const trackId = vTracks[0].id;
+                if (lastAssignedTrackIds[i] !== trackId) {
+                  lastAssignedTrackIds[i] = trackId;
+                  v.srcObject = new MediaStream([vTracks[0]]);
+                }
+              }
+            } else {
+              lastAssignedTrackIds[i] = '';
             }
 
             if (stream && v.paused) {
-
               v.play().catch(() => {});
-
             }
-
           }
-
         }
 
-        const pvwVid = document.getElementById('preview-viewport-video') as HTMLVideoElement | null;
-
-        if (pvwVid) {
-
-          pvwVid.muted = true;
-
-          pvwVid.volume = 0;
-
+        if (!cachedPvwElement || !cachedPvwElement.isConnected) {
+          cachedPvwElement = document.getElementById('preview-viewport-video') as HTMLVideoElement | null;
+        }
+        if (cachedPvwElement && !cachedPvwElement.muted) {
+          cachedPvwElement.muted = true;
         }
 
         const width = canvas.width;
-
         const height = canvas.height;
 
         const drawVideoOrPattern = (vid: HTMLVideoElement, camId: number, alpha: number) => {
-
           ctx.save();
-
           ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
-          const liveVid = (document.getElementById(`iso-video-${camId}`) as HTMLVideoElement | null) || vid;
+          const liveImg = cachedIsoImgElements[camId];
+          const isDroidCam = this.getCameraConnectionMode(camId) === 'droidcam_usb';
+          const hasImgFrames = Boolean(isDroidCam && liveImg && liveImg.naturalWidth > 0 && liveImg.complete);
 
+          const liveVid = cachedIsoElements[camId] || vid;
           if (liveVid && !liveVid.muted) {
-
             liveVid.muted = true;
-
-            liveVid.volume = 0;
-
           }
 
           const hasStream = liveVid && liveVid.srcObject;
-
           const hasFrames = Boolean(hasStream && (liveVid.videoWidth > 0 || liveVid.readyState >= 2));
-
           const now = performance.now();
-
           const buffer = lastGoodFrames[camId];
 
-          if (hasFrames) {
-
-            if (liveVid.paused) {
-
-              liveVid.play().catch(() => {});
-
-            }
-
-            ctx.drawImage(liveVid, 0, 0, width, height);
-
+          if (hasImgFrames && liveImg) {
+            ctx.drawImage(liveImg, 0, 0, width, height);
             if (buffer) {
-
-              buffer.ctx.drawImage(liveVid, 0, 0, buffer.canvas.width, buffer.canvas.height);
-
+              buffer.ctx.drawImage(liveImg, 0, 0, buffer.canvas.width, buffer.canvas.height);
               buffer.lastSeen = now;
-
             }
-
+          } else if (hasFrames) {
+            if (liveVid.paused) {
+              liveVid.play().catch(() => {});
+            }
+            ctx.drawImage(liveVid, 0, 0, width, height);
+            if (buffer) {
+              buffer.ctx.drawImage(liveVid, 0, 0, buffer.canvas.width, buffer.canvas.height);
+              buffer.lastSeen = now;
+            }
           } else if (buffer && buffer.lastSeen > 0 && (now - buffer.lastSeen < 3000)) {
 
             // Protección Broadcast Anti-Flicker: Sostener último frame válido ante caídas de paquetes o micro-jitter
@@ -1943,7 +2007,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
       ctx.textAlign = 'left';
 
-      ctx.fillText('🔴 PROGRAMA (ON-AIR): CAM 01 • HOST (PRESENTADOR)', 30, 44);
+      ctx.fillText('[LIVE] PROGRAMA (ON-AIR): CAM 01 // HOST (PRESENTADOR)', 30, 44);
 
       // Badge central gigante
 
@@ -2049,7 +2113,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
       ctx.textAlign = 'left';
 
-      ctx.fillText('🔵 PROGRAMA (ON-AIR): CAM 02 • INVITADO (CO-HOST)', 30, 44);
+      ctx.fillText('[LIVE] PROGRAMA (ON-AIR): CAM 02 // INVITADO (CO-HOST)', 30, 44);
 
       // Badge central gigante Cyan
 
@@ -2155,7 +2219,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
       ctx.textAlign = 'left';
 
-      ctx.fillText('🟡 PROGRAMA (ON-AIR): CAM 03 • SET GENERAL (WIDE)', 30, 44);
+      ctx.fillText('[LIVE] PROGRAMA (ON-AIR): CAM 03 // SET GENERAL (WIDE)', 30, 44);
 
       // Badge central gigante Ámbar
 

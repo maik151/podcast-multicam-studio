@@ -55,6 +55,8 @@ a = Analysis(
         'core.presentation.controllers.signaling_controller',
         'core.presentation.controllers.spa_controller',
         'core.presentation.controllers.telemetry_controller',
+        'core.presentation.controllers.droidcam_controller',
+        'core.network.droidcam_bridge',
     ],
     hookspath=[],
     hooksconfig={},

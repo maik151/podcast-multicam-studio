@@ -253,10 +253,10 @@ class TestSprint4MobileExperienceAndErgonomics(unittest.TestCase):
         self.assertIn('thermalStatus?: string;', self.models_ts, "CameraFeed model debe contener el campo thermalStatus.")
 
     def test_27_director_ui_displays_battery_and_charging_icons(self):
-        """Verifica que director.component.html muestre el porcentaje de batería e iconos dinámicos 🔋 y ⚡."""
+        """Verifica que director.component.html muestre el porcentaje de batería e iconos técnicos."""
         self.assertIn('bat-cam-', self.director_html, "Falta el identificador bat-cam- en las tarjetas de cámara del director.")
-        self.assertIn('⚡', self.director_html, "Debe mostrar icono ⚡ cuando el teléfono está cargando.")
-        self.assertIn('🔋', self.director_html, "Debe mostrar icono 🔋 cuando el teléfono está en batería.")
+        self.assertTrue('bolt' in self.director_html or '⚡' in self.director_html, "Debe mostrar icono bolt cuando el teléfono está cargando.")
+        self.assertTrue('battery_std' in self.director_html or '🔋' in self.director_html, "Debe mostrar icono battery_std cuando el teléfono está en batería.")
         self.assertIn('thermalStatus', self.director_html, "La UI del director debe mostrar el badge de salud térmica.")
 
     def test_28_static_telemetry_5s_interval_and_director_parity(self):

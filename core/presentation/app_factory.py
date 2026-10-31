@@ -18,6 +18,7 @@ from core.presentation.controllers.network_controller import NetworkController
 from core.presentation.controllers.telemetry_controller import TelemetryController
 from core.presentation.controllers.signaling_controller import SignalingController
 from core.presentation.controllers.spa_controller import SpaController
+from core.presentation.controllers.droidcam_controller import DroidCamController
 
 
 @web.middleware
@@ -104,6 +105,7 @@ class ApplicationContainer:
         self.telemetry_controller = TelemetryController(RECORDINGS_DIR)
         self.signaling_controller = SignalingController(self.signaling_hub)
         self.spa_controller = SpaController(ANGULAR_DIST_DIR, STATIC_DIR)
+        self.droidcam_controller = DroidCamController()
 
 
 def create_application(container: ApplicationContainer = None) -> web.Application:
@@ -140,6 +142,13 @@ def create_application(container: ApplicationContainer = None) -> web.Applicatio
 
     # 4. WebSocket Hub de Señalización WebRTC
     app.router.add_get("/ws", container.signaling_controller.handle_ws)
+
+    # 4.1. Rutas de Integración con Motor USB DroidCam (Android & iPhone)
+    app.router.add_get("/api/droidcam/devices", container.droidcam_controller.handle_devices)
+    app.router.add_get("/api/droidcam/status", container.droidcam_controller.handle_status)
+    app.router.add_post("/api/droidcam/bind", container.droidcam_controller.handle_bind)
+    app.router.add_post("/api/droidcam/unbind", container.droidcam_controller.handle_unbind)
+    app.router.add_get("/api/droidcam/feed/{cam_id}", container.droidcam_controller.handle_feed)
 
     # 5. Assets Compilados de Angular
     container.spa_controller.register_angular_dist_routes(app)
