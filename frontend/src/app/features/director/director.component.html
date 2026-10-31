@@ -14,142 +14,86 @@
 
        ========================================================================= -->
 
-  <header class="h-12 w-full px-3 flex items-center justify-between gap-2.5 bg-surface-container-lowest border-b border-surface-container-highest shrink-0 z-30">
+  <header class="h-12 w-full px-3 flex items-center justify-between gap-2.5 bg-[#0a0c10] border-b border-[#202534] shrink-0 z-30 select-none">
 
-    <!-- Brand Mark & Classic Desktop Menu Bar (Image 2 style) -->
-
+    <!-- Brand Mark & Studio Navbar -->
     <div class="flex items-center gap-2 shrink-0">
-
-      <div class="flex items-center gap-1.5 cursor-pointer" (click)="onOpenRecordingsFolder()" title="TX-Studio Broadcast Suite">
-
-        <img src="/tx_studio_Isotipo_naranja.svg" alt="TX" class="h-6 w-6 object-contain" />
-
-        <span class="text-white font-mono font-bold text-[13px] tracking-wide">TX-STUDIO</span>
-
-        <span class="text-[10px] font-mono px-1 py-0.2 rounded bg-surface-container text-primary font-semibold border border-surface-container-highest">v3.2</span>
-
+      <div class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#12151e] border border-[#272e42] hover:border-primary/50 transition-all cursor-pointer shadow-sm"
+           (click)="onOpenRecordingsFolder()" title="TX-STUDIO Broadcast Suite v3.8 - Clic para abrir grabaciones">
+        <img src="/tx_studio_Isotipo_naranja.svg" alt="TX" class="h-5 w-5 object-contain" />
+        <span class="text-white font-mono font-black text-[13px] tracking-wider">TX-STUDIO</span>
+        <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-primary/20 text-primary font-bold border border-primary/30">BROADCAST</span>
       </div>
 
+      <div class="h-5 w-[1px] bg-white/10 mx-1"></div>
 
-
-      <div class="h-4 w-[1px] bg-white/20 mx-1"></div>
-
-
-
-      <!-- Desktop Menu Item: Vista (Classic Desktop Application Style) -->
-
+      <!-- Navbar Item: VISTA -->
       <div class="relative">
-
-        <button (click)="toggleViewMenu()" title="Cambiar vista de la aplicación [Alt+1 / Alt+2]"
-
-          class="flex items-center gap-1 text-[13px] font-sans font-medium text-gray-200 hover:text-white px-2.5 py-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
-
-          [ngClass]="isViewMenuOpen() ? 'bg-white/15 text-white' : ''">
-
-          <span>Vista</span>
-
-          <span class="text-[9px] opacity-70">▾</span>
-
+        <button (click)="toggleViewMenu()" title="Cambiar disposición de pantalla [Alt+1 / Alt+2]"
+                class="flex items-center gap-1.5 text-[11.5px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-sm"
+                [ngClass]="isViewMenuOpen() ? 'bg-primary/20 text-white border-primary/60' : 'bg-[#141722] text-gray-300 border-[#2b3347] hover:bg-[#1d2232] hover:text-white'">
+          <span class="material-symbols-outlined text-[15px] text-primary">grid_view</span>
+          <span>VISTA</span>
+          <span class="text-[8px] text-gray-400">▼</span>
         </button>
 
-
-
         <!-- Dropdown Menu Desktop Clásico -->
-
         <div *ngIf="isViewMenuOpen()" (mouseleave)="closeViewMenu()"
-
-             class="absolute left-0 top-full mt-1 w-64 bg-[#1a1c23] border border-[#373c4d] rounded shadow-2xl py-1 z-50 text-[12px] font-sans">
-
-          <div class="px-3 py-1 text-[9.5px] text-gray-400 uppercase tracking-wider border-b border-[#2d3241] font-bold">
-
+             class="absolute left-0 top-full mt-1 w-64 bg-[#141722] border border-[#2d354a] rounded-lg shadow-2xl py-1 z-50 text-[11.5px] font-mono">
+          <div class="px-3 py-1 text-[9px] text-gray-400 uppercase tracking-wider border-b border-[#222838] font-bold">
             Disposición de Pantalla
-
           </div>
-
           <!-- Option 1: Dual Preview + Live -->
-
           <button (click)="setLayout('dual')"
-
-            class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-[#282d3c] transition-colors cursor-pointer"
-
-            [ngClass]="viewLayout() === 'dual' ? 'text-[#ff7a1a] font-bold bg-[#ff7a1a]/10' : 'text-gray-200'">
-
+                  class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-[#202638] transition-colors cursor-pointer"
+                  [ngClass]="viewLayout() === 'dual' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
             <div class="flex items-center gap-2">
-
               <span class="material-symbols-outlined text-[16px]">view_column</span>
-
               <div>
-
-                <div class="leading-tight">Estudio Dual (Con Previo)</div>
-
-                <div class="text-[10px] text-gray-400 font-normal">Previo + Live arriba, cámaras abajo</div>
-
+                <div class="leading-tight font-bold">Estudio Dual (Con Previo)</div>
+                <div class="text-[9.5px] text-gray-400 font-normal">Previo + Live arriba, cámaras abajo</div>
               </div>
-
             </div>
-
             <div class="flex items-center gap-1.5">
-
-              <span class="text-[10px] text-gray-500 font-mono">Alt+1</span>
-
-              <span *ngIf="viewLayout() === 'dual'" class="material-symbols-outlined text-[15px] text-[#ff7a1a]">check</span>
-
+              <span class="text-[9.5px] text-gray-500 font-mono">Alt+1</span>
+              <span *ngIf="viewLayout() === 'dual'" class="material-symbols-outlined text-[14px] text-primary">check</span>
             </div>
-
           </button>
 
           <!-- Option 2: Live Right + 3 Cameras Column Left -->
-
           <button (click)="setLayout('live_column')"
-
-            class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-[#282d3c] transition-colors cursor-pointer"
-
-            [ngClass]="viewLayout() === 'live_column' ? 'text-[#ff7a1a] font-bold bg-[#ff7a1a]/10' : 'text-gray-200'">
-
+                  class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-[#202638] transition-colors cursor-pointer"
+                  [ngClass]="viewLayout() === 'live_column' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
             <div class="flex items-center gap-2">
-
               <span class="material-symbols-outlined text-[16px]">view_sidebar</span>
-
               <div>
-
-                <div class="leading-tight">Directa Live (Sin Previo)</div>
-
-                <div class="text-[10px] text-gray-400 font-normal">3 Cámaras en columna + Live gigante</div>
-
+                <div class="leading-tight font-bold">Directa Live (Sin Previo)</div>
+                <div class="text-[9.5px] text-gray-400 font-normal">3 Cámaras columna + Live grande</div>
               </div>
-
             </div>
-
             <div class="flex items-center gap-1.5">
-
-              <span class="text-[10px] text-gray-500 font-mono">Alt+2</span>
-
-              <span *ngIf="viewLayout() === 'live_column'" class="material-symbols-outlined text-[15px] text-[#ff7a1a]">check</span>
-
+              <span class="text-[9.5px] text-gray-500 font-mono">Alt+2</span>
+              <span *ngIf="viewLayout() === 'live_column'" class="material-symbols-outlined text-[14px] text-primary">check</span>
             </div>
-
           </button>
-
         </div>
-
       </div>
 
-          <!-- Desktop Menu Item: Conexiones & Hub USB -->
-      <button (click)="openQrModal('usb')" title="Gestor de Conexiones Multiruta y Hub USB"
-        class="flex items-center gap-1.5 text-[12px] font-mono px-2 py-1 rounded bg-surface-container border border-surface-container-highest hover:bg-surface-container-high transition-colors cursor-pointer text-gray-200">
-        <span class="material-symbols-outlined text-[15px] text-primary">hub</span>
+      <!-- Navbar Item: CONEXIONES -->
+      <button (click)="openQrModal('usb')" title="Centro de Conexiones Multiruta (USB, Hotspot 5GHz, Wi-Fi LAN)"
+              class="flex items-center gap-1.5 text-[11.5px] font-mono font-bold px-2.5 py-1 rounded-lg bg-[#141722] border border-[#2b3347] hover:bg-[#1d2232] hover:border-cyan-500/60 transition-all cursor-pointer text-gray-200 shadow-sm">
+        <span class="material-symbols-outlined text-[15px] text-cyan-400">hub</span>
         <span>CONEXIONES</span>
         <span *ngIf="webrtc.connectionMatrix()?.usb_adb?.devices?.length"
-              class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 text-[9.5px] font-bold border border-emerald-500/40">
+              class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold border border-emerald-500/40">
           USB: {{ webrtc.connectionMatrix()?.usb_adb?.devices?.length }}
         </span>
         <span *ngIf="webrtc.connectionMatrix()?.hotspot_5ghz?.active"
-              class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 text-[9.5px] font-bold border border-cyan-500/40">
+              class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 text-[9px] font-bold border border-cyan-500/40">
           5G ACTIVO
         </span>
       </button>
     </div>
-
 
     <!-- Center System Telemetry Matrix (CPU, RAM, DISCO, REC CLOCK) -->
 
@@ -293,7 +237,7 @@
 
       <!-- UPPER ROW: DUAL MONITORS (PVW vs PGM) - 46% height -->
 
-      <div class="h-[46%] min-h-0 grid grid-cols-2 gap-1.5 shrink-0">
+      <div class="h-[42%] min-h-0 grid grid-cols-2 gap-1.5 shrink-0">
 
         <!-- LEFT MONITOR: PREVIEW (PVW) BUS -->
 
@@ -589,7 +533,7 @@
 
           <!-- UPPER SECTION: PROGRAM BUS COMPACTO 16:9 (50% altura para equilibrar con panel inferior) -->
 
-          <div class="h-[62%] flex flex-col bg-surface-container-lowest rounded border border-secondary-container/80 overflow-hidden shadow">
+          <div class="h-[50%] flex flex-col bg-surface-container-lowest rounded border border-secondary-container/80 overflow-hidden shadow">
 
             <!-- PGM Header -->
 
@@ -750,60 +694,42 @@
                     type="button"
                     class="px-1 py-0.5 rounded bg-surface-container-highest hover:bg-[#282d3c] border border-white/10 hover:border-primary/50 text-white text-[8px] font-mono flex items-center gap-0.5 cursor-pointer transition-colors shadow-sm whitespace-nowrap flex-nowrap">
               <span class="material-symbols-outlined text-[11px] text-primary" *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb'">usb</span>
-              <span class="material-symbols-outlined text-[11px] text-cyan-400" *ngIf="getCameraConnectionMode(cam.id) === 'tx_web_wifi'">wifi</span>
-              <span class="material-symbols-outlined text-[11px] text-amber-400" *ngIf="getCameraConnectionMode(cam.id) === 'tx_web_adb'">bolt</span>
-              <span class="material-symbols-outlined text-[11px] text-emerald-400" *ngIf="getCameraConnectionMode(cam.id) === 'tx_web_tethering'">link</span>
+              <span class="material-symbols-outlined text-[11px] text-cyan-400" *ngIf="getCameraConnectionMode(cam.id) !== 'droidcam_usb'">wifi</span>
               <span class="whitespace-nowrap font-bold">
-                {{ getCameraConnectionMode(cam.id) === 'droidcam_usb' ? 'USB' : (getCameraConnectionMode(cam.id) === 'tx_web_wifi' ? 'WIFI' : (getCameraConnectionMode(cam.id) === 'tx_web_adb' ? 'ADB' : 'TETH')) }}
+                {{ getCameraConnectionMode(cam.id) === 'droidcam_usb' ? 'USB' : 'WLAN' }}
               </span>
               <span class="text-[6.5px] text-outline ml-0.5">▼</span>
             </button>
 
-            <!-- Menú Flotante Dropdown OP-1 -->
+            <!-- Menú Flotante Dropdown OP-1 (2 Modos Oficiales) -->
             <div *ngIf="activeCamModeDropdown() === cam.id"
                  (click)="$event.stopPropagation()"
-                 class="absolute left-0 top-full mt-1 w-44 bg-[#14161f] border border-[#2d3243] rounded shadow-2xl py-1 z-50 text-[9px] font-mono">
-              <div class="px-2 py-0.5 text-[8px] text-gray-400 uppercase font-bold border-b border-[#232734]">
-                Modo Enlace CAM 0{{ cam.id }}
+                 class="absolute left-0 top-full mt-1 w-52 bg-[#14161f] border border-[#2d3243] rounded shadow-2xl py-1 z-50 text-[9px] font-mono">
+              <div class="px-2.5 py-1 text-[8px] text-gray-400 uppercase font-bold border-b border-[#232734] flex items-center justify-between">
+                <span>Modo Enlace CAM 0{{ cam.id }}</span>
+                <span class="text-primary text-[7.5px]">2 MODOS</span>
               </div>
               <button (click)="selectCamMode(cam.id, 'droidcam_usb', $event)"
-                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                      class="w-full px-2.5 py-1.5 flex items-center gap-2 text-left hover:bg-[#222736] transition-colors cursor-pointer border-b border-white/5"
                       [ngClass]="getCameraConnectionMode(cam.id) === 'droidcam_usb' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
-                <span class="material-symbols-outlined text-[13px] text-primary">usb</span>
+                <span class="material-symbols-outlined text-[14px] text-primary shrink-0">usb</span>
                 <div>
-                  <div class="leading-tight font-bold">[USB] DROIDCAM</div>
-                  <div class="text-[7.5px] text-gray-400 font-normal">Cable USB (Baja Latencia)</div>
+                  <div class="leading-tight font-bold">[USB] CABLE DROIDCAM</div>
+                  <div class="text-[7.5px] text-emerald-400 font-normal">0ms Latencia // Motor Rust :9100</div>
                 </div>
               </button>
               <button (click)="selectCamMode(cam.id, 'tx_web_wifi', $event)"
-                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
-                      [ngClass]="getCameraConnectionMode(cam.id) === 'tx_web_wifi' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
-                <span class="material-symbols-outlined text-[13px] text-cyan-400">wifi</span>
+                      class="w-full px-2.5 py-1.5 flex items-center gap-2 text-left hover:bg-[#222736] transition-colors cursor-pointer"
+                      [ngClass]="getCameraConnectionMode(cam.id) === 'tx_web_wifi' ? 'text-cyan-400 font-bold bg-cyan-400/10' : 'text-gray-200'">
+                <span class="material-symbols-outlined text-[14px] text-cyan-400 shrink-0">wifi</span>
                 <div>
-                  <div class="leading-tight font-bold">[WLAN] TX WIFI</div>
-                  <div class="text-[7.5px] text-gray-400 font-normal">PWA Escaneo QR (Wi-Fi)</div>
-                </div>
-              </button>
-              <button (click)="selectCamMode(cam.id, 'tx_web_adb', $event)"
-                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
-                      [ngClass]="getCameraConnectionMode(cam.id) === 'tx_web_adb' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
-                <span class="material-symbols-outlined text-[13px] text-amber-400">bolt</span>
-                <div>
-                  <div class="leading-tight font-bold">[ADB] TX FAST</div>
-                  <div class="text-[7.5px] text-gray-400 font-normal">Túnel ADB localhost:8443</div>
-                </div>
-              </button>
-              <button (click)="selectCamMode(cam.id, 'tx_web_tethering', $event)"
-                      class="w-full px-2 py-1 flex items-center gap-1.5 text-left hover:bg-[#222736] transition-colors cursor-pointer"
-                      [ngClass]="getCameraConnectionMode(cam.id) === 'tx_web_tethering' ? 'text-primary font-bold bg-primary/10' : 'text-gray-200'">
-                <span class="material-symbols-outlined text-[13px] text-emerald-400">link</span>
-                <div>
-                  <div class="leading-tight font-bold">[ETH] TX TETHER</div>
-                  <div class="text-[7.5px] text-gray-400 font-normal">Ethernet por Cable Virtual</div>
+                  <div class="leading-tight font-bold">[WLAN] INALÁMBRICO</div>
+                  <div class="text-[7.5px] text-cyan-300 font-normal">Hotspot 5GHz // Wi-Fi LAN QR</div>
                 </div>
               </button>
             </div>
           </div>
+
 
           <!-- Badges de Estado -->
           <span *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && isDroidCamOnline(cam.id)" class="text-[7.5px] font-mono px-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0">
@@ -1124,7 +1050,7 @@
 
       <!-- 2. SLIDER INTUITIVO DE GANANCIA DE ENTRADA (PREAMP GAIN) -->
 
-      <div class="my-1 p-1.5 bg-[#161820] border border-[#252833] rounded flex flex-col gap-0.5 shrink-0">
+      <div class="my-0.5 p-1 bg-[#161820] border border-[#252833] rounded flex flex-col gap-0.5 shrink-0">
 
         <div class="flex items-center justify-between text-[10.5px]">
 
@@ -1350,7 +1276,7 @@
 
       <!-- 4. SECCIÓN AMPLIA Y ELEGANTE DE MEZCLA: VÚMETRO ESTÉREO + FADER MASTER -->
 
-      <div class="flex-1 min-h-0 bg-[#161820] border border-[#252833] rounded p-1.5 flex flex-col justify-between my-0.5 overflow-hidden shadow-inner">
+      <div class="flex-1 min-h-[90px] bg-[#161820] border border-[#252833] rounded p-1 flex flex-col justify-between my-0.5 overflow-hidden shadow-inner">
 
         <!-- Fila Superior: Lector de Volumen Master y Pico -->
 
@@ -1396,7 +1322,7 @@
 
         <!-- Vúmetro Estéreo Dual Horizontal (L & R) -->
 
-        <div class="my-1 flex flex-col gap-0.5 bg-[#0d0e12] p-1 rounded border border-[#1f222b]">
+        <div class="my-0.5 flex flex-col gap-0.5 bg-[#0d0e12] p-0.5 rounded border border-[#1f222b]">
 
           <!-- Canal L -->
 
@@ -1404,7 +1330,7 @@
 
             <span class="text-[#9ca3af] font-bold w-3">L</span>
 
-            <div class="flex-1 h-2.5 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
+            <div class="flex-1 h-2 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
 
               <div *ngFor="let seg of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]"
 
@@ -1426,7 +1352,7 @@
 
             <span class="text-[#9ca3af] font-bold w-3">R</span>
 
-            <div class="flex-1 h-2.5 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
+            <div class="flex-1 h-2 bg-black rounded-sm flex gap-[1px] p-[1px] overflow-hidden">
 
               <div *ngFor="let seg of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]"
 
@@ -1480,7 +1406,7 @@
 
       <!-- 5. FOOTER ORGANIZADO: AUDÍFONOS + LIP-SYNC DELAY (SIN SOLAPAMIENTO) -->
 
-      <div class="border-t border-[#242833] pt-1.5 mt-0.5 flex flex-col gap-1.5 shrink-0 text-[9px]">
+      <div class="border-t border-[#242833] pt-1 mt-0.5 flex flex-col gap-1 shrink-0 text-[9px]">
 
         <!-- Fila Audífonos -->
 
@@ -1903,16 +1829,16 @@
   </footer>
 
     <!-- =========================================================================
-       5. HARDWARE USB & DROIDCAM HUB (BROADCAST MATRIX)
+       5. CENTRO DE CONEXIONES MULTIRUTA & HARDWARE HUB (STITCH PRO v3.8)
        ========================================================================= -->
-  <div *ngIf="isQrModalOpen()" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+  <div *ngIf="isQrModalOpen()" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none">
     <div class="bg-[#0e1118] border border-[#23293a] rounded-xl max-w-5xl w-full flex flex-col shadow-2xl overflow-hidden max-h-[92vh] ring-1 ring-white/5">
       
-      <!-- Top Accent Strip -->
-      <div class="h-1 w-full bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 opacity-90 shrink-0"></div>
+      <!-- Top Accent Strip Multiruta -->
+      <div class="h-1 w-full bg-gradient-to-r from-cyan-400 via-primary to-emerald-400 opacity-90 shrink-0"></div>
 
       <!-- Modal Header -->
-      <header class="px-5 py-3.5 bg-[#0b0e14]/95 border-b border-[#23293a] flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <header class="px-5 py-3 bg-[#0b0e14]/95 border-b border-[#23293a] flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-lg bg-[#161a24] border border-[#323b52] flex items-center justify-center text-cyan-400 shadow-inner">
             <span class="material-symbols-outlined text-[20px]">hub</span>
@@ -1920,10 +1846,10 @@
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-[13px] font-bold tracking-wider text-white uppercase font-mono">
-                HARDWARE USB & DROIDCAM HUB
+                CENTRO DE CONEXIONES & VIDEO HUB
               </h1>
               <span class="text-[10px] font-mono px-2 py-0.2 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-semibold tracking-wide">
-                TX-STUDIO CORE v3.8
+                TX-STUDIO v3.8
               </span>
             </div>
             <div class="flex items-center gap-2 mt-0.5 font-mono text-[10.5px]">
@@ -1935,22 +1861,12 @@
                 RUST VIDEO HUB :9100 ONLINE (0ms LATENCY)
               </span>
               <span class="text-gray-600">&#8226;</span>
-              <span class="text-gray-400">Apple usbmuxd & Android ADB Native</span>
+              <span class="text-gray-400">USB DroidCam + Hotspot 5GHz + Wi-Fi LAN</span>
             </div>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <div class="hidden sm:flex items-center gap-1.5 font-mono text-[10px]">
-            <span class="px-2 py-0.5 rounded bg-[#161a24] border border-[#23293a] text-gray-300 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-              3 ISO CANALES
-            </span>
-            <span class="px-2 py-0.5 rounded bg-[#161a24] border border-[#23293a] text-gray-300 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              USB 3.0 HIGH SPEED
-            </span>
-          </div>
           <button (click)="closeQrModal()" title="Cerrar ventana"
                   class="w-7 h-7 rounded-lg bg-[#161a24] border border-[#23293a] hover:border-red-500 hover:text-red-400 text-gray-400 transition-colors flex items-center justify-center cursor-pointer">
             <span class="material-symbols-outlined text-[16px]">close</span>
@@ -1958,236 +1874,465 @@
         </div>
       </header>
 
+      <!-- Category Navigation Tabs (Stitch Navbar) -->
+      <nav class="flex items-center gap-2 px-5 py-2.5 bg-[#0b0e14] border-b border-[#23293a] text-xs font-mono">
+        <!-- Tab 1: CABLE USB -->
+        <button (click)="setConnectionTab('usb')"
+                class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all cursor-pointer font-bold text-[11px]"
+                [ngClass]="activeConnectionTab() === 'usb' ? 'bg-primary/20 text-primary border-primary/60 shadow' : 'bg-[#141722] text-gray-400 border-white/5 hover:text-white'">
+          <span class="material-symbols-outlined text-[15px]">usb</span>
+          <span>CABLE USB (DROIDCAM)</span>
+          <span class="px-1.5 py-0.2 rounded text-[9px] font-bold"
+                [ngClass]="getConnectedUsbDevices().length > 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-gray-400'">
+            {{ getConnectedUsbDevices().length }} DISP.
+          </span>
+        </button>
+
+        <!-- Tab 2: HOTSPOT 5 GHZ -->
+        <button (click)="setConnectionTab('hotspot')"
+                class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all cursor-pointer font-bold text-[11px]"
+                [ngClass]="activeConnectionTab() === 'hotspot' ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/60 shadow' : 'bg-[#141722] text-gray-400 border-white/5 hover:text-white'">
+          <span class="material-symbols-outlined text-[15px]">wifi_tethering</span>
+          <span>HOTSPOT 5 GHz (WINDOWS)</span>
+          <span class="px-1.5 py-0.2 rounded text-[9px] font-bold"
+                [ngClass]="webrtc.connectionMatrix()?.hotspot_5ghz?.active ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-gray-400'">
+            {{ webrtc.connectionMatrix()?.hotspot_5ghz?.active ? 'ACTIVO' : 'INACTIVO' }}
+          </span>
+        </button>
+
+        <!-- Tab 3: WI-FI NORMAL LAN -->
+        <button (click)="setConnectionTab('wifi')"
+                class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all cursor-pointer font-bold text-[11px]"
+                [ngClass]="activeConnectionTab() === 'wifi' ? 'bg-amber-500/20 text-amber-400 border-amber-500/60 shadow' : 'bg-[#141722] text-gray-400 border-white/5 hover:text-white'">
+          <span class="material-symbols-outlined text-[15px]">wifi</span>
+          <span>WI-FI NORMAL (LAN)</span>
+          <span class="px-1.5 py-0.2 rounded bg-white/5 text-gray-300 text-[9px]">
+            {{ getPrimaryIp() || 'LAN LOCAL' }}
+          </span>
+        </button>
+      </nav>
+
       <!-- Modal Body -->
-      <main class="p-4 sm:p-5 space-y-4 overflow-y-auto max-h-[calc(92vh-120px)] bg-[#11141c]/60">
+      <main class="p-4 sm:p-5 space-y-4 overflow-y-auto max-h-[calc(92vh-150px)] bg-[#11141c]/60">
 
-        <!-- SECTION 1: HARDWARE MATRIX -->
-        <section>
-          <div class="flex items-center justify-between mb-2.5">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-cyan-400 text-[16px]">developer_board</span>
-              <h2 class="font-mono text-[11px] font-bold uppercase tracking-wider text-gray-200">
-                DISPOSITIVOS FISICOS CONECTADOS (HARDWARE MATRIX)
-              </h2>
-              <span class="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-cyan-300">
-                {{ getConnectedUsbDevices().length }} DETECTADOS
-              </span>
+        <!-- ================================================================= -->
+        <!-- PESTAÑA 1: CABLE USB (DROIDCAM & HARDWARE MATRIX) -->
+        <!-- ================================================================= -->
+        <div *ngIf="activeConnectionTab() === 'usb'" class="space-y-4">
+          <!-- SECTION 1: HARDWARE MATRIX -->
+          <section>
+            <div class="flex items-center justify-between mb-2.5">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-cyan-400 text-[16px]">developer_board</span>
+                <h2 class="font-mono text-[11px] font-bold uppercase tracking-wider text-gray-200">
+                  DISPOSITIVOS FISICOS CONECTADOS (HARDWARE MATRIX)
+                </h2>
+                <span class="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-cyan-300">
+                  {{ getConnectedUsbDevices().length }} DETECTADOS
+                </span>
+              </div>
+              <button (click)="onRefreshConnections()" [disabled]="webrtc.isRefreshingConnections()"
+                      class="font-mono text-[10px] text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer transition">
+                <span class="material-symbols-outlined text-[13px]" [ngClass]="webrtc.isRefreshingConnections() ? 'animate-spin' : ''">refresh</span>
+                <span>Re-escanear Puertos</span>
+              </button>
             </div>
-            <button (click)="onRefreshConnections()" [disabled]="webrtc.isRefreshingConnections()"
-                    class="font-mono text-[10px] text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer transition">
-              <span class="material-symbols-outlined text-[13px]" [ngClass]="webrtc.isRefreshingConnections() ? 'animate-spin' : ''">refresh</span>
-              <span>Re-escanear Puertos</span>
-            </button>
-          </div>
 
-          <!-- Empty State -->
-          <div *ngIf="getConnectedUsbDevices().length === 0"
-               class="bg-[#161a24] border border-[#23293a] rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2">
-            <span class="material-symbols-outlined text-[36px] text-gray-500">usb_off</span>
-            <div class="font-mono text-[12px] font-bold text-gray-300">NO SE DETECTARON DISPOSITIVOS USB</div>
-            <div class="font-sans text-[11px] text-gray-400 max-w-md">
-              Conecta tu telefono Android o iPhone mediante cable USB a la computadora. Asegurate de tener DroidCam instalado en el dispositivo.
+            <!-- Empty State -->
+            <div *ngIf="getConnectedUsbDevices().length === 0"
+                 class="bg-[#161a24] border border-[#23293a] rounded-lg p-6 flex flex-col items-center justify-center text-center gap-2">
+              <span class="material-symbols-outlined text-[36px] text-gray-500">usb_off</span>
+              <div class="font-mono text-[12px] font-bold text-gray-300">NO SE DETECTARON DISPOSITIVOS USB</div>
+              <div class="font-sans text-[11px] text-gray-400 max-w-md">
+                Conecta tu telefono Android o iPhone mediante cable USB a la computadora. Asegurate de tener DroidCam instalado en el dispositivo.
+              </div>
+              <button (click)="onRefreshConnections()"
+                      class="mt-2 px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-[10px] font-bold uppercase transition flex items-center gap-1 cursor-pointer shadow">
+                <span class="material-symbols-outlined text-[13px]">refresh</span>
+                <span>DETECTAR CABLES AHORA</span>
+              </button>
             </div>
-            <button (click)="onRefreshConnections()"
-                    class="mt-2 px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-[10px] font-bold uppercase transition flex items-center gap-1 cursor-pointer shadow">
-              <span class="material-symbols-outlined text-[13px]">refresh</span>
-              <span>DETECTAR CABLES AHORA</span>
-            </button>
-          </div>
 
-          <!-- Cards Grid -->
-          <div *ngIf="getConnectedUsbDevices().length > 0"
-               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            
-            <div *ngFor="let dev of getConnectedUsbDevices(); let idx = index"
-                 class="bg-[#161a24] rounded-lg p-3.5 flex flex-col justify-between border transition-all shadow-lg"
-                 [ngClass]="dev.platform === 'ios' ? 'border-cyan-500/40 hover:border-cyan-400' : (dev.platform === 'android' ? 'border-emerald-500/40 hover:border-emerald-400' : 'border-white/15 hover:border-white/30')">
+            <!-- Cards Grid -->
+            <div *ngIf="getConnectedUsbDevices().length > 0"
+                 class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               
-              <div>
-                <!-- Device Title & Platform Pill -->
-                <div class="flex items-start justify-between gap-2 mb-2">
-                  <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded bg-[#0b0e14] border border-[#323b52] flex items-center justify-center font-mono text-[10px] font-bold"
-                         [ngClass]="dev.platform === 'ios' ? 'text-cyan-400' : (dev.platform === 'android' ? 'text-emerald-400' : 'text-gray-300')">
-                      0{{ idx + 1 }}
+              <div *ngFor="let dev of getConnectedUsbDevices(); let idx = index"
+                   class="bg-[#161a24] rounded-lg p-3.5 flex flex-col justify-between border transition-all shadow-lg"
+                   [ngClass]="dev.platform === 'ios' ? 'border-cyan-500/40 hover:border-cyan-400' : (dev.platform === 'android' ? 'border-emerald-500/40 hover:border-emerald-400' : 'border-white/15 hover:border-white/30')">
+                
+                <div>
+                  <!-- Device Title & Platform Pill -->
+                  <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2">
+                      <div class="w-6 h-6 rounded bg-[#0b0e14] border border-[#323b52] flex items-center justify-center font-mono text-[10px] font-bold"
+                           [ngClass]="dev.platform === 'ios' ? 'text-cyan-400' : (dev.platform === 'android' ? 'text-emerald-400' : 'text-gray-300')">
+                        0{{ idx + 1 }}
+                      </div>
+                      <div>
+                        <h3 class="text-[11.5px] font-bold text-white font-mono leading-tight truncate max-w-[170px]"
+                            [title]="dev.name || dev.model">
+                          {{ dev.name || dev.model }}
+                        </h3>
+                        <p class="text-[9.5px] font-mono text-gray-400 truncate max-w-[170px]">
+                          ID: {{ dev.serial || dev.id }}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 class="text-[11.5px] font-bold text-white font-mono leading-tight truncate max-w-[170px]"
-                          [title]="dev.name || dev.model">
-                        {{ dev.name || dev.model }}
-                      </h3>
-                      <p class="text-[9.5px] font-mono text-gray-400 truncate max-w-[170px]">
-                        ID: {{ dev.serial || dev.id }}
-                      </p>
+
+                    <!-- Platform Badge -->
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-tight border"
+                          [ngClass]="dev.platform === 'ios' ? 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40' : (dev.platform === 'android' ? (dev.authorized ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40' : 'bg-amber-950/70 text-amber-300 border-amber-500/40') : 'bg-white/5 text-gray-300 border-white/20')">
+                      {{ dev.platform === 'ios' ? 'USBMUXD (iOS)' : (dev.platform === 'android' ? ('ADB ' + (dev.state || 'OK') | uppercase) : 'UVC WEBCAM') }}
+                    </span>
+                  </div>
+
+                  <!-- Stream Tech Details Box -->
+                  <div class="bg-[#0b0e14]/80 border border-[#23293a] rounded p-2 mb-3 font-mono text-[10px] space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span class="text-gray-400">Estado de Flujo:</span>
+                      <span *ngIf="getDeviceAssignedCam(dev)" class="text-emerald-400 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        EN VIVO (30 FPS)
+                      </span>
+                      <span *ngIf="!getDeviceAssignedCam(dev)" class="text-gray-400 font-normal">
+                        EN ESPERA
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-between text-gray-300">
+                      <span class="text-gray-400">Puerto DroidCam:</span>
+                      <span>PORT {{ 4740 + (getDeviceAssignedCam(dev) || (idx + 1)) }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-gray-300">
+                      <span class="text-gray-400">Enlace Fisico:</span>
+                      <span class="text-cyan-300">{{ dev.platform === 'ios' ? 'Apple usbmuxd (0ms)' : (dev.platform === 'android' ? 'Tunel ADB USB (0ms)' : 'DirectShow Video') }}</span>
                     </div>
                   </div>
 
-                  <!-- Platform Badge -->
-                  <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-tight border"
-                        [ngClass]="dev.platform === 'ios' ? 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40' : (dev.platform === 'android' ? (dev.authorized ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40' : 'bg-amber-950/70 text-amber-300 border-amber-500/40') : 'bg-white/5 text-gray-300 border-white/20')">
-                    {{ dev.platform === 'ios' ? 'USBMUXD (iOS)' : (dev.platform === 'android' ? ('ADB ' + (dev.state || 'OK') | uppercase) : 'UVC WEBCAM') }}
+                  <!-- Camera Slot Routing Buttons -->
+                  <div class="space-y-1 mb-3 font-mono">
+                    <div class="flex items-center justify-between text-[9.5px] text-gray-400">
+                      <span>ASIGNAR A CAMARA (SLOT):</span>
+                      <span *ngIf="getDeviceAssignedCam(dev)" class="text-cyan-300 font-bold">
+                        CAM 0{{ getDeviceAssignedCam(dev) }} ACTIVA
+                      </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                      <button *ngFor="let camNum of [1, 2, 3]"
+                              (click)="onAssignDeviceToCamera(camNum, dev)"
+                              [title]="'Asignar este dispositivo a CAM 0' + camNum"
+                              class="py-1 px-1 rounded text-[10px] font-bold text-center tracking-tight transition-all cursor-pointer border flex items-center justify-center gap-0.5"
+                              [ngClass]="isDeviceAssignedToCam(dev, camNum) ? 'bg-cyan-600 text-white border-cyan-400 shadow-md ring-1 ring-cyan-400/50' : 'bg-[#0b0e14] hover:bg-white/10 text-gray-300 border-[#323b52]'">
+                        <span *ngIf="isDeviceAssignedToCam(dev, camNum)" class="material-symbols-outlined text-[11px]">check</span>
+                        <span>CAM 0{{ camNum }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Card Action Button -->
+                <div>
+                  <button *ngIf="getDeviceAssignedCam(dev)"
+                          (click)="onUnbindDroidCam(getDeviceAssignedCam(dev)!)"
+                          class="w-full py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-500/40 font-mono text-[9.5px] font-bold uppercase transition flex items-center justify-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-[12px]">link_off</span>
+                    <span>DESCONECTAR DE CAM 0{{ getDeviceAssignedCam(dev) }}</span>
+                  </button>
+                  <button *ngIf="!getDeviceAssignedCam(dev)"
+                          (click)="onAssignDeviceToCamera((idx % 3) + 1, dev)"
+                          class="w-full py-1 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white font-mono text-[9.5px] font-bold uppercase transition flex items-center justify-center gap-1 cursor-pointer shadow">
+                    <span class="material-symbols-outlined text-[12px]">link</span>
+                    <span>ENLAZAR A CAM 0{{ (idx % 3) + 1 }}</span>
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          </section>
+
+          <!-- SECTION 2: GUIA RAPIDA DE CONEXION USB -->
+          <section class="bg-[#161a24] border border-[#23293a] rounded-lg p-3.5 font-mono">
+            <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-[#23293a]">
+              <div class="flex items-center gap-2 text-gray-200 text-[11px] font-bold uppercase">
+                <span class="material-symbols-outlined text-cyan-400 text-[16px]">menu_book</span>
+                <span>GUIA RAPIDA DE ENLACE POR CABLE USB</span>
+              </div>
+              <!-- OS Selector Tabs -->
+              <div class="flex items-center gap-1 text-[10px]">
+                <button (click)="setGuideTab('android')"
+                        class="px-2 py-0.5 rounded transition cursor-pointer border"
+                        [ngClass]="selectedGuideTab() === 'android' ? 'bg-emerald-600 text-white border-emerald-400 font-bold' : 'bg-[#0b0e14] text-gray-400 border-white/10 hover:text-white'">
+                  ANDROID (ADB)
+                </button>
+                <button (click)="setGuideTab('ios')"
+                        class="px-2 py-0.5 rounded transition cursor-pointer border"
+                        [ngClass]="selectedGuideTab() === 'ios' ? 'bg-cyan-600 text-white border-cyan-400 font-bold' : 'bg-[#0b0e14] text-gray-400 border-white/10 hover:text-white'">
+                  APPLE IPHONE (USBMUXD)
+                </button>
+                <button (click)="setGuideTab('webcam')"
+                        class="px-2 py-0.5 rounded transition cursor-pointer border"
+                        [ngClass]="selectedGuideTab() === 'webcam' ? 'bg-gray-600 text-white border-gray-400 font-bold' : 'bg-[#0b0e14] text-gray-400 border-white/10 hover:text-white'">
+                  CAPTURADORAS USB
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Guide Content -->
+            <!-- Android Guide -->
+            <div *ngIf="selectedGuideTab() === 'android'" class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10.5px]">
+              <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
+                <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9px] border border-emerald-500/40">1</span>
+                  <span>Modo Desarrollador</span>
+                </div>
+                <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                  En tu Android ve a <b>Ajustes > Acerca del telefono</b> y pulsa 7 veces sobre <b>"Numero de compilacion"</b> hasta que aparezca activado.
+                </p>
+              </div>
+              <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
+                <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9px] border border-emerald-500/40">2</span>
+                  <span>Depuracion por USB</span>
+                </div>
+                <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                  Ve a <b>Ajustes > Sistema > Opciones de desarrollador</b> y activa el interruptor de <b>"Depuracion por USB"</b>.
+                </p>
+              </div>
+              <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
+                <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9px] border border-emerald-500/40">3</span>
+                  <span>Autorizar y DroidCam</span>
+                </div>
+                <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                  Conecta el cable USB, marca <b>"Permitir siempre"</b> en el mensaje emergente RSA y abre la app <b>DroidCam</b> antes de pulsar Enlazar.
+                </p>
+              </div>
+            </div>
+
+            <!-- iOS Guide -->
+            <div *ngIf="selectedGuideTab() === 'ios'" class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10.5px]">
+              <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
+                <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[9px] border border-cyan-500/40">1</span>
+                  <span>Conectar Cable Lightning / USB-C</span>
+                </div>
+                <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                  Conecta el iPhone con su cable original a un puerto USB de la PC. El servicio nativo <b>Apple Mobile Device / usbmuxd</b> lo reconocera inmediatamente.
+                </p>
+              </div>
+              <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
+                <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[9px] border border-cyan-500/40">2</span>
+                  <span>Confiar en esta computadora</span>
+                </div>
+                <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                  Desbloquea el iPhone y si aparece la alerta <b>¿Confiar en esta computadora?</b>, pulsa <b>"Confiar"</b> e introduce tu codigo de desbloqueo.
+                </p>
+              </div>
+              <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
+                <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[9px] border border-cyan-500/40">3</span>
+                  <span>Abrir App DroidCam</span>
+                </div>
+                <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                  Abre la app <b>DroidCam</b> al frente en tu iPhone. Una vez abierta, presiona <b>CAM 01</b> o <b>CAM 02</b> en la tarjeta superior para iniciar el flujo directo a 30 FPS.
+                </p>
+              </div>
+            </div>
+
+            <!-- Webcam Guide -->
+            <div *ngIf="selectedGuideTab() === 'webcam'" class="p-2.5 bg-[#0b0e14] border border-white/10 rounded text-[10px] font-sans text-gray-300">
+              Conecta tu capturadora de video HDMI (Cam Link, Elgato, UGREEN) o camara USB en un puerto USB 3.0 azul/rojo. TX-STUDIO la detectara inmediatamente sin necesidad de configurar puertos de red.
+            </div>
+          </section>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- PESTAÑA 2: HOTSPOT 5 GHz (WINDOWS MOBILE HOTSPOT) -->
+        <!-- ================================================================= -->
+        <div *ngIf="activeConnectionTab() === 'hotspot'" class="space-y-4 font-mono">
+          
+          <!-- Banner de Estado & Boton de Accion 1-Click -->
+          <div class="p-4 rounded-lg border bg-[#141824] flex flex-col md:flex-row items-center justify-between gap-4"
+               [ngClass]="webrtc.connectionMatrix()?.hotspot_5ghz?.active ? 'border-cyan-500/50 shadow-lg' : 'border-[#2d354a]'">
+            
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-lg flex items-center justify-center border"
+                   [ngClass]="webrtc.connectionMatrix()?.hotspot_5ghz?.active ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300' : 'bg-white/5 border-white/10 text-gray-400'">
+                <span class="material-symbols-outlined text-[24px]">wifi_tethering</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-white text-[12.5px] font-bold">ZONA CON COBERTURA MOVIL (WINDOWS 5 GHz)</h3>
+                  <span class="px-2 py-0.2 rounded text-[9.5px] font-bold"
+                        [ngClass]="webrtc.connectionMatrix()?.hotspot_5ghz?.active ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40'">
+                    {{ webrtc.connectionMatrix()?.hotspot_5ghz?.active ? 'ACTIVO (192.168.137.1)' : 'INACTIVO' }}
+                  </span>
+                </div>
+                <p class="text-[10px] text-gray-400 font-sans mt-0.5 max-w-xl leading-relaxed">
+                  Transmite video inalámbrico de alta velocidad sin depender del router de la sala. La laptop genera su propia red de 5 GHz dedicada exclusivamente para las cámaras móviles.
+                </p>
+              </div>
+            </div>
+
+            <!-- Boton 1-Click Configuracion Windows -->
+            <button (click)="onOpenWindowsHotspotSettings()"
+                    class="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0">
+              <span class="material-symbols-outlined text-[16px]">settings</span>
+              <span>ABRIR AJUSTES HOTSPOT WINDOWS</span>
+            </button>
+          </div>
+
+          <!-- Guia de Configuracion 5GHz en 3 Pasos -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-[10.5px]">
+            <div class="bg-[#141824] border border-[#23293a] rounded-lg p-3 space-y-1">
+              <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-[9px] border border-cyan-500/40">1</span>
+                <span>Activar Zona Cobertura</span>
+              </div>
+              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                Pulsa el botón de arriba para abrir los ajustes de Windows y enciende el interruptor <b>"Zona con cobertura inalámbrica móvil"</b>.
+              </p>
+            </div>
+
+            <div class="bg-[#141824] border border-[#23293a] rounded-lg p-3 space-y-1">
+              <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-[9px] border border-cyan-500/40">2</span>
+                <span>Elegir Banda: 5.0 GHz</span>
+              </div>
+              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                En <b>Propiedades</b>, pulsa <b>Editar</b> y en <b>Banda de red</b> selecciona <b>"5 GHz"</b>. Esto garantiza 0 interferencias y 60 FPS fluidos.
+              </p>
+            </div>
+
+            <div class="bg-[#141824] border border-[#23293a] rounded-lg p-3 space-y-1">
+              <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-[9px] border border-cyan-500/40">3</span>
+                <span>Conectar Celulares al Wi-Fi</span>
+              </div>
+              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
+                En cada celular, conéctate a la red Wi-Fi de la laptop. Luego escanea los códigos QR de abajo para abrir la cámara en el navegador.
+              </p>
+            </div>
+          </div>
+
+          <!-- Tarjetas QR y Enlaces por Cámara para Hotspot 5GHz -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-gray-300 text-[11px] font-bold uppercase">
+                ENLACE QR RÁPIDO PARA CÁMARAS VÍA HOTSPOT 5 GHz
+              </span>
+              <span class="text-cyan-400 text-[9.5px]">Ruta: http://192.168.137.1:8080/cam/X</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div *ngFor="let camNum of [1, 2, 3]"
+                   class="bg-[#141824] border border-[#262e42] rounded-lg p-3 flex flex-col items-center justify-between gap-2.5 shadow">
+                
+                <div class="w-full flex items-center justify-between text-[11px]">
+                  <span class="font-bold text-white">CAM 0{{ camNum }} (5GHz)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[8.5px] font-bold"
+                        [ngClass]="webrtc.cameras()[camNum - 1].isConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-white/5 text-gray-400'">
+                    {{ webrtc.cameras()[camNum - 1].isConnected ? 'CONECTADA' : 'OFFLINE' }}
                   </span>
                 </div>
 
-                <!-- Stream Tech Details Box -->
-                <div class="bg-[#0b0e14]/80 border border-[#23293a] rounded p-2 mb-3 font-mono text-[10px] space-y-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-400">Estado de Flujo:</span>
-                    <span *ngIf="getDeviceAssignedCam(dev)" class="text-emerald-400 font-bold flex items-center gap-1">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      EN VIVO (30 FPS)
-                    </span>
-                    <span *ngIf="!getDeviceAssignedCam(dev)" class="text-gray-400 font-normal">
-                      EN ESPERA
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between text-gray-300">
-                    <span class="text-gray-400">Puerto DroidCam:</span>
-                    <span>PORT {{ 4740 + (getDeviceAssignedCam(dev) || (idx + 1)) }}</span>
-                  </div>
-                  <div class="flex items-center justify-between text-gray-300">
-                    <span class="text-gray-400">Enlace Fisico:</span>
-                    <span class="text-cyan-300">{{ dev.platform === 'ios' ? 'Apple usbmuxd (0ms)' : (dev.platform === 'android' ? 'Tunel ADB USB (0ms)' : 'DirectShow Video') }}</span>
-                  </div>
+                <!-- QR Image -->
+                <div class="bg-white p-2 rounded-lg shadow-inner">
+                  <img [src]="getHotspotQrUrl(camNum)" alt="QR CAM 0{{ camNum }}" class="w-32 h-32 object-contain" />
                 </div>
 
-                <!-- Camera Slot Routing Buttons -->
-                <div class="space-y-1 mb-3 font-mono">
-                  <div class="flex items-center justify-between text-[9.5px] text-gray-400">
-                    <span>ASIGNAR A CAMARA (SLOT):</span>
-                    <span *ngIf="getDeviceAssignedCam(dev)" class="text-cyan-300 font-bold">
-                      CAM 0{{ getDeviceAssignedCam(dev) }} ACTIVA
-                    </span>
+                <div class="w-full space-y-1.5">
+                  <div class="text-[9px] text-gray-400 truncate bg-black/40 px-2 py-1 rounded border border-white/5 text-center">
+                    {{ getHotspotTargetUrl(camNum) }}
                   </div>
-                  <div class="grid grid-cols-3 gap-1.5">
-                    <button *ngFor="let camNum of [1, 2, 3]"
-                            (click)="onAssignDeviceToCamera(camNum, dev)"
-                            [title]="'Asignar este dispositivo a CAM 0' + camNum"
-                            class="py-1 px-1 rounded text-[10px] font-bold text-center tracking-tight transition-all cursor-pointer border flex items-center justify-center gap-0.5"
-                            [ngClass]="isDeviceAssignedToCam(dev, camNum) ? 'bg-cyan-600 text-white border-cyan-400 shadow-md ring-1 ring-cyan-400/50' : 'bg-[#0b0e14] hover:bg-white/10 text-gray-300 border-[#323b52]'">
-                      <span *ngIf="isDeviceAssignedToCam(dev, camNum)" class="material-symbols-outlined text-[11px]">check</span>
-                      <span>CAM 0{{ camNum }}</span>
-                    </button>
-                  </div>
+                  <button (click)="copyCamUrl(getHotspotTargetUrl(camNum))"
+                          class="w-full py-1 rounded bg-[#202638] hover:bg-[#2c354d] text-cyan-300 border border-[#343e59] text-[9.5px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-[12px]">content_copy</span>
+                    <span>COPIAR ENLACE CAM 0{{ camNum }}</span>
+                  </button>
                 </div>
+
               </div>
+            </div>
+          </div>
 
-              <!-- Card Action Button -->
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- PESTAÑA 3: WI-FI NORMAL (LAN LOCAL) -->
+        <!-- ================================================================= -->
+        <div *ngIf="activeConnectionTab() === 'wifi'" class="space-y-4 font-mono">
+          
+          <!-- Banner Informativo LAN -->
+          <div class="p-4 rounded-lg border border-[#2d354a] bg-[#141824] flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
+                <span class="material-symbols-outlined text-[24px]">wifi</span>
+              </div>
               <div>
-                <button *ngIf="getDeviceAssignedCam(dev)"
-                        (click)="onUnbindDroidCam(getDeviceAssignedCam(dev)!)"
-                        class="w-full py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-500/40 font-mono text-[9.5px] font-bold uppercase transition flex items-center justify-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined text-[12px]">link_off</span>
-                  <span>DESCONECTAR DE CAM 0{{ getDeviceAssignedCam(dev) }}</span>
-                </button>
-                <button *ngIf="!getDeviceAssignedCam(dev)"
-                        (click)="onAssignDeviceToCamera((idx % 3) + 1, dev)"
-                        class="w-full py-1 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white font-mono text-[9.5px] font-bold uppercase transition flex items-center justify-center gap-1 cursor-pointer shadow">
-                  <span class="material-symbols-outlined text-[12px]">link</span>
-                  <span>ENLAZAR A CAM 0{{ (idx % 3) + 1 }}</span>
-                </button>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-white text-[12.5px] font-bold">RED WI-FI LOCAL DEL ESTUDIO / SALA</h3>
+                  <span class="px-2 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9.5px] font-bold">
+                    IP: {{ getPrimaryIp() || 'LAN ACTIVA' }}
+                  </span>
+                </div>
+                <p class="text-[10px] text-gray-400 font-sans mt-0.5 max-w-xl leading-relaxed">
+                  Conecta los celulares al mismo router Wi-Fi de la sala. Para mejor estabilidad y evitar retrasos, asegúrate de que tanto la laptop como los celulares estén en la red de 5 GHz del router.
+                </p>
               </div>
-
             </div>
 
-          </div>
-        </section>
-
-        <!-- SECTION 2: GUIA RAPIDA DE CONEXION USB -->
-        <section class="bg-[#161a24] border border-[#23293a] rounded-lg p-3.5 font-mono">
-          <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-[#23293a]">
-            <div class="flex items-center gap-2 text-gray-200 text-[11px] font-bold uppercase">
-              <span class="material-symbols-outlined text-cyan-400 text-[16px]">menu_book</span>
-              <span>GUIA RAPIDA DE ENLACE POR CABLE USB</span>
-            </div>
-            <!-- OS Selector Tabs -->
-            <div class="flex items-center gap-1 text-[10px]">
-              <button (click)="setGuideTab('android')"
-                      class="px-2 py-0.5 rounded transition cursor-pointer border"
-                      [ngClass]="selectedGuideTab() === 'android' ? 'bg-emerald-600 text-white border-emerald-400 font-bold' : 'bg-[#0b0e14] text-gray-400 border-white/10 hover:text-white'">
-                ANDROID (ADB)
-              </button>
-              <button (click)="setGuideTab('ios')"
-                      class="px-2 py-0.5 rounded transition cursor-pointer border"
-                      [ngClass]="selectedGuideTab() === 'ios' ? 'bg-cyan-600 text-white border-cyan-400 font-bold' : 'bg-[#0b0e14] text-gray-400 border-white/10 hover:text-white'">
-                APPLE IPHONE (USBMUXD)
-              </button>
-              <button (click)="setGuideTab('webcam')"
-                      class="px-2 py-0.5 rounded transition cursor-pointer border"
-                      [ngClass]="selectedGuideTab() === 'webcam' ? 'bg-gray-600 text-white border-gray-400 font-bold' : 'bg-[#0b0e14] text-gray-400 border-white/10 hover:text-white'">
-                CAPTURADORAS USB
-              </button>
-            </div>
+            <button (click)="onRefreshConnections()" [disabled]="webrtc.isRefreshingConnections()"
+                    class="px-3.5 py-2 rounded-lg bg-[#202638] hover:bg-[#2c354d] text-white text-[11px] font-bold border border-[#343e59] transition-all shadow flex items-center gap-1.5 cursor-pointer shrink-0">
+              <span class="material-symbols-outlined text-[14px]" [ngClass]="webrtc.isRefreshingConnections() ? 'animate-spin' : ''">refresh</span>
+              <span>VERIFICAR IP LOCAL</span>
+            </button>
           </div>
 
-          <!-- Dynamic Guide Content -->
-          <!-- Android Guide -->
-          <div *ngIf="selectedGuideTab() === 'android'" class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10.5px]">
-            <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
-              <div class="text-emerald-400 font-bold flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9px] border border-emerald-500/40">1</span>
-                <span>Modo Desarrollador</span>
-              </div>
-              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
-                En tu Android ve a <b>Ajustes > Acerca del telefono</b> y pulsa 7 veces consecutivas sobre <b>"Numero de compilacion"</b> hasta que aparezca el aviso de activado.
-              </p>
+          <!-- Tarjetas QR y Enlaces por Cámara para Wi-Fi LAN -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-gray-300 text-[11px] font-bold uppercase">
+                CÓDIGOS QR PARA CONEXIÓN EN RED LOCAL (WI-FI)
+              </span>
+              <span class="text-amber-400 text-[9.5px]">Escanea directamente con la cámara del celular</span>
             </div>
-            <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
-              <div class="text-emerald-400 font-bold flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9px] border border-emerald-500/40">2</span>
-                <span>Depuracion por USB</span>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div *ngFor="let camNum of [1, 2, 3]"
+                   class="bg-[#141824] border border-[#262e42] rounded-lg p-3 flex flex-col items-center justify-between gap-2.5 shadow">
+                
+                <div class="w-full flex items-center justify-between text-[11px]">
+                  <span class="font-bold text-white">CAM 0{{ camNum }} (WI-FI LAN)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[8.5px] font-bold"
+                        [ngClass]="webrtc.cameras()[camNum - 1].isConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-white/5 text-gray-400'">
+                    {{ webrtc.cameras()[camNum - 1].isConnected ? 'CONECTADA' : 'OFFLINE' }}
+                  </span>
+                </div>
+
+                <!-- QR Image -->
+                <div class="bg-white p-2 rounded-lg shadow-inner">
+                  <img [src]="getWifiQrUrl(camNum)" alt="QR Wi-Fi CAM 0{{ camNum }}" class="w-32 h-32 object-contain" />
+                </div>
+
+                <div class="w-full space-y-1.5">
+                  <div class="text-[9px] text-gray-400 truncate bg-black/40 px-2 py-1 rounded border border-white/5 text-center">
+                    {{ getWifiTargetUrl(camNum) }}
+                  </div>
+                  <button (click)="copyCamUrl(getWifiTargetUrl(camNum))"
+                          class="w-full py-1 rounded bg-[#202638] hover:bg-[#2c354d] text-amber-300 border border-[#343e59] text-[9.5px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-[12px]">content_copy</span>
+                    <span>COPIAR ENLACE CAM 0{{ camNum }}</span>
+                  </button>
+                </div>
+
               </div>
-              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
-                Ve a <b>Ajustes > Sistema > Opciones de desarrollador</b> y activa el interruptor de <b>"Depuracion por USB"</b>.
-              </p>
-            </div>
-            <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
-              <div class="text-emerald-400 font-bold flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[9px] border border-emerald-500/40">3</span>
-                <span>Autorizar y DroidCam</span>
-              </div>
-              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
-                Conecta el cable USB, marca <b>"Permitir siempre"</b> en el mensaje emergente RSA y abre la app <b>DroidCam</b> en tu celular antes de pulsar Enlazar.
-              </p>
             </div>
           </div>
 
-          <!-- iOS Guide -->
-          <div *ngIf="selectedGuideTab() === 'ios'" class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10.5px]">
-            <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
-              <div class="text-cyan-400 font-bold flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[9px] border border-cyan-500/40">1</span>
-                <span>Confiar en la PC</span>
-              </div>
-              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
-                Conecta tu iPhone por cable Lightning o USB-C a la PC. Si aparece el cuadro de dialogo, pulsa <b>"Confiar en esta computadora"</b> e ingresa tu codigo de desbloqueo.
-              </p>
-            </div>
-            <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
-              <div class="text-cyan-400 font-bold flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[9px] border border-cyan-500/40">2</span>
-                <span>Pantalla Desbloqueada</span>
-              </div>
-              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
-                Manten la pantalla del iPhone encendida y desbloqueada. El sistema iOS suspende la captura de video si el telefono entra en reposo o pantalla negra.
-              </p>
-            </div>
-            <div class="bg-[#0b0e14] border border-white/10 rounded p-2.5 space-y-1">
-              <div class="text-cyan-400 font-bold flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[9px] border border-cyan-500/40">3</span>
-                <span>Abrir App DroidCam</span>
-              </div>
-              <p class="text-gray-400 font-sans text-[10px] leading-relaxed">
-                Abre la aplicacion <b>DroidCam</b> al frente en tu iPhone. Una vez abierta, presiona <b>CAM 01</b> o <b>CAM 02</b> en la tarjeta superior para iniciar el flujo directo a 30 FPS.
-              </p>
-            </div>
-          </div>
-
-          <!-- Webcam Guide -->
-          <div *ngIf="selectedGuideTab() === 'webcam'" class="p-2.5 bg-[#0b0e14] border border-white/10 rounded text-[10px] font-sans text-gray-300">
-            Conecta tu capturadora de video HDMI (Cam Link, Elgato, UGREEN) o camara USB en un puerto USB 3.0 azul/rojo. TX-STUDIO la detectara inmediatamente sin necesidad de configurar puertos de red.
-          </div>
-        </section>
+        </div>
 
       </main>
 
@@ -2202,7 +2347,7 @@
           <button (click)="onRefreshConnections()" [disabled]="webrtc.isRefreshingConnections()"
                   class="flex items-center gap-1.5 text-gray-300 hover:text-white px-2.5 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[13px]" [ngClass]="webrtc.isRefreshingConnections() ? 'animate-spin' : ''">refresh</span>
-            <span>{{ webrtc.isRefreshingConnections() ? 'ESCANEANDO...' : 'RE-ESCANEAR PUERTOS USB' }}</span>
+            <span>{{ webrtc.isRefreshingConnections() ? 'ESCANEANDO...' : 'RE-ESCANEAR CONEXIONES' }}</span>
           </button>
 
           <button (click)="closeQrModal()"

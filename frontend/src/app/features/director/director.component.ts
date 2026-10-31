@@ -70,7 +70,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   public readonly toastMessage = signal<string | null>(null);
   public readonly isQrModalOpen = signal<boolean>(false);
-  public readonly activeConnectionTab = signal<'usb' | 'tethering' | 'hotspot' | 'hybrid'>('usb');
+  public readonly activeConnectionTab = signal<'usb' | 'hotspot' | 'wifi' | 'tethering' | 'hybrid'>('usb');
   public readonly usbQrMode = signal<'auto' | 'localhost' | 'ip'>('auto');
   private connectionPollInterval: any = null;
   public readonly isTutorialOpen = signal<boolean>(false);
@@ -594,7 +594,7 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     return null;
   }
 
-  public openQrModal(tab: 'usb' | 'tethering' | 'hotspot' | 'hybrid' = 'usb'): void {
+  public openQrModal(tab: 'usb' | 'hotspot' | 'wifi' | 'tethering' | 'hybrid' = 'usb'): void {
     this.activeConnectionTab.set(tab);
     this.isQrModalOpen.set(true);
     this.webrtc.fetchConnectionMatrix(true);
@@ -618,8 +618,37 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  public setConnectionTab(tab: 'usb' | 'tethering' | 'hotspot' | 'hybrid'): void {
+  public setConnectionTab(tab: 'usb' | 'hotspot' | 'wifi' | 'tethering' | 'hybrid'): void {
     this.activeConnectionTab.set(tab);
+  }
+
+    public async onOpenWindowsHotspotSettings(): Promise<void> {
+    const ok = await this.webrtc.openWindowsHotspotSettings();
+    if (ok) {
+      this.showToast('Abriendo configuracion de Zona con Cobertura Movil en Windows...');
+      setTimeout(() => this.webrtc.fetchConnectionMatrix(true), 2500);
+    } else {
+      this.showAlert('Por favor abre Ajustes > Red e Internet > Zona con cobertura movil en Windows.');
+    }
+  }
+
+  public getWifiQrUrl(camId: number): string {
+    return this.getCustomQrUrl(this.getWifiTargetUrl(camId));
+  }
+
+  public getWifiTargetUrl(camId: number): string {
+    const matrix = this.webrtc.connectionMatrix();
+    const ip = (matrix as any)?.primary_ip || (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
+    const port = matrix?.port || (typeof window !== 'undefined' && window.location.port ? window.location.port : '8080');
+    const protocol = (typeof window !== 'undefined' && window.location.protocol) ? window.location.protocol : 'http:';
+    return `${protocol}//${ip}:${port}/cam/${camId}`;
+  }
+
+  public getHotspotTargetUrl(camId: number): string {
+    const matrix = this.webrtc.connectionMatrix();
+    const ip = matrix?.hotspot_5ghz?.ip || '192.168.137.1';
+    const port = matrix?.port || 8080;
+    return `http://${ip}:${port}/cam/${camId}`;
   }
 
   public toggleUsbQrMode(): void {
@@ -673,6 +702,14 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   public onSelectCameraRoute(camId: number, routeId: string): void {
     this.webrtc.setCameraRoute(camId, routeId);
     this.showToast(`CAM 0${camId} vinculada a la ruta seleccionada.`);
+  }
+
+    public copyCamUrl(url: string): void {
+    this.onCopyUrl(url);
+  }
+
+  public getPrimaryIp(): string {
+    return (this.webrtc.connectionMatrix() as any)?.primary_ip || (typeof window !== 'undefined' ? window.location.hostname : '192.168.1.X');
   }
 
   public onCopyUrl(url: string): void {
