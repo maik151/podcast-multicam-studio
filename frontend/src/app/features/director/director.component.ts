@@ -226,12 +226,12 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.checkFirstTimeTutorial();
     await this.webrtc.fetchNetworkInfo();
-    await this.webrtc.fetchConnectionMatrix();
-    await this.webrtc.fetchDroidCamStatus();
+    await this.webrtc.fetchConnectionMatrix(true);
+    await this.webrtc.fetchDroidCamStatus(true);
     this.connectionInterval = window.setInterval(() => {
-      this.webrtc.fetchDroidCamStatus();
+      this.webrtc.fetchDroidCamStatus(true);
       if (this.isQrModalOpen()) {
-        this.webrtc.fetchConnectionMatrix();
+        this.webrtc.fetchConnectionMatrix(true);
       }
     }, 3000);
     this.webrtc.connectSignalingHub();
@@ -363,7 +363,9 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public async onConnectDroidCam(camId: number, deviceId?: string): Promise<void> {
-    const res = await this.webrtc.bindDroidCam(camId, deviceId);
+    const dev = this.webrtc.droidcamStatus()?.devices?.find(d => d.id === deviceId || d.serial === deviceId);
+    const platform = (dev?.platform === 'ios') ? 'ios' : 'android';
+    const res = await this.webrtc.bindDroidCam(camId, deviceId, platform);
     if (res.success) {
       this.refreshDroidCamFeed(camId);
       this.showToast(res.message);
@@ -540,11 +542,11 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   public openQrModal(tab: 'usb' | 'tethering' | 'hotspot' | 'hybrid' = 'usb'): void {
     this.activeConnectionTab.set(tab);
     this.isQrModalOpen.set(true);
-    this.webrtc.fetchConnectionMatrix();
+    this.webrtc.fetchConnectionMatrix(true);
     if (this.connectionPollInterval) clearInterval(this.connectionPollInterval);
     this.connectionPollInterval = setInterval(() => {
       if (this.isQrModalOpen()) {
-        this.webrtc.fetchConnectionMatrix();
+        this.webrtc.fetchConnectionMatrix(true);
       } else {
         clearInterval(this.connectionPollInterval);
       }
@@ -1866,10 +1868,24 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
           const buffer = lastGoodFrames[camId];
 
           if (hasImgFrames && liveImg) {
-            ctx.drawImage(liveImg, 0, 0, width, height);
-            if (buffer) {
-              buffer.ctx.drawImage(liveImg, 0, 0, buffer.canvas.width, buffer.canvas.height);
-              buffer.lastSeen = now;
+            if (this.isCropWatermarkActive() && liveImg.naturalWidth && liveImg.naturalHeight) {
+              const nw = liveImg.naturalWidth;
+              const nh = liveImg.naturalHeight;
+              const sx = nw * 0.01;
+              const sy = nh * 0.08;
+              const sw = nw * 0.94;
+              const sh = nh * 0.90;
+              ctx.drawImage(liveImg, sx, sy, sw, sh, 0, 0, width, height);
+              if (buffer) {
+                buffer.ctx.drawImage(liveImg, sx, sy, sw, sh, 0, 0, buffer.canvas.width, buffer.canvas.height);
+                buffer.lastSeen = now;
+              }
+            } else {
+              ctx.drawImage(liveImg, 0, 0, width, height);
+              if (buffer) {
+                buffer.ctx.drawImage(liveImg, 0, 0, buffer.canvas.width, buffer.canvas.height);
+                buffer.lastSeen = now;
+              }
             }
           } else if (hasFrames) {
             if (liveVid.paused) {

@@ -1,5 +1,6 @@
 mod http;
 mod ingest;
+mod logger;
 mod slot;
 mod usbmuxd;
 
@@ -10,6 +11,9 @@ use std::time::Duration;
 use slot::CameraSlot;
 
 fn main() {
+    logger::Logger::init();
+    logger::info("SYSTEM", "Iniciando TX-VIDEO-HUB // Motor Nativo en Rust");
+
     println!("============================================================");
     println!("   TX-VIDEO-HUB // MOTOR NATIVO DE TRANSMISIÓN DE VIDEO     ");
     println!("   Cero Latencia | Zero-Copy MJPEG 60 FPS | Android & iOS   ");
@@ -34,7 +38,7 @@ fn main() {
     // Iniciar el servidor HTTP multihilo de ultra-alto rendimiento en puerto 9100
     http::start_http_server(Arc::clone(&slots));
 
-    println!("[tx-video-hub] Listo para recibir conexiones en http://127.0.0.1:9100");
+    logger::info("SYSTEM", "TX-VIDEO-HUB listo y escuchando en http://0.0.0.0:9100");
 
     // Mantener vivo el proceso principal
     loop {

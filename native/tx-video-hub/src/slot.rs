@@ -7,13 +7,15 @@ pub struct CameraSlot {
     pub id: usize,
     pub target_port: Mutex<u16>,
     pub platform: Mutex<String>,
+    pub device_id: Mutex<Option<u32>>,
     pub is_connected: AtomicBool,
     pub frame_seq: AtomicU64,
-    pub fps_x10: AtomicU32, // FPS multiplicado por 10 (ej. 598 = 59.8 fps)
+    pub fps_x10: AtomicU32,
     pub latest_frame: Mutex<Option<Arc<Vec<u8>>>>,
     pub condvar: Condvar,
     pub frame_count: AtomicU64,
     pub last_fps_calc: Mutex<Instant>,
+    pub force_reconnect: AtomicBool,
 }
 
 impl CameraSlot {
@@ -22,6 +24,7 @@ impl CameraSlot {
             id,
             target_port: Mutex::new(default_port),
             platform: Mutex::new("android".to_string()),
+            device_id: Mutex::new(None),
             is_connected: AtomicBool::new(false),
             frame_seq: AtomicU64::new(0),
             fps_x10: AtomicU32::new(0),
@@ -29,11 +32,11 @@ impl CameraSlot {
             condvar: Condvar::new(),
             frame_count: AtomicU64::new(0),
             last_fps_calc: Mutex::new(Instant::now()),
+            force_reconnect: AtomicBool::new(false),
         }
     }
 
     /// Publica un nuevo fotograma JPEG completo en el slot.
-    /// Si un cliente está leyendo lento, el fotograma anterior se sobreescribe inmediatamente (Zero-Latency).
     pub fn push_frame(&self, frame: Vec<u8>) {
         let frame_arc = Arc::new(frame);
         {
@@ -43,7 +46,6 @@ impl CameraSlot {
         self.frame_seq.fetch_add(1, Ordering::SeqCst);
         self.is_connected.store(true, Ordering::SeqCst);
 
-        // Cálculo de FPS dinámico cada segundo
         let count = self.frame_count.fetch_add(1, Ordering::Relaxed) + 1;
         let mut last_calc = self.last_fps_calc.lock().unwrap();
         let elapsed = last_calc.elapsed().as_secs_f64();
@@ -54,13 +56,16 @@ impl CameraSlot {
             *last_calc = Instant::now();
         }
 
-        // Notificar a todos los clientes HTTP que hay un fotograma listo
         self.condvar.notify_all();
     }
 
-    /// Marca el slot como desconectado y limpia el fotograma
     pub fn set_disconnected(&self) {
-        self.is_connected.store(false, Ordering::SeqCst);
+        if self.is_connected.swap(false, Ordering::SeqCst) {
+            crate::logger::info(
+                &format!("CAM-{}", self.id),
+                "Cámara desconectada o esperando flujo"
+            );
+        }
         self.fps_x10.store(0, Ordering::Relaxed);
         let mut guard = self.latest_frame.lock().unwrap();
         *guard = None;
@@ -73,6 +78,7 @@ impl CameraSlot {
     pub fn set_port(&self, port: u16) {
         let mut p = self.target_port.lock().unwrap();
         *p = port;
+        self.force_reconnect.store(true, Ordering::SeqCst);
     }
 
     pub fn get_platform(&self) -> String {
@@ -82,5 +88,16 @@ impl CameraSlot {
     pub fn set_platform(&self, plat: &str) {
         let mut p = self.platform.lock().unwrap();
         *p = plat.to_string();
+        self.force_reconnect.store(true, Ordering::SeqCst);
+    }
+
+    pub fn get_device_id(&self) -> Option<u32> {
+        *self.device_id.lock().unwrap()
+    }
+
+    pub fn set_device_id(&self, dev_id: Option<u32>) {
+        let mut d = self.device_id.lock().unwrap();
+        *d = dev_id;
+        self.force_reconnect.store(true, Ordering::SeqCst);
     }
 }

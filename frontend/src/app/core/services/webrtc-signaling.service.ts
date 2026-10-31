@@ -72,8 +72,10 @@ export class WebRtcSignalingService {
     return this.baseUrl();
   }
 
-  public async fetchConnectionMatrix(): Promise<ConnectionMatrix | null> {
-    this.isRefreshingConnections.set(true);
+  public async fetchConnectionMatrix(silent: boolean = false): Promise<ConnectionMatrix | null> {
+    if (!silent) {
+      this.isRefreshingConnections.set(true);
+    }
     try {
       const res = await fetch('/api/connections');
       if (res.ok) {
@@ -86,7 +88,9 @@ export class WebRtcSignalingService {
     } catch (e) {
       console.warn('[WebRtcService] Error consultando /api/connections:', e);
     } finally {
-      this.isRefreshingConnections.set(false);
+      if (!silent) {
+        this.isRefreshingConnections.set(false);
+      }
     }
     return null;
   }
@@ -96,7 +100,7 @@ export class WebRtcSignalingService {
     try {
       const res = await fetch('/api/connections/adb-reverse', { method: 'POST' });
       const data = await res.json();
-      await this.fetchConnectionMatrix();
+      await this.fetchConnectionMatrix(true);
       return { success: Boolean(data.success), message: data.message || 'Comando ADB procesado' };
     } catch (e: any) {
       return { success: false, message: `Error conectando con ADB: ${e?.message || e}` };
@@ -115,8 +119,10 @@ export class WebRtcSignalingService {
     }
   }
 
-  public async fetchDroidCamStatus(): Promise<DroidCamStatusResponse | null> {
-    this.isRefreshingDroidCam.set(true);
+  public async fetchDroidCamStatus(silent: boolean = false): Promise<DroidCamStatusResponse | null> {
+    if (!silent) {
+      this.isRefreshingDroidCam.set(true);
+    }
     try {
       const res = await fetch('/api/droidcam/devices');
       if (res.ok) {
@@ -142,7 +148,9 @@ export class WebRtcSignalingService {
     } catch (e) {
       console.warn('[WebRtcService] Error consultando /api/droidcam/devices:', e);
     } finally {
-      this.isRefreshingDroidCam.set(false);
+      if (!silent) {
+        this.isRefreshingDroidCam.set(false);
+      }
     }
     return null;
   }

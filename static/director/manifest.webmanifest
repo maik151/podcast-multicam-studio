@@ -1,0 +1,31 @@
+{
+  "name": "TX-STUDIO // Professional Multicam Broadcast Suite",
+  "short_name": "TX-STUDIO",
+  "description": "Consola de dirección multicámara WebRTC P2P y cliente de cámara móvil profesional para producción de podcasts.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090b0e",
+  "theme_color": "#ff6200",
+  "icons": [
+    {
+      "src": "/tx_studio_Isotipo_naranja.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/tx_studio_Isotipo_naranja.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/tx_studio_Isotipo_naranja.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -883,7 +883,8 @@
              [src]="getDroidCamFeedUrl(cam.id)"
              (error)="onDroidCamFeedError(cam.id)"
              class="w-full h-full object-cover transition-transform duration-300"
-             [style.transform]="isCropWatermarkActive() ? 'scale(1.06)' : 'none'"
+             [style.transform]="isCropWatermarkActive() ? 'scale(1.10) translate(-1%, 2%)' : 'none'"
+             [style.transformOrigin]="'bottom left'"
              [alt]="'DROIDCAM USB FEED CAM 0' + cam.id">
 
         <!-- UI cuando está en Modo DROIDCAM USB pero NO está transmitiendo aún -->

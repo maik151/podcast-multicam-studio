@@ -90,7 +90,7 @@ class DroidCamController:
                             content_type="text/plain"
                         )
 
-                    content_type = resp.headers.get("Content-Type", "multipart/x-mixed-replace; boundary=--txframe")
+                    content_type = resp.headers.get("Content-Type", "multipart/x-mixed-replace; boundary=txframe")
                     headers = {
                         "Content-Type": content_type,
                         "Cache-Control": "no-cache, no-store, must-revalidate",

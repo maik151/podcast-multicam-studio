@@ -32,6 +32,35 @@ DROIDCAM_CAMERA_PORTS = {
 DROIDCAM_DEVICE_DEFAULT_PORT = 4747
 
 
+
+def _notify_tx_video_hub(cam_id: int, platform: str, port: int, device_id: any = None):
+    """Notifica al motor de video en Rust (puerto 9100) la nueva asignación de slot."""
+    try:
+        url = "http://127.0.0.1:9100/bind"
+        payload = json.dumps({
+            "cam_id": cam_id,
+            "platform": platform,
+            "port": port,
+            "device_id": device_id
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=0.8) as resp:
+            pass
+    except Exception:
+        pass
+
+def _log_backend_event(tag: str, msg: str):
+    """Registra eventos de conexión en Logs/backend.log con timestamp."""
+    try:
+        log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "Logs")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "backend.log")
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"[{ts}] [INFO] [{tag}] {msg}\n")
+    except Exception:
+        pass
+
 class UsbMuxForwarder:
     """Cliente nativo en Python puro para comunicarse con el servicio Apple usbmuxd en Windows."""
     
@@ -279,6 +308,10 @@ class DroidCamBridgeManager:
         local_port = self.camera_ports[cam_id]
 
         with self._lock:
+            # Auto-detect iOS
+            ios_devs = UsbMuxForwarder.list_ios_devices()
+            if any(str(d.get('serial')) == device_id or str(d.get('device_id')) == device_id for d in ios_devs):
+                platform = 'ios'
             # Si la cámara ya tenía un enlace previo, liberarlo primero
             self._unbind_unlocked(cam_id)
 
@@ -350,6 +383,8 @@ class DroidCamBridgeManager:
                         "bound_at": time.time()
                     }
                     self.active_bindings[cam_id] = binding_info
+                    _notify_tx_video_hub(cam_id, "android", local_port, None)
+                    _log_backend_event("ANDROID_USB", f"CAM 0{cam_id} vinculada a {device_id} en puerto {local_port}")
                     msg = f"CAM 0{cam_id} enlazada por cable USB a Android ({device_id}) en puerto {local_port} -> cel:{target_port}."
                     if not port_connected:
                         msg += " (Abre la app DroidCam en tu cel si no ves video inmediato)."
@@ -374,8 +409,9 @@ class DroidCamBridgeManager:
 
                 mux_dev_id = matched["device_id"]
                 try:
-                    thread = UsbMuxForwarder.start_ios_tunnel(local_port, mux_dev_id, DROIDCAM_DEVICE_DEFAULT_PORT)
-                    self.ios_tunnel_threads[cam_id] = thread
+                    # En lugar de competir por el socket usbmuxd, asignamos directamente a tx-video-hub (Rust)
+                    _notify_tx_video_hub(cam_id, "ios", local_port, mux_dev_id)
+                    _log_backend_event("IOS_USB", f"CAM 0{cam_id} vinculada a iPhone ({matched.get('name')}, dev_id={mux_dev_id}) en tx-video-hub")
 
                     binding_info = {
                         "cam_id": cam_id,
@@ -385,7 +421,7 @@ class DroidCamBridgeManager:
                         "model": matched.get("model", "iPhone"),
                         "local_port": local_port,
                         "target_port": DROIDCAM_DEVICE_DEFAULT_PORT,
-                        "stream_url": f"http://127.0.0.1:{local_port}/video",
+                        "stream_url": f"http://127.0.0.1:9100/feed/{cam_id}",
                         "proxy_url": f"/api/droidcam/feed/{cam_id}",
                         "status": "FORWARDED",
                         "bound_at": time.time()
@@ -394,10 +430,10 @@ class DroidCamBridgeManager:
                     return {
                         "success": True,
                         "binding": binding_info,
-                        "message": f"CAM 0{cam_id} enlazada por cable USB a iPhone ({matched.get('name')}) en puerto {local_port}."
+                        "message": f"CAM 0{cam_id} enlazada por cable USB a iPhone ({matched.get('name')})."
                     }
                 except Exception as e:
-                    return {"success": False, "message": f"Error al iniciar túnel usbmuxd con iPhone: {e}"}
+                    return {"success": False, "message": f"Error al enlazar iPhone en tx-video-hub: {e}"}
 
             else:
                 return {"success": False, "message": f"Plataforma '{platform}' no soportada (use 'android' o 'ios')."}
