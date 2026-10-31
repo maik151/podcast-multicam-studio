@@ -589,7 +589,7 @@
 
           <!-- UPPER SECTION: PROGRAM BUS COMPACTO 16:9 (50% altura para equilibrar con panel inferior) -->
 
-          <div class="h-[50%] flex flex-col bg-surface-container-lowest rounded border border-secondary-container/80 overflow-hidden shadow">
+          <div class="h-[62%] flex flex-col bg-surface-container-lowest rounded border border-secondary-container/80 overflow-hidden shadow">
 
             <!-- PGM Header -->
 
@@ -685,15 +685,15 @@
 
           <!-- LOWER SECTION: AUDIO STRIP + LIVE SWITCHER (57% altura disponible) -->
 
-          <div class="flex-1 min-h-0 flex gap-1.5 overflow-hidden">
+          <div class="flex-1 min-h-0 flex gap-2 overflow-hidden justify-center items-stretch px-1">
 
             <!-- Pro Audio Channel Strip -->
 
-            <ng-container *ngTemplateOutlet="audioChannelStripTpl; context: { widthClass: 'w-[48%]' }"></ng-container>
+            <ng-container *ngTemplateOutlet="audioChannelStripTpl; context: { widthClass: 'w-[42%] max-w-[480px]' }"></ng-container>
 
             <!-- Live Switcher & Transitions -->
 
-            <ng-container *ngTemplateOutlet="switcherConsoleTpl; context: { widthClass: 'flex-1' }"></ng-container>
+            <ng-container *ngTemplateOutlet="switcherConsoleTpl; context: { widthClass: 'w-[56%] max-w-[620px]' }"></ng-container>
 
           </div>
 
@@ -719,9 +719,9 @@
 
   <ng-template #isoCameraCardsTpl let-layout="layout">
 
-    <div *ngFor="let cam of webrtc.cameras().slice(0, 3)"
+    <div *ngFor="let cam of webrtc.cameras().slice(0, 3); trackBy: trackByCamId"
 
-         class="flex flex-col bg-surface-container-low rounded border transition-all duration-150 overflow-hidden"
+         class="flex flex-col bg-surface-container-low rounded border transition-all duration-150 relative"
 
          [ngClass]="{
 
@@ -734,7 +734,7 @@
          }">
 
       <!-- Card Header: Tally, Cam Title, Battery & Controls -->
-      <div class="h-6 px-1 flex items-center justify-between bg-surface-container shrink-0 text-[10px] font-mono select-none overflow-hidden">
+      <div class="h-6 px-1 flex items-center justify-between bg-surface-container shrink-0 text-[10px] font-mono select-none overflow-visible relative z-30">
         <div class="flex items-center gap-1 min-w-0 flex-nowrap">
           <span class="w-1.5 h-1.5 rounded-full shrink-0"
                 [ngClass]="{
@@ -2146,7 +2146,7 @@
                 </span>
               </div>
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
-                <img [src]="getCustomQrUrl(getUsbQrTargetUrl(cam.id))"
+                <img [src]="getUsbHubQrUrl(cam.id)"
                      loading="eager"
                      decoding="sync"
                      class="w-36 h-36 object-contain" [alt]="'QR USB CAM 0' + cam.id">
@@ -2248,7 +2248,7 @@
                 </span>
               </div>
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
-                <img [src]="getCustomQrUrl('https://' + (webrtc.connectionMatrix()?.android_rndis?.ip || webrtc.connectionMatrix()?.apple_usb?.ip || webrtc.connectionMatrix()?.wifi_lan?.ip || 'localhost') + ':' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
+                <img [src]="getTetheringQrUrl(cam.id)"
                      class="w-36 h-36 object-contain" [alt]="'QR TETHERING CAM 0' + cam.id">
               </div>
               <div class="w-full flex items-center justify-between gap-1 pt-1 font-mono text-[9.5px]">
@@ -2326,7 +2326,7 @@
                 </span>
               </div>
               <div class="p-2 bg-white rounded-lg shadow-xl flex items-center justify-center border border-white/30">
-                <img [src]="getCustomQrUrl('https://' + (webrtc.connectionMatrix()?.hotspot_5ghz?.ip || '192.168.137.1') + ':' + (webrtc.connectionMatrix()?.port || 8443) + '/cam/' + cam.id)"
+                <img [src]="getHotspotQrUrl(cam.id)"
                      class="w-36 h-36 object-contain" [alt]="'QR HOTSPOT CAM 0' + cam.id">
               </div>
               <div class="w-full flex items-center justify-between gap-1 pt-1 font-mono text-[9.5px]">

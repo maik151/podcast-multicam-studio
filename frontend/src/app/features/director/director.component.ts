@@ -286,9 +286,36 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'Intel Smart Mic / Micrófono Principal';
   }
 
+  @HostListener('document:click')
+  public onDocumentClick(): void {
+    this.closeAllDropdowns();
+  }
+
   public closeAllDropdowns(): void {
     this.activeCamModeDropdown.set(null);
     this.isAudioDropdownOpen.set(false);
+  }
+
+  public getUsbHubQrUrl(camId: number): string {
+    return this.getCustomQrUrl(this.getUsbQrTargetUrl(camId));
+  }
+
+  public getTetheringQrUrl(camId: number): string {
+    const matrix = this.webrtc.connectionMatrix();
+    const ip = matrix?.android_rndis?.ip || matrix?.apple_usb?.ip || matrix?.wifi_lan?.ip || 'localhost';
+    const port = matrix?.port || 8443;
+    return this.getCustomQrUrl(`https://${ip}:${port}/cam/${camId}`);
+  }
+
+  public getHotspotQrUrl(camId: number): string {
+    const matrix = this.webrtc.connectionMatrix();
+    const ip = matrix?.hotspot_5ghz?.ip || '192.168.137.1';
+    const port = matrix?.port || 8443;
+    return this.getCustomQrUrl(`https://${ip}:${port}/cam/${camId}`);
+  }
+
+  public trackByCamId(index: number, cam: { id: number }): number {
+    return cam.id;
   }
 
   public getCameraConnectionMode(camId: number): CameraConnectionMode {

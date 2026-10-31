@@ -3,6 +3,7 @@ Controlador HTTP de Red y Códigos QR (Presentation Layer).
 """
 
 import io
+import re
 from aiohttp import web
 import qrcode
 import qrcode.image.svg
@@ -18,18 +19,20 @@ _QR_SVG_CACHE = {}
 
 def _render_qr_svg(url: str) -> bytes:
     qr = qrcode.QRCode(
-        version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=10,
         border=2,
-        image_factory=qrcode.image.svg.SvgPathImage
+        image_factory=qrcode.image.svg.SvgPathFillImage
     )
     qr.add_data(url)
     qr.make(fit=True)
     img = qr.make_image()
     buf = io.BytesIO()
     img.save(buf)
-    return buf.getvalue()
+    raw = buf.getvalue().decode("utf-8")
+    raw = re.sub(r'width="\d+mm"', 'width="100%"', raw)
+    raw = re.sub(r'height="\d+mm"', 'height="100%"', raw)
+    return raw.encode("utf-8")
 
 class NetworkController:
     def __init__(self, port: int):
@@ -49,6 +52,9 @@ class NetworkController:
                     f"http://127.0.0.1:8080/cam/{cam_id}",
                     f"https://{primary_ip}:{self.port}/cam/{cam_id}",
                     f"http://{primary_ip}:8080/cam/{cam_id}",
+                    f"https://192.168.137.1:{self.port}/cam/{cam_id}",
+                    f"https://172.20.10.1:{self.port}/cam/{cam_id}",
+                    f"https://192.168.42.1:{self.port}/cam/{cam_id}",
                 ])
             for u in urls_to_cache:
                 if u not in _QR_SVG_CACHE:
