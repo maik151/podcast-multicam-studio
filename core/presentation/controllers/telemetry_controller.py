@@ -77,11 +77,12 @@ class TelemetryController:
         """Abre la carpeta de Logs JSON en el Explorador de Windows."""
         try:
             os.makedirs(LOGS_DIR, exist_ok=True)
+            norm_path = os.path.normpath(LOGS_DIR)
             if sys.platform == "win32":
-                subprocess.Popen(
-                    ["explorer.exe", os.path.normpath(LOGS_DIR)],
-                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
-                )
+                try:
+                    os.startfile(norm_path)
+                except Exception:
+                    subprocess.Popen(["explorer.exe", norm_path])
             log_event(
                 component="TELEMETRY_CTRL",
                 message=f"Carpeta de logs abierta: {LOGS_DIR}",

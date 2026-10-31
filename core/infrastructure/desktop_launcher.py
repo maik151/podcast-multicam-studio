@@ -59,6 +59,8 @@ def launch_desktop_window(url: str, width: int = 1520, height: int = 920) -> boo
                 f"--app={local_url}",
                 f"--user-data-dir={profile_dir}",
                 f"--window-size={width},{height}",
+                "--test-type",
+                "--disable-infobars",
                 "--ignore-certificate-errors",
                 "--allow-insecure-localhost",
                 "--no-first-run",

@@ -48,7 +48,15 @@ class RecordingController:
         return web.json_response(res)
 
     async def handle_open_folder(self, request: web.Request) -> web.Response:
-        folder = self.recorder.current_recording_folder or self.recorder.base_recordings_dir
-        if sys.platform == "win32":
-            subprocess.Popen(f'explorer "{folder}"')
-        return web.json_response({"status": "ok", "folder": folder})
+        try:
+            folder = self.recorder.current_recording_folder or self.recorder.base_recordings_dir
+            os.makedirs(folder, exist_ok=True)
+            norm_path = os.path.normpath(folder)
+            if sys.platform == "win32":
+                try:
+                    os.startfile(norm_path)
+                except Exception:
+                    subprocess.Popen(["explorer.exe", norm_path])
+            return web.json_response({"status": "ok", "folder": norm_path})
+        except Exception as e:
+            return web.json_response({"status": "error", "message": str(e)}, status=500)

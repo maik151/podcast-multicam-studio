@@ -109,9 +109,13 @@ class RecorderService:
     def open_folder(self) -> bool:
         """Abre la carpeta de grabaciones en el Explorador de Windows."""
         folder = self.current_recording_folder or self.base_recordings_dir
-        if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
+        os.makedirs(folder, exist_ok=True)
+        norm_path = os.path.normpath(folder)
         if sys.platform == "win32":
-            subprocess.Popen(["explorer", folder])
-            return True
+            try:
+                os.startfile(norm_path)
+                return True
+            except Exception:
+                subprocess.Popen(["explorer.exe", norm_path])
+                return True
         return False
