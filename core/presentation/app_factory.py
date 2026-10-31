@@ -128,6 +128,7 @@ def create_application(container: ApplicationContainer = None) -> web.Applicatio
     app.router.add_post("/api/connections/open-hotspot", container.network_controller.handle_open_hotspot)
     app.router.add_get("/api/qr", container.network_controller.handle_qr)
     app.router.add_get("/api/ping", container.network_controller.handle_ping)
+    app.router.add_post("/api/system/shutdown", container.network_controller.handle_shutdown)
     app.router.add_get("/api/telemetry", container.telemetry_controller.handle_telemetry)
     app.router.add_get("/api/logs", container.telemetry_controller.handle_get_logs)
     app.router.add_post("/api/logs", container.telemetry_controller.handle_ingest_log)

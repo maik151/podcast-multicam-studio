@@ -114,3 +114,10 @@ class NetworkController:
 
     async def handle_ping(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok", "app": "Podcast Multicam Studio Clean Core"})
+
+    async def handle_shutdown(self, request: web.Request) -> web.Response:
+        """Cierra el servidor de forma segura tras solicitud del frontend."""
+        import asyncio, os
+        loop = asyncio.get_event_loop()
+        loop.call_later(0.5, lambda: os._exit(0))
+        return web.json_response({"success": True, "message": "Apagando TX-STUDIO..."})

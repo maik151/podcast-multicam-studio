@@ -241,7 +241,51 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  public activeCamModeDropdown = signal<number | null>(null);
+    public activeDesktopMenu = signal<string | null>(null);
+  public isWindowFullscreen = signal<boolean>(false);
+
+  @HostListener('document:fullscreenchange')
+  public onFullscreenChange(): void {
+    this.isWindowFullscreen.set(Boolean(document.fullscreenElement));
+  }
+
+  public toggleDesktopMenu(menu: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.activeDesktopMenu.update(curr => (curr === menu ? null : menu));
+  }
+
+  public closeDesktopMenu(): void {
+    this.activeDesktopMenu.set(null);
+  }
+
+  public onMinimizeWindow(): void {
+    this.showToast('TX-STUDIO minimizado.');
+    if (typeof window !== 'undefined' && window.blur) {
+      try { window.blur(); } catch {}
+    }
+  }
+
+  public async onMaximizeWindow(): Promise<void> {
+    await this.toggleFullscreen();
+    this.isWindowFullscreen.set(Boolean(document.fullscreenElement));
+  }
+
+  public onCloseWindow(): void {
+    if (this.recorder.recordingState().isRecording) {
+      const confirmClose = confirm('ATENCION: Hay una grabacion activa en curso.\n¿Seguro que deseas detener la grabacion y salir de TX-STUDIO?');
+      if (!confirmClose) return;
+      this.onToggleRecording();
+    }
+    this.showToast('Cerrando TX-STUDIO...');
+    fetch('/api/system/shutdown', { method: 'POST' }).catch(() => {});
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.close();
+      }
+    }, 300);
+  }
+
+public activeCamModeDropdown = signal<number | null>(null);
   public isAudioDropdownOpen = signal<boolean>(false);
   private qrUrlCache = new Map<string, string>();
 
