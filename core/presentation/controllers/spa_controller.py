@@ -30,12 +30,21 @@ class SpaController:
         return web.FileResponse(os.path.join(self.static_dir, "mobile", "index.html"))
 
     def register_angular_dist_routes(self, app: web.Application) -> None:
-        """Registra automáticamente todos los assets compilados por Angular en la raíz."""
-        if os.path.exists(self.angular_dist_dir):
-            for fname in os.listdir(self.angular_dist_dir):
-                fpath = os.path.join(self.angular_dist_dir, fname)
-                if os.path.isfile(fpath) and fname != "index.html":
-                    app.router.add_get(
-                        f"/{fname}",
-                        (lambda p: lambda r: web.FileResponse(p, headers={"Cache-Control": "no-cache"}))(fpath)
-                    )
+        """Registra la entrega dinámica de todos los assets compilados por Angular sin necesidad de reiniciar el servidor."""
+        async def handle_static_asset(request: web.Request) -> web.StreamResponse:
+            fname = request.match_info.get("filename", "")
+            # 1. Probar en angular_dist_dir
+            p1 = os.path.join(self.angular_dist_dir, fname)
+            if os.path.isfile(p1):
+                return web.FileResponse(p1, headers={"Cache-Control": "no-cache"})
+            # 2. Probar en static/director
+            p2 = os.path.join(self.static_dir, "director", fname)
+            if os.path.isfile(p2):
+                return web.FileResponse(p2, headers={"Cache-Control": "no-cache"})
+            # 3. Probar en static/
+            p3 = os.path.join(self.static_dir, fname)
+            if os.path.isfile(p3):
+                return web.FileResponse(p3, headers={"Cache-Control": "no-cache"})
+            return web.Response(status=404, text=f"Asset '{fname}' no encontrado")
+
+        app.router.add_get(r"/{filename:.+\.(?:js|css|ico|svg|png|webmanifest|json|woff2|woff|ttf|map)}", handle_static_asset)
