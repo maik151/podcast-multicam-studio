@@ -882,7 +882,8 @@
              *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && isDroidCamOnline(cam.id)"
              [src]="getDroidCamFeedUrl(cam.id)"
              (error)="onDroidCamFeedError(cam.id)"
-             class="w-full h-full object-cover"
+             class="w-full h-full object-cover transition-transform duration-300"
+             [style.transform]="isCropWatermarkActive() ? 'scale(1.06)' : 'none'"
              [alt]="'DROIDCAM USB FEED CAM 0' + cam.id">
 
         <!-- UI cuando está en Modo DROIDCAM USB pero NO está transmitiendo aún -->
@@ -933,6 +934,12 @@
         <div *ngIf="getCameraConnectionMode(cam.id) === 'droidcam_usb' && isDroidCamOnline(cam.id)"
              class="absolute bottom-1 left-1 flex items-center gap-1 bg-black/80 rounded px-1.5 py-0.5 border border-cyan-500/40 text-[8.5px] font-mono z-10 text-cyan-300">
           <span>PORT {{ 4740 + cam.id }}</span>
+          <button (click)="toggleWatermarkCrop()"
+                  [title]="isCropWatermarkActive() ? 'Desactivar recorte anti-marca de agua' : 'Activar recorte anti-marca de agua'"
+                  class="ml-1 px-1 py-0.2 rounded text-[7.5px] cursor-pointer border"
+                  [ngClass]="isCropWatermarkActive() ? 'bg-cyan-500/30 text-white border-cyan-400' : 'bg-transparent text-gray-400 border-white/20'">
+            {{ isCropWatermarkActive() ? 'CROP: ON' : 'CROP: OFF' }}
+          </button>
           <button (click)="onUnbindDroidCam(cam.id)"
                   title="Desconectar túnel DroidCam"
                   class="text-red-400 hover:text-red-300 underline cursor-pointer ml-1">

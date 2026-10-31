@@ -149,6 +149,10 @@ def create_application(container: ApplicationContainer = None) -> web.Applicatio
     app.router.add_post("/api/droidcam/bind", container.droidcam_controller.handle_bind)
     app.router.add_post("/api/droidcam/unbind", container.droidcam_controller.handle_unbind)
     app.router.add_get("/api/droidcam/feed/{cam_id}", container.droidcam_controller.handle_feed)
+    
+    # Microservicio de Video en Rust (tx-video-hub)
+    from core.infrastructure.video_hub_process import get_video_hub_status
+    app.router.add_get("/api/video-hub/status", lambda r: web.json_response(get_video_hub_status()))
 
     # 5. Assets Compilados de Angular
     container.spa_controller.register_angular_dist_routes(app)

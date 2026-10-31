@@ -66,7 +66,11 @@ def main():
     # 3. Contexto SSL Seguro X.509
     ssl_context = create_ssl_context(CERTS_DIR)
 
-    # 4. Construir la Aplicación con Clean Architecture
+    # 4. Iniciar Microservicio de Video Nativo en Rust (Puerto 9100)
+    from core.infrastructure.video_hub_process import ensure_video_hub_running
+    ensure_video_hub_running()
+
+    # 5. Construir la Aplicación con Clean Architecture
     app = create_application()
 
     # 5. Lanzar ventana de escritorio nativa (Edge App Mode) si no se especifica --no-window

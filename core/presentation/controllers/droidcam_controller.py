@@ -72,20 +72,25 @@ class DroidCamController:
 
         binding = self.bridge.active_bindings.get(cam_id)
         port = binding["local_port"] if binding else self.bridge.camera_ports.get(cam_id, 4741)
-        target_url = f"http://127.0.0.1:{port}/video"
+        # Priorizar el Hub nativo de video en Rust (puerto 9100) para cero latencia
+        from core.infrastructure.video_hub_process import is_video_hub_alive
+        if is_video_hub_alive():
+            target_url = f"http://127.0.0.1:9100/feed/{cam_id}"
+        else:
+            target_url = f"http://127.0.0.1:{port}/video"
 
-        timeout = aiohttp.ClientTimeout(total=None, connect=1.5, sock_read=5.0)
+        timeout = aiohttp.ClientTimeout(total=None, connect=2.0, sock_read=None)
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(target_url) as resp:
                     if resp.status != 200:
                         return web.Response(
                             status=503,
-                            text=f"El stream de DroidCam en puerto {port} no está emitiendo aún (HTTP {resp.status}). Abre la app en el teléfono.",
+                            text=f"El stream de video para CAM 0{cam_id} en puerto {port} no está emitiendo aún (HTTP {resp.status}). Abre la app en el teléfono.",
                             content_type="text/plain"
                         )
 
-                    content_type = resp.headers.get("Content-Type", "multipart/x-mixed-replace; boundary=--droidcam")
+                    content_type = resp.headers.get("Content-Type", "multipart/x-mixed-replace; boundary=--txframe")
                     headers = {
                         "Content-Type": content_type,
                         "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -95,7 +100,8 @@ class DroidCamController:
                     stream_resp = web.StreamResponse(status=200, headers=headers)
                     await stream_resp.prepare(request)
 
-                    async for chunk in resp.content.iter_chunked(32768):
+                    # Búfer de 128KB de alta eficiencia para mínimo consumo de CPU
+                    async for chunk in resp.content.iter_chunked(131072):
                         await stream_resp.write(chunk)
 
                     return stream_resp

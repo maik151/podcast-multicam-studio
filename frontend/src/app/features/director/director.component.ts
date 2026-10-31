@@ -330,8 +330,19 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public droidcamFeedNonce = signal<{ [camId: number]: number }>({ 1: Date.now(), 2: Date.now(), 3: Date.now() });
+  public isCropWatermarkActive = signal<boolean>(true);
+  private feedRetryCooldown: { [camId: number]: boolean } = {};
+
+  public toggleWatermarkCrop(): void {
+    this.isCropWatermarkActive.update(v => !v);
+  }
 
   public getDroidCamFeedUrl(camId: number): string {
+    const isLocalHttp = typeof window !== 'undefined' && window.location.protocol === 'http:';
+    if (isLocalHttp) {
+      // Conexión directa a tx-video-hub en Rust (Puerto 9100): CERO latencia y 0% CPU en Python
+      return `http://127.0.0.1:9100/feed/${camId}`;
+    }
     const nonce = this.droidcamFeedNonce()[camId] || Date.now();
     return `/api/droidcam/feed/${camId}?t=${nonce}`;
   }
@@ -341,9 +352,14 @@ export class DirectorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public onDroidCamFeedError(camId: number): void {
+    if (this.feedRetryCooldown[camId]) {
+      return;
+    }
+    this.feedRetryCooldown[camId] = true;
     setTimeout(() => {
+      this.feedRetryCooldown[camId] = false;
       this.refreshDroidCamFeed(camId);
-    }, 2000);
+    }, 4000);
   }
 
   public async onConnectDroidCam(camId: number, deviceId?: string): Promise<void> {
