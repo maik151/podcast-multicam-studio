@@ -16,13 +16,13 @@ class RecordingController:
     async def handle_start(self, request: web.Request) -> web.Response:
         data = await request.json()
         res = self.recorder.start_take(
-            project=data.get("project", "Podcast"),
+            project=data.get("project", "RUTA33"),
             episode=data.get("episode", "Episodio_01"),
             take=int(data.get("take", 1)),
             resolution=data.get("resolution", "1080p"),
             fps=int(data.get("fps", 60)),
-            ext=data.get("ext", "webm"),
-            custom_name=data.get("customName", "")
+            ext=data.get("ext", "mp4"),
+            custom_name=data.get("customName", "") or data.get("takeName", "")
         )
         return web.json_response(res)
 
@@ -32,7 +32,36 @@ class RecordingController:
         return web.json_response(res)
 
     async def handle_stop(self, request: web.Request) -> web.Response:
-        res = self.recorder.stop_take()
+        auto_open = True
+        try:
+            if request.can_read_body:
+                body = await request.json()
+                if isinstance(body, dict) and "autoOpen" in body:
+                    auto_open = bool(body["autoOpen"])
+        except Exception:
+            pass
+        res = self.recorder.stop_take(auto_open=auto_open)
+        return web.json_response(res)
+
+    async def handle_list_projects(self, request: web.Request) -> web.Response:
+        res = self.recorder.list_projects()
+        return web.json_response(res)
+
+    async def handle_create_project(self, request: web.Request) -> web.Response:
+        data = await request.json()
+        project_name = data.get("project", "RUTA33")
+        res = self.recorder.create_project(project_name)
+        return web.json_response(res)
+
+    async def handle_reveal(self, request: web.Request) -> web.Response:
+        target_path = None
+        try:
+            if request.can_read_body:
+                data = await request.json()
+                target_path = data.get("path")
+        except Exception:
+            pass
+        res = self.recorder.reveal_file(target_path)
         return web.json_response(res)
 
     async def handle_marker(self, request: web.Request) -> web.Response:

@@ -140,6 +140,9 @@ def create_application(container: ApplicationContainer = None) -> web.Applicatio
     app.router.add_post("/api/record/stop", container.recording_controller.handle_stop)
     app.router.add_post("/api/record/marker", container.recording_controller.handle_marker)
     app.router.add_get("/api/record/open-folder", container.recording_controller.handle_open_folder)
+    app.router.add_get("/api/record/projects", container.recording_controller.handle_list_projects)
+    app.router.add_post("/api/record/projects", container.recording_controller.handle_create_project)
+    app.router.add_post("/api/record/reveal", container.recording_controller.handle_reveal)
 
     # 4. WebSocket Hub de Señalización WebRTC
     app.router.add_get("/ws", container.signaling_controller.handle_ws)
