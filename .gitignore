@@ -25,3 +25,5 @@ tools/.android/
 Thumbs.db
 .vscode/
 .idea/
+
+dist_electron/

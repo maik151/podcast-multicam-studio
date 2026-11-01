@@ -6,7 +6,11 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "electron": "electron ../electron/main.js",
+    "electron:dev": "electron electron/main.js",
+    "electron:pack": "electron-builder --dir",
+    "electron:dist": "electron-builder"
   },
   "private": true,
   "dependencies": {
@@ -26,6 +30,8 @@
     "@angular/cli": "^19.2.27",
     "@angular/compiler-cli": "^19.2.0",
     "@types/jasmine": "~5.1.0",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
@@ -33,5 +39,58 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.7.2"
-  }
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.txstudio.broadcast",
+    "productName": "TX-STUDIO Broadcast Suite",
+    "copyright": "Copyright \u00a9 2026 TX-STUDIO",
+    "directories": {
+      "output": "../dist_electron"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "../favicon.ico"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist/start_studio",
+        "to": "engine",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../favicon.ico",
+        "to": "favicon.ico"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "../favicon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TX-STUDIO Broadcast Suite"
+    }
+  },
+  "author": "TX-STUDIO",
+  "description": "TX-STUDIO Professional Multicam Broadcast Suite"
 }
